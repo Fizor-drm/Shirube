@@ -1,0 +1,11 @@
+{
+  "$schema": "https://github.com/dyoshikawa/rulesync/releases/latest/download/config-schema.json",
+  "targets": ["codexcli", "opencode"],
+  "features": ["rules"],
+  "outputRoots": ["output"],
+  "delete": false,
+  "global": false,
+  "sources": [
+    { "source": "your-org/team-rules", "rules": ["global"] }
+  ]
+}

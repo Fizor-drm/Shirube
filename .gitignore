@@ -1,0 +1,49 @@
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/
+
+# Personal settings and runtime state (tokens, registry snapshots, logs).
+# Explicit names only: never a broad "dashboard*" glob, which would also match
+# the tracked Dashboard-Server.ps1 under Windows' case-insensitive ignore.
+.automation/dashboard.token
+.automation/dashboard.*.json
+.automation/dashboard.lastsync.txt
+.automation/dashboard.browse-*.tmp-*
+.automation/projects.json
+.automation/projects.json.bak-*
+.automation/projects.json.tmp-*
+.automation/project-status.json
+.automation/project-history-*.json
+.automation/global-status.json
+.automation/global-settings.json
+.automation/settings.json
+.automation/logs/
+.automation/backups/
+.automation/deployment-backups/
+.automation/*.lock
+.automation/*.tmp-*
+.automation/*.bak-*
+# Atomic-write temp/backup leftovers and per-run work dirs hold private data;
+# match the real generated names so an interrupted run is never published.
+.automation/.*-tmp-*
+.automation/.*-bak-*
+.automation/snapshots/
+.automation/preview-home-*/
+.automation/tests/*.log
+# Private GitHub clone of the shared rules (never publish).
+source-repo/
+# Local rules directory of this machine (personal project rules).
+.rulesync/
+# Throwaway sync targets kept only for local checks.
+trial/
+# Local sync workspaces: personal rulesync configs, staged output and scratch.
+# Whole directories are ignored so no stray file can be staged by accident.
+# Templates for a fresh setup live in examples/.
+global-preview/
+project-common-preview/
+# Stray output of a rulesync generate run in the repository root.
+/output/
+# Rulesync configs that point at a personal GitHub repo. Templates live in examples/.
+rulesync.lock
+rulesync.jsonc
+# Playwright MCP browser captures.
+.playwright-mcp/
