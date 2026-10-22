@@ -195,6 +195,14 @@ try {
   Assert ($readme.Contains('元が有効なら有効化')) 'R6 README restores the recorded task state after verification'
   Assert (($readme.Contains('.automation\*.ps1') -and $readme.Contains('%LOCALAPPDATA%\Shirube\.automation') -and $readme.Contains('`管理.bat` と `Shirube-Manager.bat` は `%LOCALAPPDATA%\Shirube`'))) 'R6 README places scripts under .automation and both launchers at the Shirube root'
 
+  # R6b: the dashboard does not show task names or action paths, so step 6 must
+  # send the name/action/disabled checks to Task Scheduler and keep the
+  # dashboard check to the intervals (and Global's enabled state).
+  Assert (($readme.Contains('タスク スケジューラで 2 つのタスクの名前・操作（Action）')) -and ($readme.Contains('無効状態のままであることを確認'))) 'R6b README checks task name, action path and disabled state in Task Scheduler'
+  Assert ($readme.Contains('Global は同期間隔と有効状態、Project は同期間隔')) 'R6b README limits dashboard checks to the intervals and Global state'
+  Assert ($readme.Contains('管理画面にはタスク名と操作は表示されません')) 'R6b README says the dashboard does not show task name or action'
+  Assert (-not $readme.Contains('新しいタスク名・操作・間隔を参照していることを確認')) 'R6b README rejects the old dashboard name/action claim'
+
   # R7: the dashboard export filename follows the rename; the JSON format and
   # import compatibility stay unchanged.
   $dashSrc = Get-Content -LiteralPath (Join-Path $devAuto 'Dashboard-Server.ps1') -Raw -Encoding UTF8
