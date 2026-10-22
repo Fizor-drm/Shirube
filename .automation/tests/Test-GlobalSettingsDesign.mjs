@@ -471,7 +471,7 @@ await testAsync('a target edit made while reload is pending survives the reload 
   release();
   await pending;
   must(h.state().selected.join('|') === 'codexcli|opencode|pi', 'target edit made during the GET is kept');
-  must(h.state().saved.join('|') === 'codexcli|opencode', 'the pre-reload saved baseline is kept');
+  must(h.state().saved.join('|') === 'claudecode|pi', 'the response becomes the saved baseline');
   must(h.state().dirty === true, 'the surviving target edit stays dirty');
   must(h.checkFor('claudecode').checked === false, 'the response does not check the server target');
   must(String(h.byId('numGlobalInterval').value) === '30', 'the untouched interval is still adopted');
@@ -512,7 +512,7 @@ await testAsync('target and interval edits made while reload is pending are both
   release();
   await pending;
   must(h.state().selected.join('|') === 'codexcli|opencode|pi', 'target edit made during the GET is kept');
-  must(h.state().saved.join('|') === 'codexcli|opencode', 'saved targets are not overwritten');
+  must(h.state().saved.join('|') === 'claudecode|pi', 'the response becomes the saved baseline');
   must(h.state().dirty === true, 'the target edit stays dirty');
   must(String(input.value) === '45', 'interval edit made during the GET is kept');
 });
@@ -532,7 +532,7 @@ await testAsync('a reload with no edits during the GET still adopts targets and 
   must(String(h.byId('numGlobalInterval').value) === '30', 'interval adopts when untouched through the GET');
 });
 
-await testAsync('a reverted edit made during reload still blocks target adoption', async () => {
+await testAsync('a reverted edit made during reload keeps the UI but adopts the response baseline', async () => {
   const h = harness();
   h.model.globalStatus.targets = ['claudecode', 'pi'];
   h.model.globalStatus.intervalMinutes = 30;
@@ -547,9 +547,67 @@ await testAsync('a reverted edit made during reload still blocks target adoption
   await pending;
   must(h.state().selected.join('|') === 'codexcli|opencode', 'the reverted selection is kept');
   must(h.checkFor('claudecode').checked === false, 'the response is not adopted after an edit-then-revert');
-  must(h.state().saved.join('|') === 'codexcli|opencode', 'the saved targets stay at the pre-reload baseline');
-  must(h.state().dirty === false, 'a reverted selection has no unsaved difference');
+  must(h.state().saved.join('|') === 'claudecode|pi', 'the saved baseline moves to the response');
+  must(h.state().dirty === true, 'the kept UI differs from the response baseline');
+  must(h.byId('btnGlobalTargets').disabled === false, 'save is available for the difference');
   must(String(h.byId('numGlobalInterval').value) === '30', 'the untouched interval is still adopted');
+});
+
+await testAsync('a preserved reload edit survives polls and locale redraw and can be saved', async () => {
+  const h = harness();
+  h.model.globalStatus.targets = ['claudecode', 'pi'];
+  h.model.globalStatus.intervalMinutes = 30;
+  let release;
+  h.model.statusGetGate = new Promise(resolve => { release = resolve; });
+  const pending = h.byId('btnGlobalReload').onclick();
+  h.checkFor('pi').checked = true;
+  h.gs.markGlobalTargetsDirty();
+  h.checkFor('pi').checked = false;
+  h.gs.markGlobalTargetsDirty();
+  release();
+  await pending;
+  must(h.state().selected.join('|') === 'codexcli|opencode', 'reload response keeps the edited UI');
+  must(h.state().saved.join('|') === 'claudecode|pi', 'reload response becomes the saved baseline');
+  must(h.state().dirty === true, 'the difference is dirty after the response');
+  must(h.byId('btnGlobalTargets').disabled === false, 'save is enabled after the response');
+  h.model.statusGetGate = null;
+  await h.context.refreshGlobal();
+  must(h.state().selected.join('|') === 'codexcli|opencode', 'a normal poll keeps the preserved selection');
+  must(h.checkFor('codexcli').checked === true && h.checkFor('opencode').checked === true, 'a normal poll keeps the preserved checkboxes');
+  must(h.checkFor('claudecode').checked === false && h.checkFor('pi').checked === false, 'a normal poll does not restore the old server targets');
+  must(h.state().saved.join('|') === 'claudecode|pi', 'a normal poll leaves the response baseline while dirty');
+  h.context.L = (key, vars) => String(key)
+    .replace('未保存の変更があります', 'You have unsaved changes.')
+    .replace(/\{([^{}]+)\}/g, (m, k) => vars && Object.prototype.hasOwnProperty.call(vars, k) ? String(vars[k]) : m);
+  h.gs.renderGlobalTargetsUI();
+  must(h.checkFor('codexcli').checked === true && h.checkFor('opencode').checked === true, 'a locale redraw keeps the preserved checkboxes');
+  must(h.byId('globalTargetsDirty').textContent === 'You have unsaved changes.', 'the locale redraw shows the dirty state');
+  must(h.byId('btnGlobalTargets').disabled === false, 'the locale redraw keeps save enabled');
+  await h.byId('btnGlobalTargets').onclick();
+  const posts = h.model.calls.filter(c => c.ep === '/api/global-targets-set');
+  must(posts.length === 1, 'the user can save the preserved selection');
+  must(JSON.stringify(posts[0].body) === JSON.stringify({ targets: ['codexcli', 'opencode'], confirm: true }), 'save sends the preserved canonical payload');
+  must(h.state().saved.join('|') === 'codexcli|opencode', 'the save moves the baseline to the preserved selection');
+  must(h.state().dirty === false && h.byId('btnGlobalTargets').disabled === true, 'the save clears the difference');
+  must(h.state().selected.join('|') === 'codexcli|opencode', 'the save refresh keeps the saved selection');
+});
+
+await testAsync('a preserved reload edit equal to the response stays clean', async () => {
+  const h = harness();
+  h.model.globalStatus.targets = ['codexcli', 'opencode'];
+  let release;
+  h.model.statusGetGate = new Promise(resolve => { release = resolve; });
+  const pending = h.byId('btnGlobalReload').onclick();
+  h.checkFor('pi').checked = true;
+  h.gs.markGlobalTargetsDirty();
+  h.checkFor('pi').checked = false;
+  h.gs.markGlobalTargetsDirty();
+  release();
+  await pending;
+  must(h.state().selected.join('|') === 'codexcli|opencode', 'the reverted selection is kept');
+  must(h.state().saved.join('|') === 'codexcli|opencode', 'the equal response is the baseline');
+  must(h.state().dirty === false, 'equal selections are clean');
+  must(h.byId('btnGlobalTargets').disabled === true, 'equal selections keep save disabled');
 });
 
 // --- save flow -----------------------------------------------------------

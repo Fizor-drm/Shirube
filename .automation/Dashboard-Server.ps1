@@ -3329,6 +3329,8 @@ function updateGlobalUI(g){
   if(!globalTargetsSaving && (forceAdopt || !globalTargetsDirty)){
     try{
       if(targetsEdited){
+        // Keep the user's checkboxes, but the successful GET is the new server truth to diff against.
+        globalSavedTargets = (g.targets || []).slice();
         globalTargetsDirty = globalTargetsDirtyNow();
       } else {
         const wanted = (g.targets || []).slice();
