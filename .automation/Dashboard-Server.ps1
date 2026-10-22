@@ -1,4 +1,4 @@
-﻿# Dashboard-Server.ps1 - Rulesync project registry dashboard (dev source).
+﻿# Dashboard-Server.ps1 - Shirube project registry dashboard (dev source).
 # Loopback-only HTTP UI: list / preview-register / unregister / sync-now / last result.
 # No new deps: PowerShell 5.1 + .NET HttpListener only. No arbitrary shell/read APIs.
 # Registry truth stays projects.json in AutoDir. Never touches AGENTS.md contents
@@ -1108,7 +1108,7 @@ input[type=number]{width:120px;background:#0a0a0a;border:1px solid #2c2c2c;color
 <div class="btnrow"><button id="btnGlobalTargets" class="primary">対象を保存</button></div>
 <div id="msgGlobalTargets" role="status"></div>
 <hr style="border:0;border-top:1px solid #1d1d1d;margin:16px 0">
-<p class="muted">自動同期（Rulesync Global Auto Sync）。ログオン時＋一定間隔で裏で実行します。</p>
+<p class="muted">自動同期（Shirube Global Auto Sync）。ログオン時＋一定間隔で裏で実行します。</p>
 <p class="muted" id="globalEnabledState">読込中</p>
 <div class="btnrow"><button id="btnGlobalEnabled">有効/無効を切替</button></div>
 <div class="btnrow"><label class="muted">間隔（分） <input type="number" id="numGlobalInterval" min="5" max="1440" step="1" value="15"></label><button id="btnGlobalIntervalGet">現在値</button><button id="btnGlobalIntervalSet">間隔を変更</button></div>

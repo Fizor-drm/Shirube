@@ -26,39 +26,39 @@ try {
   Assert (-not (Test-Path -LiteralPath $settingsPath)) 'S0 missing file still resolves a path'
 
   # S1: settings.json が無いときは既定値
-  Assert ((Get-ShirubeSetting -Name 'taskNameGlobal' -Default 'Rulesync Global Auto Sync') -ceq 'Rulesync Global Auto Sync') 'S1 no file: global task default'
-  Assert ((Get-ShirubeSetting -Name 'taskNameProject' -Default 'Rulesync Project Auto Sync') -ceq 'Rulesync Project Auto Sync') 'S1 no file: project task default'
+  Assert ((Get-ShirubeSetting -Name 'taskNameGlobal' -Default 'Shirube Global Auto Sync') -ceq 'Shirube Global Auto Sync') 'S1 no file: global task default'
+  Assert ((Get-ShirubeSetting -Name 'taskNameProject' -Default 'Shirube Project Auto Sync') -ceq 'Shirube Project Auto Sync') 'S1 no file: project task default'
   Assert ((Get-ShirubeSetting -Name 'rulesyncVersion' -Default '32.0.0') -ceq '32.0.0') 'S1 no file: rulesync version default'
 
   # S2: 値があれば上書き値を返す
   Set-Settings '{"taskNameGlobal":"Custom Global Task","taskNameProject":"Custom Project Task","rulesyncVersion":"1.2.3"}'
-  Assert ((Get-ShirubeSetting -Name 'taskNameGlobal' -Default 'Rulesync Global Auto Sync') -ceq 'Custom Global Task') 'S2 override global task name'
-  Assert ((Get-ShirubeSetting -Name 'taskNameProject' -Default 'Rulesync Project Auto Sync') -ceq 'Custom Project Task') 'S2 override project task name'
+  Assert ((Get-ShirubeSetting -Name 'taskNameGlobal' -Default 'Shirube Global Auto Sync') -ceq 'Custom Global Task') 'S2 override global task name'
+  Assert ((Get-ShirubeSetting -Name 'taskNameProject' -Default 'Shirube Project Auto Sync') -ceq 'Custom Project Task') 'S2 override project task name'
   Assert ((Get-ShirubeSetting -Name 'rulesyncVersion' -Default '32.0.0') -ceq '1.2.3') 'S2 override rulesync version'
 
   # S3: JSON不正でも例外を投げず既定値
   Set-Settings '{"taskNameGlobal": '
   $s3Threw = $false
   $s3Val = ''
-  try { $s3Val = Get-ShirubeSetting -Name 'taskNameGlobal' -Default 'Rulesync Global Auto Sync' } catch { $s3Threw = $true }
-  Assert ((-not $s3Threw) -and ($s3Val -ceq 'Rulesync Global Auto Sync')) 'S3 broken JSON falls back without throwing'
+  try { $s3Val = Get-ShirubeSetting -Name 'taskNameGlobal' -Default 'Shirube Global Auto Sync' } catch { $s3Threw = $true }
+  Assert ((-not $s3Threw) -and ($s3Val -ceq 'Shirube Global Auto Sync')) 'S3 broken JSON falls back without throwing'
   Set-Settings 'not json at all'
   Assert ((Get-ShirubeSetting -Name 'rulesyncVersion' -Default '32.0.0') -ceq '32.0.0') 'S3 non-JSON text falls back'
 
   # S4: キー欠落・型不一致・空文字は既定値
   Set-Settings '{"taskNameGlobal":"OnlyThis","taskNameProject":"   ","rulesyncVersion":32}'
-  Assert ((Get-ShirubeSetting -Name 'taskNameGlobal' -Default 'Rulesync Global Auto Sync') -ceq 'OnlyThis') 'S4 present string is used'
-  Assert ((Get-ShirubeSetting -Name 'taskNameProject' -Default 'Rulesync Project Auto Sync') -ceq 'Rulesync Project Auto Sync') 'S4 blank string falls back'
+  Assert ((Get-ShirubeSetting -Name 'taskNameGlobal' -Default 'Shirube Global Auto Sync') -ceq 'OnlyThis') 'S4 present string is used'
+  Assert ((Get-ShirubeSetting -Name 'taskNameProject' -Default 'Shirube Project Auto Sync') -ceq 'Shirube Project Auto Sync') 'S4 blank string falls back'
   Assert ((Get-ShirubeSetting -Name 'rulesyncVersion' -Default '32.0.0') -ceq '32.0.0') 'S4 number instead of string falls back'
   Set-Settings '{"rulesyncVersion":"9.9.9"}'
-  Assert ((Get-ShirubeSetting -Name 'taskNameGlobal' -Default 'Rulesync Global Auto Sync') -ceq 'Rulesync Global Auto Sync') 'S4 missing key falls back'
+  Assert ((Get-ShirubeSetting -Name 'taskNameGlobal' -Default 'Shirube Global Auto Sync') -ceq 'Shirube Global Auto Sync') 'S4 missing key falls back'
   Set-Settings '["a","b"]'
-  Assert ((Get-ShirubeSetting -Name 'taskNameGlobal' -Default 'Rulesync Global Auto Sync') -ceq 'Rulesync Global Auto Sync') 'S4 non-object JSON falls back'
+  Assert ((Get-ShirubeSetting -Name 'taskNameGlobal' -Default 'Shirube Global Auto Sync') -ceq 'Shirube Global Auto Sync') 'S4 non-object JSON falls back'
 
   # S5: 既定値は現行値のまま (設定ファイル無しで評価)
   Remove-Item -LiteralPath $settingsPath -Force
-  Assert ((Get-ShirubeSetting -Name 'taskNameGlobal' -Default 'Rulesync Global Auto Sync') -ceq 'Rulesync Global Auto Sync') 'S5 taskNameGlobal default is current value'
-  Assert ((Get-ShirubeSetting -Name 'taskNameProject' -Default 'Rulesync Project Auto Sync') -ceq 'Rulesync Project Auto Sync') 'S5 taskNameProject default is current value'
+  Assert ((Get-ShirubeSetting -Name 'taskNameGlobal' -Default 'Shirube Global Auto Sync') -ceq 'Shirube Global Auto Sync') 'S5 taskNameGlobal default is current value'
+  Assert ((Get-ShirubeSetting -Name 'taskNameProject' -Default 'Shirube Project Auto Sync') -ceq 'Shirube Project Auto Sync') 'S5 taskNameProject default is current value'
   Assert ((Get-ShirubeSetting -Name 'rulesyncVersion' -Default '32.0.0') -ceq '32.0.0') 'S5 rulesyncVersion default is current value'
 
   # S6: 直書きが設定参照に置き換わっていること (既定へ戻す変更の取りこぼし防止)
@@ -67,9 +67,9 @@ try {
     Assert (-not $txt.Contains("'rulesync@32.0.0'")) ("S6 no hardcoded package: " + $rel)
   }
   $pmTxt = Get-Content -LiteralPath (Join-Path $devAuto 'Project-Management.ps1') -Raw
-  Assert (-not $pmTxt.Contains("Get-ScheduledTask -TaskName 'Rulesync Project Auto Sync'")) 'S6 project task lookup goes through settings'
+  Assert (-not $pmTxt.Contains("Get-ScheduledTask -TaskName 'Shirube Project Auto Sync'")) 'S6 project task lookup goes through settings'
   $dsTxt = Get-Content -LiteralPath (Join-Path $devAuto 'Dashboard-Server.ps1') -Raw
-  Assert (-not $dsTxt.Contains("Set-MgmtProjectInterval 'Rulesync Project Auto Sync'")) 'S6 dashboard interval uses settings task name'
+  Assert (-not $dsTxt.Contains("Set-MgmtProjectInterval 'Shirube Project Auto Sync'")) 'S6 dashboard interval uses settings task name'
 }
 finally {
   if (Test-Path -LiteralPath $scratch) {

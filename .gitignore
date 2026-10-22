@@ -42,7 +42,7 @@ global-preview/
 project-common-preview/
 # Stray output of a rulesync generate run in the repository root.
 /output/
-# Rulesync configs that point at a personal GitHub repo. Templates live in examples/.
+# Shirube configs that point at a personal GitHub repo. Templates live in examples/.
 rulesync.lock
 rulesync.jsonc
 # Playwright MCP browser captures.

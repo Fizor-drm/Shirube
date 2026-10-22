@@ -17,15 +17,16 @@ function Test-ContainedLocal([string]$Candidate, [string]$Root) {
 }
 $devAuto = Split-Path -Parent $PSScriptRoot
 try {
-  . (Join-Path $devAuto 'Global-Management.ps1')
-  Assert ((Get-Command Get-GlobalSettings -ErrorAction SilentlyContinue) -ne $null) 'G0 module dot-sourced (no listen)'
-
   $base = Join-Path ([System.IO.Path]::GetTempPath()) 'GlobalMgmtTest'
   New-Item -ItemType Directory -Force -Path $base | Out-Null
   $scratch = Join-Path $base ('run-' + [System.Guid]::NewGuid().ToString('N'))
   $auto = Join-Path $scratch 'auto'
   $fakeHome = Join-Path $scratch 'home'
   New-Item -ItemType Directory -Force -Path $auto, (Join-Path $fakeHome '.codex'), (Join-Path $fakeHome '.config\opencode') | Out-Null
+  # Own settings: the real dev settings.json must not decide these assertions.
+  Copy-Item -LiteralPath (Join-Path $devAuto 'Global-Management.ps1'), (Join-Path $devAuto 'Settings.ps1') -Destination $auto -Force
+  . (Join-Path $auto 'Global-Management.ps1')
+  Assert ((Get-Command Get-GlobalSettings -ErrorAction SilentlyContinue) -ne $null) 'G0 module dot-sourced (no listen)'
   # fake preview root: <scratch>\global-preview\rulesync.lock (sibling of auto)
   $gprev = Join-Path $scratch 'global-preview'
   New-Item -ItemType Directory -Force -Path $gprev | Out-Null
@@ -166,10 +167,11 @@ try {
   Assert ((($bd.same -eq $false) -and ((@($bd.lines).Count) -gt 0))) 'G9 diff shows change'
   Assert ((@($bd.lines).Count -le 300)) 'G9 diff bounded'
   $script:pauseCalls = @()
+  function Get-ScheduledTask { param([string]$TaskName) return [pscustomobject]@{ TaskName = $TaskName; State = 'Ready'; Triggers = @() } }
   function Disable-ScheduledTask { param([string]$TaskName) $script:pauseCalls += ('disable:' + [string]$TaskName) }
   $cfG9 = New-GlobalRestoreConfirm $auto (Split-Path $bk -Leaf) $fakeHome
   $rs = Restore-GlobalBackup $auto (Split-Path $bk -Leaf) $true $fakeHome $cfG9
-  Assert ((($rs.ok -eq $true) -and (@($script:pauseCalls).Count -eq 1) -and ([string]$script:pauseCalls[0] -ceq 'disable:Rulesync Global Auto Sync'))) 'G9 restore pauses global sync first (task disable)'
+  Assert ((($rs.ok -eq $true) -and (@($script:pauseCalls).Count -eq 1) -and ([string]$script:pauseCalls[0] -ceq 'disable:Shirube Global Auto Sync'))) 'G9 restore pauses global sync first (task disable)'
   Assert (((Get-Content -LiteralPath (Join-Path $fakeHome '.codex\AGENTS.md') -Raw).Contains('codex-body-AAA'))) 'G9 restore brings back backup content'
   Remove-Item -Path 'function:Disable-ScheduledTask' -Force -ErrorAction SilentlyContinue
   $rsNoConfirm = $true
@@ -201,7 +203,7 @@ try {
   $script:mockGInterval = 'PT15M'
   $script:mockGCalls = @()
   function Get-ScheduledTask { param([string]$TaskName)
-    if ($TaskName -cne 'Rulesync Global Auto Sync') { throw 'task not found' }
+    if ($TaskName -cne 'Shirube Global Auto Sync') { throw 'task not found' }
     $rep = New-Object PSObject -Property @{ Interval = $script:mockGInterval }
     $tr = [pscustomobject]@{ CimClass = [pscustomobject]@{ CimClassName = 'MSFT_TaskTimeTrigger' }; Repetition = $rep }
     return [pscustomobject]@{ Triggers = @($tr); State = 'Ready' }
@@ -215,7 +217,7 @@ try {
   Assert (((Get-GlobalInterval) -eq 15)) 'G10 mocked interval reads 15'
   Set-GlobalInterval 30 | Out-Null
   Assert ((($script:mockGInterval -ceq 'PT30M') -and ((Get-GlobalInterval) -eq 30))) 'G10 interval set roundtrips mocked scheduler'
-  Assert ((@($script:mockGCalls | Where-Object { ($_ -ne 'Rulesync Global Auto Sync') -and ($_ -notlike 'disable:*') -and ($_ -notlike 'enable:*') }).Count -eq 0)) 'G10 scheduler writes target Global task only'
+  Assert ((@($script:mockGCalls | Where-Object { ($_ -ne 'Shirube Global Auto Sync') -and ($_ -notlike 'disable:*') -and ($_ -notlike 'enable:*') }).Count -eq 0)) 'G10 scheduler writes target Global task only'
   $ivBad = $true
   try { Set-GlobalInterval 3 | Out-Null; $ivBad = $false } catch { $ivBad = $true }
   Assert ($ivBad) 'G10 out-of-range interval refused before scheduler write'
@@ -225,7 +227,7 @@ try {
   Assert (($script:mockGState -ceq 'Disabled')) 'G10 disable pauses auto sync'
   Set-GlobalTaskEnabled $true | Out-Null
   Assert (($script:mockGState -ceq 'Ready')) 'G10 re-enable resumes auto sync'
-  Assert ((Get-GlobalTaskName) -ceq 'Rulesync Global Auto Sync') 'G10 task name fixed (no arbitrary tasks)'
+  Assert ((Get-GlobalTaskName) -ceq 'Shirube Global Auto Sync') 'G10 task name fixed (no arbitrary tasks)'
   Remove-Item -Path 'function:Get-ScheduledTask' -Force -ErrorAction SilentlyContinue
   Remove-Item -Path 'function:Set-ScheduledTask' -Force -ErrorAction SilentlyContinue
   Remove-Item -Path 'function:Disable-ScheduledTask' -Force -ErrorAction SilentlyContinue

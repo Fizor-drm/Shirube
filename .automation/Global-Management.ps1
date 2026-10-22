@@ -305,8 +305,22 @@ function Global-DiffTextPair($OldText, $NewText) {
 }
 
 # Fixed task name: no arbitrary task parameter exists anywhere in this module.
-# 値は settings.json (taskNameGlobal) で変更できる。既定は現行値。
-function Get-GlobalTaskName { return (Get-ShirubeSetting -Name 'taskNameGlobal' -Default 'Rulesync Global Auto Sync') }
+# 値は settings.json (taskNameGlobal) で変更できる。既定は Shirube の現行値。
+function Get-GlobalTaskName { return (Get-ShirubeSetting -Name 'taskNameGlobal' -Default 'Shirube Global Auto Sync') }
+
+# Pre-rename installs keep working until their task is migrated: the legacy
+# task is used only when the new default is absent. Custom settings never fall back.
+function Get-GlobalScheduledTask {
+  $name = Get-GlobalTaskName
+  try { return @{ name = $name; task = (Get-ScheduledTask -TaskName $name -ErrorAction Stop) } }
+  catch {
+    $original = $_
+    if ($name -cne 'Shirube Global Auto Sync') { throw $original }
+    $legacy = 'Rulesync Global Auto Sync'
+    try { return @{ name = $legacy; task = (Get-ScheduledTask -TaskName $legacy -ErrorAction Stop) } }
+    catch { throw $original }
+  }
+}
 
 # Allowlisted generation targets only. Scalar singletons are accepted;
 # empty/null/unknown/duplicates are rejected (no arbitrary values).
@@ -1181,7 +1195,7 @@ function Restore-GlobalBackup([string]$AutoDir, [string]$BackupId, [bool]$Confir
   }
   # Pause the Global auto sync BEFORE updating files so a scheduled run can
   # never overwrite a half-restored home. A pause failure refuses the restore.
-  try { Disable-ScheduledTask -TaskName (Get-GlobalTaskName) }
+  try { Disable-ScheduledTask -TaskName ((Get-GlobalScheduledTask).name) }
   catch { throw ('自動同期の休止に失敗したため復元しません: ' + $_.Exception.Message) }
   # Shelter current state (lossless) for rollback and history.
   $broot = Join-Path $AutoDir 'backups'
@@ -1279,7 +1293,7 @@ function Global-FormatInterval([int]$Minutes) { return ('PT' + $Minutes + 'M') }
 function Test-GlobalIntervalValid([int]$Minutes) { return (($Minutes -ge 5) -and ($Minutes -le 1440)) }
 # Project task is never touched here: the Global task name is fixed (no parameter).
 function Get-GlobalInterval {
-  $t = Get-ScheduledTask -TaskName (Get-GlobalTaskName) -ErrorAction Stop
+  $t = (Get-GlobalScheduledTask).task
   foreach ($tr in $t.Triggers) {
     try {
       if ($tr.CimClass.CimClassName -ceq 'MSFT_TaskTimeTrigger') {
@@ -1293,8 +1307,9 @@ function Get-GlobalInterval {
 function Set-GlobalInterval([int]$Minutes) {
   if (-not (Test-GlobalIntervalValid $Minutes)) { throw '間隔は5〜1440分で指定してください。' }
   # One read per operation: Get and Set must target the same task.
-  $taskName = Get-GlobalTaskName
-  $t = Get-ScheduledTask -TaskName $taskName -ErrorAction Stop
+  $r = Get-GlobalScheduledTask
+  $taskName = [string]$r.name
+  $t = $r.task
   $trs = @($t.Triggers)
   $found = $false
   foreach ($tr in $trs) {
@@ -1308,12 +1323,12 @@ function Set-GlobalInterval([int]$Minutes) {
   return @{ ok = $true; minutes = $Minutes }
 }
 function Get-GlobalTaskEnabled {
-  $t = Get-ScheduledTask -TaskName (Get-GlobalTaskName) -ErrorAction Stop
+  $t = (Get-GlobalScheduledTask).task
   try { if ([string]$t.State -ceq 'Disabled') { return $false } } catch {}
   return $true
 }
 function Set-GlobalTaskEnabled([bool]$Enabled) {
-  $taskName = Get-GlobalTaskName
+  $taskName = [string]((Get-GlobalScheduledTask).name)
   if ($Enabled) { Enable-ScheduledTask -TaskName $taskName -ErrorAction Stop | Out-Null }
   else { Disable-ScheduledTask -TaskName $taskName -ErrorAction Stop | Out-Null }
   return @{ ok = $true; enabled = [bool]$Enabled }

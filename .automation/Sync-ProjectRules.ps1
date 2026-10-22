@@ -1,4 +1,4 @@
-﻿# Sync-ProjectRules.ps1 - Auto-sync project rules via Rulesync standard commands only.
+﻿# Sync-ProjectRules.ps1 - Auto-sync project rules via Shirube standard commands only.
 # Reads shared project rules (project-common-preview cwd) plus each repo's local
 # rule file, and writes the registered repos' AGENTS.md files.
 # Run hidden from Task Scheduler (at logon + every 15 min). No MCP/model APIs.
@@ -402,7 +402,7 @@ function Invoke-ProjectSync {
       }
 
       $BaseArgs = @('--yes', $script:Pkg, 'generate', '--config', $UseConfig, '--input-roots') + $UseRoots + @('--output-roots', $RepoFull, '--targets', $script:Targets, '--features', 'rules')
-      # Rulesync32 resolves --config against the process cwd (path-traversal
+      # Shirube32 resolves --config against the process cwd (path-traversal
       # guard): a staged config outside the install cwd is rejected. Run every
       # per-project CLI call from the directory containing UseConfig. Args stay
       # absolute; only the cwd changes. Single push per project, popped in

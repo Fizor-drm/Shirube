@@ -8,9 +8,18 @@
 param([string]$AutoDir = '', [int]$Port = 18721, [int]$WaitSec = 0, [int]$PollMs = 250)
 $ErrorActionPreference = 'Stop'
 
+# Existing installs keep the pre-rename tree; fresh installs use Shirube.
+function Get-DefaultAutoDir {
+  $new = Join-Path $env:LOCALAPPDATA 'Shirube\.automation'
+  if (Test-Path -LiteralPath $new) { return $new }
+  $legacy = Join-Path $env:LOCALAPPDATA 'Rulesync\.automation'
+  if (Test-Path -LiteralPath $legacy) { return $legacy }
+  return $new
+}
+
 function Test-VerifyOnce {
   try {
-    if (-not $AutoDir) { $script:_ad = Join-Path $env:LOCALAPPDATA 'Rulesync\.automation' } else { $script:_ad = $AutoDir }
+    if (-not $AutoDir) { $script:_ad = Get-DefaultAutoDir } else { $script:_ad = $AutoDir }
     $ad = $script:_ad
     $sf = Join-Path $ad 'dashboard.state.json'
     if (-not (Test-Path -LiteralPath $sf)) { Write-Host 'NG: state missing'; return 1 }
@@ -58,7 +67,7 @@ function Wait-Verify {
   if ($WaitSec -le 0) { return (Test-VerifyOnce) }
   if ($PollMs -le 0) { $PollMs = 250 }
   $deadline = (Get-Date).AddSeconds($WaitSec)
-  $ad = if ($AutoDir) { $AutoDir } else { Join-Path $env:LOCALAPPDATA 'Rulesync\.automation' }
+  $ad = if ($AutoDir) { $AutoDir } else { Get-DefaultAutoDir }
   # expose to Test-VerifyOnce (which reads script/caller scope)
   $script:AutoDir = $ad
   $script:Port = $Port

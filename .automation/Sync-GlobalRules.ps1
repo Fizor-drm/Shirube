@@ -1,4 +1,4 @@
-﻿# Sync-GlobalRules.ps1 - Auto-sync global rules via Rulesync standard commands only.
+﻿# Sync-GlobalRules.ps1 - Auto-sync global rules via Shirube standard commands only.
 # Reads GitHub rules (global-preview cwd) and writes real home files.
 # Run hidden from Task Scheduler (at logon + every 15 min). No MCP/model APIs.
 # Manual home edits are overwritten by design. Failures exit non-zero for retry.
@@ -17,8 +17,8 @@ function Invoke-GlobalSync {
 
   $ErrorActionPreference = 'Stop'
   # One version per run: install, check, dry-run and generate all use this value.
-  $RulesyncVersion = [string](Get-ShirubeSetting -Name 'rulesyncVersion' -Default '32.0.0')
-  $Pkg = 'rulesync@' + $RulesyncVersion
+  $ShirubeVersion = [string](Get-ShirubeSetting -Name 'rulesyncVersion' -Default '32.0.0')
+  $Pkg = 'rulesync@' + $ShirubeVersion
 
   $script:GblHaveTargets = $false
   $script:GblEffTargets = @()
@@ -319,7 +319,7 @@ function Invoke-GlobalSync {
             # home itself must stay rooted at the trusted AutoDir.
             Assert-GlobalCliParents 'preview generate --global'
             Global-AssertNoLinkChain $iso $AutoDir 'preview'
-            $genArgv = Get-GlobalGenerateArgv $Targets '' $RulesyncVersion
+            $genArgv = Get-GlobalGenerateArgv $Targets '' $ShirubeVersion
             Write-Log 'STEP: preview generate --global'
             $prevEap2 = $ErrorActionPreference
             $ErrorActionPreference = 'Continue'
@@ -432,7 +432,7 @@ function Invoke-GlobalSync {
           return 0
         }
 
-        $check = Invoke-Step 'generate --global --check' $npx (Get-GlobalGenerateArgv $Targets 'check' $RulesyncVersion)
+        $check = Invoke-Step 'generate --global --check' $npx (Get-GlobalGenerateArgv $Targets 'check' $ShirubeVersion)
         if ($check -eq 0) {
           Save-GlobalRunStatus 'success' '' ''
           Write-Log 'OK: no changes.'
@@ -443,7 +443,7 @@ function Invoke-GlobalSync {
           throw ("check failed with exit=" + $check + '.')
         }
         # Exit 1 means drift OR error, so confirm with --dry-run before touching home.
-        if ((Invoke-Step 'generate --global --dry-run' $npx (Get-GlobalGenerateArgv $Targets 'dry-run' $RulesyncVersion)) -ne 0) {
+        if ((Invoke-Step 'generate --global --dry-run' $npx (Get-GlobalGenerateArgv $Targets 'dry-run' $ShirubeVersion)) -ne 0) {
           Save-GlobalRunStatus 'failed' ('dry-run failed; not a clean update candidate. ' + $script:LastStepTail) ''
           throw 'dry-run failed; not a clean update candidate.'
         }
@@ -539,7 +539,7 @@ function Invoke-GlobalSync {
         }
         try {
           # global.md only (global-preview config); never --delete.
-          if ((Invoke-Step 'generate --global' $npx (Get-GlobalGenerateArgv $Targets '' $RulesyncVersion)) -ne 0) {
+          if ((Invoke-Step 'generate --global' $npx (Get-GlobalGenerateArgv $Targets '' $ShirubeVersion)) -ne 0) {
             throw 'generate --global failed.'
           }
           # Plan-bound apply: fresh output must equal the approved output.
@@ -556,7 +556,7 @@ function Invoke-GlobalSync {
               if ($freshT -cne [string]$pj[0].generatedText) { throw ($t + ': generated output differs from the approved plan.') }
             }
           }
-          if ((Invoke-Step 'final generate --global --check' $npx (Get-GlobalGenerateArgv $Targets 'check' $RulesyncVersion)) -ne 0) {
+          if ((Invoke-Step 'final generate --global --check' $npx (Get-GlobalGenerateArgv $Targets 'check' $ShirubeVersion)) -ne 0) {
             throw 'final check failed.'
           }
         }

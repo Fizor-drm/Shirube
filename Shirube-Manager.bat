@@ -1,8 +1,8 @@
 @echo off
-rem Rulesync management dashboard launcher (AppData trusted copy only)
+rem Shirube management dashboard launcher (AppData trusted copy only)
 rem Trust boundary: the repository directory may be writable by other local users (Modify),
 rem so code there is NEVER executed directly. Only the protected copy under
-rem %LOCALAPPDATA%\Rulesync\.automation is executed. This bat in the repo is the
+rem %LOCALAPPDATA%\Shirube\.automation is executed. This bat in the repo is the
 rem master for deployment; a parent copies it to AppData after review.
 rem No dev fallback. If the AppData set is missing, exit with placement error.
 rem r3: health 200 alone is not trusted. Verify state PID+start+TCP+health instance before token use.
@@ -10,7 +10,7 @@ rem r7: Run only fixed absolute paths to prevent CWD hijack. powershell/wscript/
 rem Browser start keeps OS default. health is fixed 127.0.0.1.
 setlocal
 set PORT=18721
-set AUTO=%LOCALAPPDATA%\Rulesync\.automation
+set AUTO=%LOCALAPPDATA%\Shirube\.automation
 set HEALTH=http://127.0.0.1:%PORT%/health
 set PS=%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe
 set WS=%SystemRoot%\System32\wscript.exe

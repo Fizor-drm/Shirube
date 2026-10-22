@@ -158,7 +158,7 @@ try {
   Assert ($null -eq (Parse-MgmtInterval 'bogus')) 'F9 bogus interval parses to null'
   Assert ((Format-MgmtInterval 30) -ceq 'PT30M') 'F9 format is PT30M'
   $gGuard = $true
-  try { Set-MgmtProjectInterval 'Rulesync Global Auto Sync' 30; $gGuard = $false } catch { $gGuard = ($_.Exception.Message.Contains('Project')) }
+  try { Set-MgmtProjectInterval 'Shirube Global Auto Sync' 30; $gGuard = $false } catch { $gGuard = ($_.Exception.Message.Contains('Project')) }
   Assert ($gGuard) 'F9 Global task interval change refused (Project only)'
   $ivCur = Get-MgmtProjectInterval
   Assert (($ivCur -ge 5) -and ($ivCur -le 1440)) 'F9 current Project interval reads in range (read-only)'

@@ -733,8 +733,10 @@ console.log('ALL R8JS CHECKS PASSED');
   $script:mockSchedCalls = @()
   $script:mockSchedGetCount = 0
   $script:mockSchedGetFailOn = @()
+  # Configured name keeps this rollback test independent of personal settings.
+  $script:projectTask = Get-MgmtProjectTaskName
   function Get-ScheduledTask { param([string]$TaskName)
-    if ($TaskName -cne 'Rulesync Project Auto Sync') { throw 'task not found' }
+    if ($TaskName -cne $script:projectTask) { throw 'task not found' }
     $script:mockSchedGetCount++
     if ($script:mockSchedGetFailOn -contains $script:mockSchedGetCount) { throw 'injected-get-fail' }
     $rep = New-Object PSObject -Property @{ Interval = $script:mockSchedInterval }
@@ -767,14 +769,17 @@ console.log('ALL R8JS CHECKS PASSED');
     $repoI10 = New-Repo 'R10Imp'
     $imI10 = Import-MgmtRegistry $auto (@{ schemaVersion = 1; projects = @(@{ name = 'R10x'; path = $repoI10 }); intervalMinutes = 30 }) $true
     Assert (($imI10.added -eq 1) -and ($script:mockSchedInterval -ceq 'PT30M')) 'R10 import applies interval to mocked scheduler'
-    Assert ((@($script:mockSchedCalls | Where-Object { $_ -cne 'Rulesync Project Auto Sync' })).Count -eq 0) 'R10 scheduler writes target Project task only'
+    Assert ((@($script:mockSchedCalls | Where-Object { $_ -cne $script:projectTask })).Count -eq 0) 'R10 scheduler writes target Project task only'
     Assert ((Get-MgmtProjectInterval) -eq 30) 'R10 mocked scheduler roundtrip reads back'
     $callsBefore = @($script:mockSchedCalls).Count
     Import-MgmtRegistry $auto (@{ schemaVersion = 1; projects = @() }) $true | Out-Null
     Assert ((@($script:mockSchedCalls).Count -eq $callsBefore)) 'R10 import without interval leaves scheduler alone'
     $gGuard = $true
-    try { Set-MgmtProjectInterval 'Rulesync Global Auto Sync' 30; $gGuard = $false } catch { $gGuard = ($_.Exception.Message.Contains('Project')) }
+    try { Set-MgmtProjectInterval 'Shirube Global Auto Sync' 30; $gGuard = $false } catch { $gGuard = ($_.Exception.Message.Contains('Project')) }
     Assert ($gGuard) 'R10 Global task interval change refused'
+    $gLegacyGuard = $true
+    try { Set-MgmtProjectInterval 'Rulesync Global Auto Sync' 30; $gLegacyGuard = $false } catch { $gLegacyGuard = ($_.Exception.Message.Contains('Project')) }
+    Assert ($gLegacyGuard) 'R10 legacy Global task interval change refused'
     $script:mockSchedThrow = $true
     $repoI10b = New-Repo 'R10ImpB'
     $namesBefore = @((Get-Registry $auto) | ForEach-Object { [string]$_.name })

@@ -1036,13 +1036,26 @@ function Format-MgmtInterval([int]$Minutes) {
 }
 
 # Project 同期タスク名は1箇所に固定する (任意タスク名は受け付けない)。
-# 値は settings.json (taskNameProject) で変更できる。既定は現行値。
-function Get-MgmtProjectTaskName { return (Get-ShirubeSetting -Name 'taskNameProject' -Default 'Rulesync Project Auto Sync') }
+# 値は settings.json (taskNameProject) で変更できる。既定は Shirube の現行値。
+function Get-MgmtProjectTaskName { return (Get-ShirubeSetting -Name 'taskNameProject' -Default 'Shirube Project Auto Sync') }
+
+# Pre-rename installs keep working until their task is migrated: the legacy
+# task is used only when the new default is absent. Custom settings never fall back.
+function Get-MgmtProjectScheduledTask([string]$TaskName) {
+  if ([string]::IsNullOrWhiteSpace($TaskName)) { $TaskName = Get-MgmtProjectTaskName }
+  try { return @{ name = $TaskName; task = (Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop) } }
+  catch {
+    $original = $_
+    if ($TaskName -cne 'Shirube Project Auto Sync') { throw $original }
+    $legacy = 'Rulesync Project Auto Sync'
+    try { return @{ name = $legacy; task = (Get-ScheduledTask -TaskName $legacy -ErrorAction Stop) } }
+    catch { throw $original }
+  }
+}
 
 function Get-MgmtProjectInterval([string]$TaskName) {
   # An empty name keeps the existing behavior (resolve from settings now).
-  if ([string]::IsNullOrWhiteSpace($TaskName)) { $TaskName = Get-MgmtProjectTaskName }
-  $t = Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+  $t = (Get-MgmtProjectScheduledTask $TaskName).task
   foreach ($tr in $t.Triggers) {
     try {
       if ($tr.CimClass.CimClassName -ceq 'MSFT_TaskTimeTrigger') {
@@ -1059,7 +1072,9 @@ function Set-MgmtProjectInterval([string]$TaskName, [int]$Minutes) {
   $allowed = Get-MgmtProjectTaskName
   if ($TaskName -cne $allowed) { throw 'Project同期タスクのみ変更できます。(Global は対象外)' }
   if (-not (Test-MgmtIntervalValid $Minutes)) { throw '間隔は5〜1440分で指定してください。' }
-  $t = Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+  $r = Get-MgmtProjectScheduledTask $TaskName
+  $TaskName = [string]$r.name
+  $t = $r.task
   $trs = @($t.Triggers)
   $found = $false
   foreach ($tr in $trs) {

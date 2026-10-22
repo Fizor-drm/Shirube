@@ -42,6 +42,13 @@ try {
   Set-GlobalTargets $auto @('codexcli', 'opencode') | Out-Null
   # Scheduler shadowing MUST live at test script scope: functions defined inside
   # a helper vanish with its scope and the real task would be touched.
+  # Get-ScheduledTask stays mocked too: autoloading ScheduledTasks re-registers
+  # its cmdlets and would let the real Disable-ScheduledTask replace the mock.
+  function Get-ScheduledTask {
+    param([string]$TaskName)
+    if ($TaskName -ceq 'Rulesync Global Auto Sync') { return [pscustomobject]@{ TaskName = $TaskName; State = 'Ready'; Triggers = @() } }
+    throw ('Task not found: ' + $TaskName)
+  }
   function Disable-ScheduledTask { param([string]$TaskName) }
   function Enable-ScheduledTask { param([string]$TaskName) }
 
@@ -400,6 +407,7 @@ finally {
   $env:PATH = $origPath
   Remove-Item Env:FAKE_AUTO_DIR -ErrorAction SilentlyContinue
   Remove-Item -Path 'function:Copy-GlobalExpectedBytes' -Force -ErrorAction SilentlyContinue
+  Remove-Item -Path 'function:Get-ScheduledTask' -Force -ErrorAction SilentlyContinue
   Remove-Item -Path 'function:Disable-ScheduledTask' -Force -ErrorAction SilentlyContinue
   Remove-Item -Path 'function:Enable-ScheduledTask' -Force -ErrorAction SilentlyContinue
   Set-Location -LiteralPath $initCwd -ErrorAction SilentlyContinue

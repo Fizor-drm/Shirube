@@ -1,4 +1,4 @@
-# Shirube（内部名: Rulesync）
+# Shirube
 
 AI コーディングエージェント（Codex / OpenCode）が読む `AGENTS.md` を、GitHub 上のルール正本から各ツール・各プロジェクトへ配布する Windows 向けの運用基盤です。配布エンジンには rulesync（MIT）を使い、その前後を「差分プレビュー・バックアップ・復元・状態管理」で囲みます。Windows で Codex / OpenCode を複数プロジェクトに使い、ルール配布を手作業から減らしたい個人・小規模チーム向けです。生成物である `AGENTS.md` を手で編集する運用は想定せず、初回登録時に既存の `AGENTS.md` を自動変換・自動上書きしません。認証トークンなどの秘密情報は画面・ログに表示しません。
 
@@ -45,7 +45,7 @@ Windows のスケジュールタスクが Global 用と Project 用を別々に�
 
 ## 3. 導入手順
 
-以下は、クローンしたリポジトリを `%LOCALAPPDATA%\Rulesync` の保護コピーとして配置する手順です。
+以下は、クローンしたリポジトリを `%LOCALAPPDATA%\Shirube` の保護コピーとして配置する手順です。
 
 ### 3.1 クローン
 
@@ -67,7 +67,7 @@ examples\rulesync.project.jsonc  → project-common-preview\rulesync.jsonc
 この 2 つのフォルダは `.automation` の兄弟に置きます。実行コードは `.automation` の親フォルダから `global-preview` と `project-common-preview` を解決するため、別の場所には置けません。配置後は次のようになります。
 
 ```text
-%LOCALAPPDATA%\Rulesync\
+%LOCALAPPDATA%\Shirube\
 ├─ .automation\
 ├─ global-preview\rulesync.jsonc
 ├─ project-common-preview\rulesync.jsonc
@@ -86,12 +86,12 @@ Copy-Item .automation\settings.example.json .automation\settings.json
 
 ### 3.4 保護コピーへ実行用ファイルを配置する
 
-リポジトリは、他のユーザーが書き込める場所に置かれる想定です。そのため `管理.bat` はリポジトリ側のコードを直接実行せず、`%LOCALAPPDATA%\Rulesync\.automation` の保護コピーだけを実行します。保護コピーが無い場合はエラーで終了します（開発用のフォールバックはありません）。
+リポジトリは、他のユーザーが書き込める場所に置かれる想定です。そのため `管理.bat` はリポジトリ側のコードを直接実行せず、`%LOCALAPPDATA%\Shirube\.automation` の保護コピーだけを実行します。保護コピーが無い場合はエラーで終了します（開発用のフォールバックはありません）。
 
 `.automation` 内の実行用ファイル（`*.ps1`、`*.vbs`、`settings.json`）と、3.2 で作った 2 つの設定フォルダ、`管理.bat` を配置します。
 
 ```powershell
-$root = Join-Path $env:LOCALAPPDATA 'Rulesync'
+$root = Join-Path $env:LOCALAPPDATA 'Shirube'
 New-Item -ItemType Directory -Force (Join-Path $root '.automation') | Out-Null
 Copy-Item .automation\*.ps1, .automation\*.vbs, .automation\settings.json (Join-Path $root '.automation')
 Copy-Item global-preview, project-common-preview $root -Recurse
@@ -118,7 +118,7 @@ Copy-Item 管理.bat $root
 
 | 設定 | 値 |
 | --- | --- |
-| 名前 | `settings.json` の `taskNameGlobal` / `taskNameProject`（既定は `Rulesync Global Auto Sync` / `Rulesync Project Auto Sync`） |
+| 名前 | `settings.json` の `taskNameGlobal` / `taskNameProject`（既定は `Shirube Global Auto Sync` / `Shirube Project Auto Sync`） |
 | トリガー | ログオン時。15 分ごとに繰り返す |
 | 実行条件 | ユーザーがログオンしている間のみ |
 | 操作 | `wscript.exe` に `"<保護コピー>\.automation\Run-GlobalRules.vbs"` または `Run-ProjectRules.vbs` を渡す |
@@ -132,6 +132,18 @@ Copy-Item 管理.bat $root
 ### 3.7 管理画面を起動する
 
 `管理.bat` をダブルクリックすると、非表示のサーバーが起動し、既定のブラウザで管理画面が開きます。待受は `http://127.0.0.1:18721` のループバックのみです。二重起動時は既存のサーバーを再利用し、15 分間操作がないとサーバーは終了します（同期タスクは別プロセスで継続します）。
+
+### 3.8 旧 Rulesync 環境から移行する
+
+以前の `%LOCALAPPDATA%\Rulesync` を使っている場合は、データと個人設定を保ったまま次の順で移行します。フォルダを分割・削除せず、1 つの単位として移動してください。
+
+1. 管理画面と実行中の同期を終了し、タスク スケジューラで旧 `Rulesync Global Auto Sync` / `Rulesync Project Auto Sync` を無効化します。
+2. `settings.json` の `taskNameGlobal` / `taskNameProject` が旧既定値のままなら、`Shirube Global Auto Sync` / `Shirube Project Auto Sync` に更新します。独自のタスク名を使っている場合はその名前を変えず、タスク スケジューラ側と一致させます。
+3. `%LOCALAPPDATA%\Rulesync` を `%LOCALAPPDATA%\Shirube` へフォルダごと移動します。`projects.json`、ログ、バックアップ、状態ファイル、`global-preview` / `project-common-preview` の個人設定（`rulesync.jsonc`）はそのまま残ります。
+4. リポジトリ側の `.automation\*.ps1`・`*.vbs` と `管理.bat` を `%LOCALAPPDATA%\Shirube` へ配置します。`settings.json`・`projects.json`・ログ・バックアップ・プレビュー設定は移動済みのものを使うため、上書きしないでください。
+5. タスク スケジューラで 2 つのタスクの名前と操作を Shirube の値へ変更します（または新しい名前で作り直します）。操作は新しい `<Shirube>\.automation\Run-GlobalRules.vbs` / `Run-ProjectRules.vbs` を指します。
+6. 管理画面を起動し、Global / Project の両方が新しいタスク名・操作・間隔を参照していることを確認します。新しい既定タスクが無い場合、アプリは旧既定名のタスクを互換参照しますが、移行後は旧タスクを残さないでください。
+7. 新しいタスクで 1 回ずつ同期し、登録プロジェクト、ログ、バックアップ、プレビュー設定が残っていることを確認してから旧タスクを削除します。旧 `%LOCALAPPDATA%\Rulesync` をコピーで残した場合は、確認が終わるまで削除しないでください。
 
 ## 4. ルールの書き方
 
@@ -171,12 +183,12 @@ frontmatter は決まった形式だけを受け付けます。3 つのキーを
 
 ## 5. 設定ファイル settings.json
 
-自動同期のタスク名と、使う rulesync のバージョンは `settings.json` で変更できます。置き場所は `Settings.ps1` と同じフォルダ（コードと同一ディレクトリ）です。保護コピーでは `%LOCALAPPDATA%\Rulesync\.automation\settings.json` になります。
+自動同期のタスク名と、使う rulesync のバージョンは `settings.json` で変更できます。置き場所は `Settings.ps1` と同じフォルダ（コードと同一ディレクトリ）です。保護コピーでは `%LOCALAPPDATA%\Shirube\.automation\settings.json` になります。
 
 | キー | 意味 | 既定値 |
 | --- | --- | --- |
-| `taskNameGlobal` | Global 自動同期の Windows タスク名 | `Rulesync Global Auto Sync` |
-| `taskNameProject` | Project 自動同期の Windows タスク名 | `Rulesync Project Auto Sync` |
+| `taskNameGlobal` | Global 自動同期の Windows タスク名 | `Shirube Global Auto Sync` |
+| `taskNameProject` | Project 自動同期の Windows タスク名 | `Shirube Project Auto Sync` |
 | `rulesyncVersion` | 使用する `rulesync` のバージョン | `32.0.0` |
 
 タスク名を変えるときは、Windows の「タスク スケジューラ」側のタスク名も同じ名前に変えてください。名前が違うと対象のタスクが見つからず、間隔変更・有効/無効の切替・復元前の休止が失敗します。
@@ -230,7 +242,7 @@ node .automation\tests\Test-DashboardGenerationRace.mjs
 - 起動用 `.vbs` は `C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe` を固定で参照します。Windows のインストール先が異なる環境ではそのままでは動作しません。
 - シンボリックリンク作成権限のない環境では、`Test-SyncProjectRules.ps1` の T13a / T13b は未検証です。
 - 英語版 README は未作成です。
-- アプリケーションディレクトリ名と内部名は現在 `Rulesync` です（表示名は Shirube）。
+- 上流エンジン由来の識別子（`rulesync` パッケージ、`rulesync.jsonc`、`.rulesync`、`rulesync.lock`、`rulesyncVersion`）は互換性のため旧名のままです。
 - セキュリティ監査は公開前プレリリースに限定して実施済みで、標準監査は未実施です。
 
 ## 8. ライセンス

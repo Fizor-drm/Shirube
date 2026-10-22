@@ -76,32 +76,32 @@ try {
 
   # T1: Set-GlobalInterval reads the task name once; a settings change between
   # Get-ScheduledTask and Set-ScheduledTask must not retarget the task.
-  Set-TestSettings 'Rulesync Global Auto Sync' 'Rulesync Project Auto Sync' '32.0.0'
+  Set-TestSettings 'Shirube Global Auto Sync' 'Shirube Project Auto Sync' '32.0.0'
   $script:taskCalls = @()
   $script:setCalls = @()
   $script:settingReads = @()
-  $script:onGet = { Set-TestSettings 'Changed Global Task' 'Rulesync Project Auto Sync' '9.9.9' }
+  $script:onGet = { Set-TestSettings 'Changed Global Task' 'Shirube Project Auto Sync' '9.9.9' }
   Set-GlobalInterval 30 | Out-Null
   $allNames = @($script:taskCalls + $script:setCalls)
   $globalReads = @($script:settingReads | Where-Object { $_ -ceq 'taskNameGlobal' }).Count
-  $ok = (($globalReads -eq 1) -and (@($allNames | Select-Object -Unique).Count -eq 1) -and ($allNames[0] -ceq 'Rulesync Global Auto Sync'))
+  $ok = (($globalReads -eq 1) -and (@($allNames | Select-Object -Unique).Count -eq 1) -and ($allNames[0] -ceq 'Shirube Global Auto Sync'))
   Assert $ok 'T1 Set-GlobalInterval reads one name and cannot retarget mid-operation'
 
   # T2: Set-MgmtProjectInterval enables exactly one task-name read per call and
   # keeps Get-ScheduledTask and Set-ScheduledTask on the same name.
-  Set-TestSettings 'Rulesync Global Auto Sync' 'Rulesync Project Auto Sync' '32.0.0'
+  Set-TestSettings 'Shirube Global Auto Sync' 'Shirube Project Auto Sync' '32.0.0'
   $script:taskCalls = @()
   $script:setCalls = @()
   $script:settingReads = @()
-  $script:onGet = { Set-TestSettings 'Rulesync Global Auto Sync' 'Changed Project Task' '9.9.9' }
-  Set-MgmtProjectInterval 'Rulesync Project Auto Sync' 45 | Out-Null
+  $script:onGet = { Set-TestSettings 'Shirube Global Auto Sync' 'Changed Project Task' '9.9.9' }
+  Set-MgmtProjectInterval 'Shirube Project Auto Sync' 45 | Out-Null
   $allNames = @($script:taskCalls + $script:setCalls)
   $projectReads = @($script:settingReads | Where-Object { $_ -ceq 'taskNameProject' }).Count
-  $ok = (($projectReads -eq 1) -and (@($allNames | Select-Object -Unique).Count -eq 1) -and ($allNames[0] -ceq 'Rulesync Project Auto Sync'))
+  $ok = (($projectReads -eq 1) -and (@($allNames | Select-Object -Unique).Count -eq 1) -and ($allNames[0] -ceq 'Shirube Project Auto Sync'))
   Assert $ok 'T2 Set-MgmtProjectInterval reads one name and keeps one target'
 
   # T3: an explicit version is used as-is; omitting it keeps the settings read.
-  Set-TestSettings 'Rulesync Global Auto Sync' 'Rulesync Project Auto Sync' '9.9.9'
+  Set-TestSettings 'Shirube Global Auto Sync' 'Shirube Project Auto Sync' '9.9.9'
   $script:settingReads = @()
   $argvPinned = @(Get-GlobalGenerateArgv 'codexcli,opencode' 'check' '1.2.3')
   $versionReads = @($script:settingReads | Where-Object { $_ -ceq 'rulesyncVersion' }).Count
@@ -112,14 +112,14 @@ try {
   $versionReads = @($script:settingReads | Where-Object { $_ -ceq 'rulesyncVersion' }).Count
   $ok = (($argvDefault -contains 'rulesync@9.9.9') -and ($versionReads -eq 1))
   Assert $ok 'T3 omitted version still reads settings once (existing behavior)'
-  Set-TestSettings 'Rulesync Global Auto Sync' 'Rulesync Project Auto Sync' '32.0.0'
+  Set-TestSettings 'Shirube Global Auto Sync' 'Shirube Project Auto Sync' '32.0.0'
   $argvFallback = @(Get-GlobalGenerateArgv 'codexcli,opencode' 'dry-run')
   Assert ($argvFallback -contains 'rulesync@32.0.0') 'T3 default version is unchanged'
 
   # T4: one operation resolves the version once; later settings edits do not
   # leak into check/dry-run/generate argv.
   $runVersion = [string](Get-ShirubeSetting -Name 'rulesyncVersion' -Default '32.0.0')
-  Set-TestSettings 'Rulesync Global Auto Sync' 'Rulesync Project Auto Sync' '9.9.9'
+  Set-TestSettings 'Shirube Global Auto Sync' 'Shirube Project Auto Sync' '9.9.9'
   $versions = @()
   foreach ($mode in @('', 'check', 'dry-run')) {
     foreach ($a in @(Get-GlobalGenerateArgv 'codexcli,opencode' $mode $runVersion)) {
@@ -133,7 +133,7 @@ try {
   # T5: the sync entry points pin that version for every generate call.
   $sgTxt = Get-Content -LiteralPath (Join-Path $devAuto 'Sync-GlobalRules.ps1') -Raw
   $sgCalls = [regex]::Matches($sgTxt, 'Get-GlobalGenerateArgv\s+\$Targets')
-  $sgPinned = [regex]::Matches($sgTxt, 'Get-GlobalGenerateArgv\s+\$Targets\s+''[^'']*''\s+\$RulesyncVersion')
+  $sgPinned = [regex]::Matches($sgTxt, 'Get-GlobalGenerateArgv\s+\$Targets\s+''[^'']*''\s+\$ShirubeVersion')
   Assert (($sgCalls.Count -eq 5) -and ($sgPinned.Count -eq 5)) 'T5 every global generate call pins the run version'
   $spTxt = Get-Content -LiteralPath (Join-Path $devAuto 'Sync-ProjectRules.ps1') -Raw
   Assert (([regex]::Matches($spTxt, "Get-ShirubeSetting -Name 'rulesyncVersion'")).Count -eq 1) 'T5 project sync resolves the version once per run'
@@ -142,7 +142,7 @@ try {
   # T6: an import pins the Project task for preview, apply, verification and
   # rollback. If settings switch A->B mid-apply, B's interval must never be the
   # reason to skip the rollback check on A (review repro: A=15, B=15, apply 30).
-  Set-TestSettings 'Rulesync Global Auto Sync' 'TaskA' '32.0.0'
+  Set-TestSettings 'Shirube Global Auto Sync' 'TaskA' '32.0.0'
   $script:intervals = @{ TaskA = 15; TaskB = 15 }
   $script:taskCalls = @()
   $script:setCalls = @()
@@ -152,7 +152,7 @@ try {
   $script:onSet = {
     param([string]$TaskName)
     if (($TaskName -ceq 'TaskA') -and ([int]$script:intervals['TaskA'] -eq 30)) {
-      Set-TestSettings 'Rulesync Global Auto Sync' 'TaskB' '32.0.0'
+      Set-TestSettings 'Shirube Global Auto Sync' 'TaskB' '32.0.0'
     }
   }
   $impErr = $null
