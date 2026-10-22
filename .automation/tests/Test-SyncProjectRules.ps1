@@ -25,6 +25,30 @@ function Test-Contained([string]$Candidate, [string]$Root) {
   if ($r[$r.Length - 1] -ne $sep) { $r = $r + $sep }
   return $c.StartsWith($r, [System.StringComparison]::OrdinalIgnoreCase)
 }
+# Windows PowerShell 5.1 New-Item -ItemType SymbolicLink requires admin even in Developer Mode;
+# the kernel flag 0x2 (ALLOW_UNPRIVILEGED_CREATE) does not. That flag needs Windows 10 Creators Update,
+# so on ERROR_INVALID_PARAMETER (87) retry with flags=0, which admin hosts before it still accept.
+function New-FileSymlink([string]$Path, [string]$Target) {
+  if (-not ('SyncProjectRulesTest.Native' -as [type])) {
+    Add-Type -TypeDefinition @'
+using System.Runtime.InteropServices;
+namespace SyncProjectRulesTest {
+  public static class Native {
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CreateSymbolicLinkW")]
+    [return: MarshalAs(UnmanagedType.U1)]
+    public static extern bool CreateSymbolicLink(string path, string target, uint flags);
+  }
+}
+'@
+  }
+  if ([SyncProjectRulesTest.Native]::CreateSymbolicLink($Path, $Target, 2)) { return }
+  $err = [System.Runtime.InteropServices.Marshal]::GetLastWin32Error()
+  if ($err -eq 87) {
+    if ([SyncProjectRulesTest.Native]::CreateSymbolicLink($Path, $Target, 0)) { return }
+    $err = [System.Runtime.InteropServices.Marshal]::GetLastWin32Error()
+  }
+  throw ([System.ComponentModel.Win32Exception]::new($err))
+}
 
 try {
   $devAuto = Split-Path -Parent $PSScriptRoot
@@ -438,14 +462,14 @@ exit /b 0
   Assert (Test-Path -LiteralPath (Join-Path $otherSnap 'sentinel.txt')) 'T11 other-run sentinel survives'
 
   # T13a: existing AGENTS.md symlink -> refused just before write (best-effort, not guaranteed).
-  # Symlink privilege is required; a skip is recorded as failure, never as pass.
+  # Developer Mode unprivileged symlinks; a skip is recorded as failure, never as pass.
   Reset-Case @(0, 1, 0, 0)
   Set-Stdout 2 ('Would write: ' + (Join-Path $projA 'AGENTS.md'))
   $beforeB = Get-Content -LiteralPath (Join-Path $projB 'AGENTS.md') -Raw -Encoding UTF8
   $linkOk = $true
   try {
     Remove-Item -LiteralPath (Join-Path $projA 'AGENTS.md') -Force
-    New-Item -ItemType SymbolicLink -Path (Join-Path $projA 'AGENTS.md') -Target (Join-Path $projB 'AGENTS.md') -ErrorAction Stop | Out-Null
+    New-FileSymlink (Join-Path $projA 'AGENTS.md') (Join-Path $projB 'AGENTS.md')
   }
   catch { $linkOk = $false; Write-Host 'SKIP: T13a symlink needs privilege' }
   Assert ($linkOk) 'T13a symlink privilege available (skip is not a pass)'
@@ -460,14 +484,14 @@ exit /b 0
     Remove-Item -LiteralPath (Join-Path $projA 'AGENTS.md') -Force
   }
 
-  # T13b: symlinked local input file -> refused before snapshot (same privilege gate).
+  # T13b: symlinked local input file -> refused before snapshot (same unprivileged symlink path).
   # Skip is recorded as failure, never as pass.
   Reset-Case @(0, 0)
   $localOk = $true
   try {
     $lf = Join-Path $projA '.rulesync\rules\project-local.md'
     Remove-Item -LiteralPath $lf -Force
-    New-Item -ItemType SymbolicLink -Path $lf -Target (Join-Path $projB 'AGENTS.md') -ErrorAction Stop | Out-Null
+    New-FileSymlink $lf (Join-Path $projB 'AGENTS.md')
   }
   catch { $localOk = $false; Write-Host 'SKIP: T13b symlink needs privilege' }
   Assert ($localOk) 'T13b symlink privilege available (skip is not a pass)'
@@ -496,6 +520,12 @@ exit /b 0
     Set-Content -LiteralPath (Join-Path $auto 'projects.json') $origReg -Encoding Ascii
     [System.IO.Directory]::Delete($juncPath)
   }
+
+  # T13d: native CreateSymbolicLinkW returns a one-byte BOOLEAN; 4-byte bool marshalling can read a
+  # failed create as success. Assert the U1 contract (the ERROR_INVALID_PARAMETER retry needs a pre-Creators-Update host).
+  $retParam = [SyncProjectRulesTest.Native].GetMethod('CreateSymbolicLink').ReturnParameter
+  $masAttr = @($retParam.GetCustomAttributes([System.Runtime.InteropServices.MarshalAsAttribute], $false))
+  Assert ($masAttr.Count -eq 1 -and $masAttr[0].Value -eq [System.Runtime.InteropServices.UnmanagedType]::U1) 'T13d native BOOLEAN return marshalled as U1'
 
   # T12: own snapshot root leaks nothing; other-run TEMP sentinel survives (no shared-TEMP sweep).
   # Only own GUID scratch is inspected, so parallel runs cannot cause false failures.
