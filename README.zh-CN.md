@@ -2,12 +2,12 @@
 
 [日本語](README.md) | [English](README.en.md) | [简体中文](README.zh-CN.md)
 
-Shirube 从 GitHub 上的规则仓库和各项目的本地规则生成 Codex / OpenCode 读取的 `AGENTS.md`，并通过 Windows 计划任务进行分发。生成过程使用 [rulesync](https://github.com/dyoshikawa/rulesync)，管理界面支持差异预览、备份、还原和同步状态确认。
+Shirube 从 GitHub 上的规则仓库和各项目的本地规则生成 Codex、OpenCode 等 18 种受支持 CLI 读取的 `AGENTS.md`，并通过 Windows 计划任务进行分发。生成过程使用 [rulesync](https://github.com/dyoshikawa/rulesync)，管理界面支持差异预览、备份、还原和同步状态确认。
 
 ![Windows 10 / 11](https://img.shields.io/badge/OS-Windows%2010%20%2F%2011-0078D4?logo=windows&logoColor=white)
 ![Windows PowerShell 5.1](https://img.shields.io/badge/PowerShell-5.1-5391FE?logo=powershell&logoColor=white)
 ![rulesync 32.0.0](https://img.shields.io/badge/rulesync-32.0.0-2F6F44)
-![Codex / OpenCode](https://img.shields.io/badge/targets-Codex%20%2F%20OpenCode-111827)
+![Global 18 CLIs / Project 2](https://img.shields.io/badge/targets-Global%2018%20CLIs%20%2F%20Project%202-111827)
 [![MIT License](https://img.shields.io/badge/license-MIT-2EA043)](LICENSE)
 
 仅支持 Windows。不支持 Linux / macOS。
@@ -45,12 +45,14 @@ flowchart TB
   subgraph O [生成的 AGENTS.md]
     OG["%USERPROFILE%/.codex/AGENTS.md"]
     OO["%USERPROFILE%/.config/opencode/AGENTS.md"]
+    OX["其余 16 种 CLI 的固定路径"]
     OP["项目根目录/AGENTS.md"]
   end
 
   G --> TG --> CG
   CG --> OG
   CG --> OO
+  CG --> OX
   P --> TP
   L --> TP
   TP --> CP --> OP
@@ -58,11 +60,12 @@ flowchart TB
 
 | 范围 | 规则来源 | 生成位置 |
 | --- | --- | --- |
-| Global（Codex） | `rules/global.md` | `%USERPROFILE%\.codex\AGENTS.md` |
-| Global（OpenCode） | `rules/global.md` | `%USERPROFILE%\.config\opencode\AGENTS.md` |
+| Global（18 种） | `rules/global.md` | 所选 CLI 的固定路径（例如 `%USERPROFILE%\.codex\AGENTS.md`、`%USERPROFILE%\.config\opencode\AGENTS.md`） |
 | Project | `rules/project.md` 和 `.rulesync\rules\project-local.md` | `<项目>\AGENTS.md` |
 
-rulesync 使用 `--features rules` 生成 `AGENTS.md`。Global 使用 `--global`，在主目录下为选中的 Codex / OpenCode 生成 `AGENTS.md`。Project 将注册文件夹作为输出目录，只生成该文件夹正下方的 `AGENTS.md`。Project 生成时按顺序读取通用规则（`rules/project.md`）和项目专用规则（`project-local.md`），合并为一个 `AGENTS.md`。通用规则的 frontmatter 必须为 `root: true`，专用规则必须为 `localRoot: true`，否则同步会被拒绝。
+Global 可选目标（18 种）为 Codex、OpenCode、Claude Code、Cline、GitHub Copilot CLI、Antigravity CLI、Continue、Roo Code、Goose、Devin、Zed、Crush、CodeBuddy、CommandCode、Kimi Code、Vibe、Qoder、Pi。只接受各 CLI 的固定输出路径，不能指定任意路径。为保证安全，会生成多个文件的目标（augment、takt）和存在别名冲突的目标（warp、claudecode-legacy、antigravity-ide、zoocode）不会出现在列表中。默认选择仍为 Codex / OpenCode。
+
+rulesync 使用 `--features rules` 生成 `AGENTS.md`。Global 使用 `--global`，在主目录下为选中的 CLI 生成 `AGENTS.md`。Project 将注册文件夹作为输出目录，只生成该文件夹正下方的 `AGENTS.md`。Project 生成时按顺序读取通用规则（`rules/project.md`）和项目专用规则（`project-local.md`），合并为一个 `AGENTS.md`。通用规则的 frontmatter 必须为 `root: true`，专用规则必须为 `localRoot: true`，否则同步会被拒绝。
 
 管理界面作为独立进程运行，负责预览、应用、备份和还原，与上述同步流程分开。
 
@@ -226,7 +229,8 @@ frontmatter 只接受固定格式。请将 3 个键各写一行，不要缩进�
 | 界面 | 可以做什么 |
 | --- | --- |
 | 项目 | 注册、取消注册、预览、同步 |
-| Global 同步 / Global 设置 | 选择 Codex / OpenCode 目标、应用前预览、应用、确认最终结果和来源、修改同步间隔（5～1440 分钟）以及启用/禁用状态 |
+| Global 同步 / Global 设置 | 从 18 种目标中选择分发对象、应用前预览、应用、确认最终结果和来源、修改同步间隔（5～1440 分钟）以及启用/禁用状态 |
+| 概述 | 通过“全部同步”“仅 Global”“仅 Project”选择执行范围（单独执行显示 1 步进度，全部同步按 Global → Project 显示 2 步） |
 | 本地编辑 | 编辑和检查 `project-local.md` |
 | 备份 | 查看项目 / Global 备份列表、确认差异、还原。还原后会暂停该目标的自动同步，防止下次覆盖 |
 | 日志 / 设置 | 查看同步日志、修改 Project 的同步间隔、导出和导入设置 |

@@ -2,12 +2,12 @@
 
 [日本語](README.md) | [English](README.en.md) | [简体中文](README.zh-CN.md)
 
-GitHub のルールリポジトリと各プロジェクトのローカルルールから、Codex / OpenCode が読む `AGENTS.md` を生成し、Windows のスケジュールタスクで配布するツールです。生成には [rulesync](https://github.com/dyoshikawa/rulesync) を使い、差分プレビュー、バックアップ、復元、同期状態の確認を管理画面から行えます。
+GitHub のルールリポジトリと各プロジェクトのローカルルールから、Codex / OpenCode を含む 18 の対応 CLI が読む `AGENTS.md` を生成し、Windows のスケジュールタスクで配布するツールです。生成には [rulesync](https://github.com/dyoshikawa/rulesync) を使い、差分プレビュー、バックアップ、復元、同期状態の確認を管理画面から行えます。
 
 ![Windows 10 / 11](https://img.shields.io/badge/OS-Windows%2010%20%2F%2011-0078D4?logo=windows&logoColor=white)
 ![Windows PowerShell 5.1](https://img.shields.io/badge/PowerShell-5.1-5391FE?logo=powershell&logoColor=white)
 ![rulesync 32.0.0](https://img.shields.io/badge/rulesync-32.0.0-2F6F44)
-![Codex / OpenCode](https://img.shields.io/badge/targets-Codex%20%2F%20OpenCode-111827)
+![Global 18 CLIs / Project 2](https://img.shields.io/badge/targets-Global%2018%20CLIs%20%2F%20Project%202-111827)
 [![MIT License](https://img.shields.io/badge/license-MIT-2EA043)](LICENSE)
 
 Windows 専用です。Linux / macOS には対応していません。
@@ -45,12 +45,14 @@ flowchart TB
   subgraph O [生成される AGENTS.md]
     OG["%USERPROFILE%/.codex/AGENTS.md"]
     OO["%USERPROFILE%/.config/opencode/AGENTS.md"]
+    OX["ほか 16 CLI の固定パス"]
     OP["プロジェクト直下/AGENTS.md"]
   end
 
   G --> TG --> CG
   CG --> OG
   CG --> OO
+  CG --> OX
   P --> TP
   L --> TP
   TP --> CP --> OP
@@ -58,11 +60,12 @@ flowchart TB
 
 | スコープ | 正本 | 生成先 |
 | --- | --- | --- |
-| Global（Codex） | `rules/global.md` | `%USERPROFILE%\.codex\AGENTS.md` |
-| Global（OpenCode） | `rules/global.md` | `%USERPROFILE%\.config\opencode\AGENTS.md` |
+| Global（18 種） | `rules/global.md` | 選択した CLI の固定パス（例: `%USERPROFILE%\.codex\AGENTS.md`、`%USERPROFILE%\.config\opencode\AGENTS.md`） |
 | Project | `rules/project.md` と `.rulesync\rules\project-local.md` | `<プロジェクト>\AGENTS.md` |
 
-rulesync は `--features rules` で `AGENTS.md` を生成します。Global は `--global` で、選択した Codex / OpenCode 向けの `AGENTS.md` をホームディレクトリ配下に生成します。Project は登録フォルダを出力先に指定し、そのフォルダ直下の `AGENTS.md` だけを生成します。Project の生成では、共通ルール（`rules/project.md`）とプロジェクト固有ルール（`project-local.md`）をこの順で入力し、1 つの `AGENTS.md` にまとめます。共通ルールの frontmatter は `root: true`、固有ルールは `localRoot: true` でなければ同期は拒否します。
+Global で選べる対象（18）は Codex、OpenCode、Claude Code、Cline、GitHub Copilot CLI、Antigravity CLI、Continue、Roo Code、Goose、Devin、Zed、Crush、CodeBuddy、CommandCode、Kimi Code、Vibe、Qoder、Pi です。出力先は CLI ごとの固定パスだけで、任意のパスは指定できません。複数ファイルを生成する対象（augment、takt）と、重複する別名（warp、claudecode-legacy、antigravity-ide、zoocode）は安全のため一覧に含めません。既定の選択は Codex / OpenCode のままです。
+
+rulesync は `--features rules` で `AGENTS.md` を生成します。Global は `--global` で、選択した CLI 向けの `AGENTS.md` をホームディレクトリ配下に生成します。Project は登録フォルダを出力先に指定し、そのフォルダ直下の `AGENTS.md` だけを生成します。Project の生成では、共通ルール（`rules/project.md`）とプロジェクト固有ルール（`project-local.md`）をこの順で入力し、1 つの `AGENTS.md` にまとめます。共通ルールの frontmatter は `root: true`、固有ルールは `localRoot: true` でなければ同期は拒否します。
 
 管理画面はこの流れとは別プロセスで、プレビュー、適用、バックアップ、復元を行います。
 
@@ -226,7 +229,8 @@ frontmatter は決まった形式だけを受け付けます。3 つのキーを
 | 画面 | できること |
 | --- | --- |
 | プロジェクト | 登録、解除、プレビュー、同期 |
-| Global 同期 / Global 設定 | Codex / OpenCode の対象選択、反映前プレビュー、適用、最終結果と取得元の確認、同期間隔（5〜1440 分）と有効/無効の変更 |
+| Global 同期 / Global 設定 | 18 種から配布対象を選択、反映前プレビュー、適用、最終結果と取得元の確認、同期間隔（5〜1440 分）と有効/無効の変更 |
+| 概要 | 「すべて同期」「Globalのみ」「Projectのみ」で実行範囲を選択（単独実行は進行表示 1 段、すべて同期は Global → Project の 2 段） |
 | ローカル編集 | `project-local.md` の編集と検査 |
 | バックアップ | プロジェクト / Global のバックアップ一覧、差分確認、復元。復元後は次回上書きを防ぐため対象の自動同期を休止 |
 | ログ / 設定 | 同期ログの確認、Project の同期間隔変更、設定のエクスポートとインポート |

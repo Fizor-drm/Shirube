@@ -2,12 +2,12 @@
 
 [日本語](README.md) | [English](README.en.md) | [简体中文](README.zh-CN.md)
 
-Shirube generates the `AGENTS.md` files that Codex and OpenCode read from a GitHub rules repository and each project's local rules, then distributes them with Windows scheduled tasks. Generation uses [rulesync](https://github.com/dyoshikawa/rulesync), and the dashboard lets you preview diffs, back up and restore files, and check sync status.
+Shirube generates the `AGENTS.md` files that Codex, OpenCode and 16 other supported CLIs read from a GitHub rules repository and each project's local rules, then distributes them with Windows scheduled tasks. Generation uses [rulesync](https://github.com/dyoshikawa/rulesync), and the dashboard lets you preview diffs, back up and restore files, and check sync status.
 
 ![Windows 10 / 11](https://img.shields.io/badge/OS-Windows%2010%20%2F%2011-0078D4?logo=windows&logoColor=white)
 ![Windows PowerShell 5.1](https://img.shields.io/badge/PowerShell-5.1-5391FE?logo=powershell&logoColor=white)
 ![rulesync 32.0.0](https://img.shields.io/badge/rulesync-32.0.0-2F6F44)
-![Codex / OpenCode](https://img.shields.io/badge/targets-Codex%20%2F%20OpenCode-111827)
+![Global 18 CLIs / Project 2](https://img.shields.io/badge/targets-Global%2018%20CLIs%20%2F%20Project%202-111827)
 [![MIT License](https://img.shields.io/badge/license-MIT-2EA043)](LICENSE)
 
 Windows only. Linux and macOS are not supported.
@@ -45,12 +45,14 @@ flowchart TB
   subgraph O [Generated AGENTS.md]
     OG["%USERPROFILE%/.codex/AGENTS.md"]
     OO["%USERPROFILE%/.config/opencode/AGENTS.md"]
+    OX["Fixed paths for 16 more CLIs"]
     OP["Project root/AGENTS.md"]
   end
 
   G --> TG --> CG
   CG --> OG
   CG --> OO
+  CG --> OX
   P --> TP
   L --> TP
   TP --> CP --> OP
@@ -58,11 +60,12 @@ flowchart TB
 
 | Scope | Source of truth | Output |
 | --- | --- | --- |
-| Global (Codex) | `rules/global.md` | `%USERPROFILE%\.codex\AGENTS.md` |
-| Global (OpenCode) | `rules/global.md` | `%USERPROFILE%\.config\opencode\AGENTS.md` |
+| Global (18 targets) | `rules/global.md` | Fixed path per selected CLI (for example `%USERPROFILE%\.codex\AGENTS.md` and `%USERPROFILE%\.config\opencode\AGENTS.md`) |
 | Project | `rules/project.md` and `.rulesync\rules\project-local.md` | `<project>\AGENTS.md` |
 
-rulesync generates `AGENTS.md` with `--features rules`. For Global, `--global` writes `AGENTS.md` for the selected Codex / OpenCode targets under the home directory. For Project, the registered folder is the output directory, and only `AGENTS.md` directly under that folder is generated. Project generation takes the shared rules (`rules/project.md`) and the project-specific rules (`project-local.md`) in that order and merges them into one `AGENTS.md`. Sync is rejected unless the shared rules frontmatter has `root: true` and the local rules use `localRoot: true`.
+The 18 Global targets are Codex, OpenCode, Claude Code, Cline, GitHub Copilot CLI, Antigravity CLI, Continue, Roo Code, Goose, Devin, Zed, Crush, CodeBuddy, CommandCode, Kimi Code, Vibe, Qoder and Pi. Only each CLI's fixed output path is accepted; arbitrary paths cannot be selected. Multi-file targets (augment, takt) and colliding aliases (warp, claudecode-legacy, antigravity-ide, zoocode) are left out of the list for safety. The default selection stays Codex / OpenCode.
+
+rulesync generates `AGENTS.md` with `--features rules`. For Global, `--global` writes `AGENTS.md` for the selected CLIs under the home directory. For Project, the registered folder is the output directory, and only `AGENTS.md` directly under that folder is generated. Project generation takes the shared rules (`rules/project.md`) and the project-specific rules (`project-local.md`) in that order and merges them into one `AGENTS.md`. Sync is rejected unless the shared rules frontmatter has `root: true` and the local rules use `localRoot: true`.
 
 The dashboard runs as a separate process from this flow and handles preview, apply, backup, and restore.
 
@@ -226,7 +229,8 @@ Changes to shared rules are picked up from GitHub on the next sync. For project-
 | Screen | What you can do |
 | --- | --- |
 | Projects | Register, unregister, preview, and sync |
-| Global sync / Global settings | Select Codex / OpenCode targets, preview before applying, apply, check the final result and source, change the sync interval (5 to 1440 minutes) and enable/disable state |
+| Global sync / Global settings | Select targets from the 18 providers, preview before applying, apply, check the final result and source, change the sync interval (5 to 1440 minutes) and enable/disable state |
+| Overview | Choose the scope with "Sync all", "Global only" or "Project only" (a single scope shows one progress step; Sync all runs Global then Project as two steps) |
 | Local edit | Edit and validate `project-local.md` |
 | Backups | List project / Global backups, inspect diffs, and restore. After a restore, automatic sync for that target is paused so the next run does not overwrite it |
 | Logs / Settings | Check sync logs, change the Project sync interval, and export or import settings |
