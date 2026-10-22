@@ -227,6 +227,7 @@ global.document = {
   addEventListener: function () {}, removeEventListener: function () {}
 };
 var lastFocus = null, modalRestoreTarget = null, modalQueue = Promise.resolve();
+function L(s) { return s; }
 eval(sliceFn('function isShown(el)', '\nfunction focusVisible'));
 eval(sliceFn('function focusVisible', '\nasync function api('));
 eval(sliceFn('function safeFocus(el)', '\nfunction showModal('));
@@ -440,6 +441,7 @@ function mkEl(tag) {
 }
 global.document = { createElement: function (t) { return mkEl(t); },
   createDocumentFragment: function () { return { children: [], appendChild: function (c) { this.children.push(c); return c; } }; } };
+function L(s) { return s; }
 eval(sliceFn('function renderBackupDiff(', '\nfunction renderDiffFrag('));
 eval(sliceFn('function renderDiffFrag(', '\nfunction diffLinesLocal('));
 function texts(el) {
@@ -2279,6 +2281,7 @@ function ok(c, n) { console.log((c ? 'PASS: ' : 'FAIL: ') + n); if (!c) fails.pu
 var src = fs.readFileSync(process.argv[2], 'utf8');
 var m = src.match(/function localRedactNotice\(r\)\{[\s\S]*?\n\}/);
 if (!m) { console.log('FAIL: localRedactNotice not found'); process.exit(1); }
+function L(s) { return s; }
 eval(m[0]);
 ok(localRedactNotice({ redacted: true }).length > 0, 'R-new notice shown when redacted');
 ok(localRedactNotice({ redacted: false }) === '', 'R-new no notice when clean');

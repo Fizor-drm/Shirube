@@ -264,6 +264,12 @@ global.stateJa = function (s) { return s; };
 global.globalResultJa = function (s) { return s; };
 global.renderGlobalTable = function () {};
 var commonSyncStates = { project: null, global: null }, commonSyncSource = 'project';
+var currentLang = 'ja', localizedText = { ja:new Map(), en:new Map(), 'zh-CN':new Map() }, I18N = {};
+var lastProjectCount = null, syncDisplayState = null, unifiedSyncActive = false, unifiedStateLock = false, unifiedFinalState = null;
+global.renderUnifiedProgress = function () {};
+global.setUnifiedProgress = function () {};
+global.renderGlobalLog = function () {};
+function L(s) { return s; }
 eval(sliceFn('function updateCommonSyncState', '\nfunction resultJa'));
 eval(sliceFn('let lastGlobalPlan', UI_END).split('let ').join('var '));
 eval(sliceFn('function updateGlobalUI(g){', '\nasync function refreshGlobal').split('let ').join('var '));

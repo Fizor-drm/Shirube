@@ -24,32 +24,45 @@ function handler(id) {
 }
 const names = ['stateJa', 'resultJa', 'updateSyncUI', 'updateCommonSyncState',
   'updateGlobalUI', 'renderGlobalTable', 'renderStatusTable', 'applySearchFilter',
+  'renderSyncState', 'renderUnifiedProgress', 'renderProjectLog', 'renderGlobalLog', 'renderGlobalStatus',
   'refresh', 'refreshGlobal', 'pollUntilDone', 'pollGlobalUntilDone',
   'afterSyncNotify', 'afterGlobalSyncNotify', 'setUnifiedProgress',
   'globalSelectedTargets', 'globalPlanIdForSelection', 'globalSyncApplyEnabled',
-  'updateGlobalSyncApplyButton'];
+  'updateGlobalSyncApplyButton', 'selectedNames', 'selectedNamesIn'];
 function setup() {
   const elements = new Map();
   function element() {
-    return { textContent: '', title: '', innerHTML: '', value: '', checked: false,
+    const el = { textContent: '', title: '', value: '', checked: false,
       disabled: false, hidden: false, dataset: {}, style: {}, children: [],
       appendChild(c) { this.children.push(c); }, setAttribute(k,v) { this[k]=v; },
       removeAttribute(k) { delete this[k]; }, classList: {add(){},remove(){}} };
+    Object.defineProperty(el, 'innerHTML', { get(){return this._innerHTML || '';}, set(v){this._innerHTML=v; if(v === '') this.children=[];} });
+    return el;
   }
   const document = { getElementById(id) {
     if (!elements.has(id)) elements.set(id, element());
     return elements.get(id);
-  }, createElement: element, querySelectorAll: () => [] };
+  }, createElement(tag) { const el=element(); el.tagName=String(tag).toUpperCase(); return el; },
+  querySelectorAll(selector) {
+    return selector.split(',').flatMap(part => {
+      const id = /#([A-Za-z0-9_-]+)/.exec(part)?.[1];
+      const root = id ? elements.get(id) : null;
+      const found = [];
+      const visit = n => { if(n && n.type === 'checkbox' && String(n.className).split(/\s+/).includes('selbox')) found.push(n); (n && n.children || []).forEach(visit); };
+      visit(root);
+      return found;
+    });
+  } };
   let now = 1000;
   const model = {
     project: {syncId:'P0',syncState:'success',count:2,logName:'old-project',tail:'old project'},
     global: {syncId:'G0',syncState:'success',providers:[],targets:['codexcli'],logName:'old-global'},
     globalResult: 'success', projectResult: 'success', globalResponse: null, projectResponse: null,
-    calls: [], notices: [], confirm: true, hook: null
+    calls: [], notices: [], confirm: true, hook: null, projects: [], projectStatuses: []
   };
   const c = vm.createContext({ document, console, Promise,
     Date: { now:()=>now, parse:Date.parse }, setTimeout(cb,ms) { now+=ms; queueMicrotask(cb); },
-    safeFocus(){}, esc:s=>String(s ?? ''),
+    safeFocus(){}, esc:s=>String(s ?? ''), L:(s,vars)=>String(s).replace(/\{([^{}]+)\}/g,(m,k)=>vars&&Object.prototype.hasOwnProperty.call(vars,k)?String(vars[k]):m),
     showConfirm: async()=> typeof model.confirm === 'function' ? model.confirm() : model.confirm,
     showNotify: async(title,text)=>{ model.notices.push({title,text}); if(model.hook) await model.hook(); },
     api: async(ep, method, body) => {
@@ -68,16 +81,22 @@ function setup() {
       }
       if(ep.startsWith('/api/global-status')) return {...model.global};
       if(ep === '/api/status') return {...model.project};
-      if(ep === '/api/projects' || ep === '/api/project-status') return {projects:[]};
+      if(ep === '/api/projects') return {projects:model.projects};
+      if(ep === '/api/project-status') return {projects:model.projectStatuses};
       throw Error('Unexpected API: '+ep);
     }
   });
   vm.runInContext('var commonSyncStates={project:null,global:null}; var commonSyncSource="project";' +
+    'var currentLang="ja",localizedText={ja:new Map(),en:new Map(),"zh-CN":new Map()},I18N={};' +
+    'var lastProjectCount=null,syncDisplayState=null,projectLogState={loaded:false,tail:"",error:null};' +
+    'var currentGlobalStatus=null,globalLogState={loaded:false,tail:"",error:null};' +
+    'var globalContentState=null,lastBackupDiff=null,lastGlobalBackupDiff=null;' +
     'var unifiedSyncActive=false,unifiedStateLock=false,unifiedFinalState=null;' +
     'var unifiedProjectRunId=null,unifiedGlobalRunId=null,completedUnifiedRunIds={};' +
     'var unifiedObservedProjectRunId=null,unifiedObservedGlobalRunId=null;' +
     'var unifiedBaselineProjectRunId=null,unifiedBaselineGlobalRunId=null;' +
     'var globalApplyInflight=false,globalTargetsDirty=false,globalIntervalDirty=false,lastGlobalPlan=null;' +
+    'var unifiedProgressState={completed:0,total:2,text:"0/2 待機中",key:null,vars:null,indeterminate:false,lang:"ja"};' +
     names.map(actual).join('\n') +
     '\nvar startUnified='+handler('btnSync')+';var applyGlobal='+handler('btnGlobalSync')+';', c);
   return {c, model, document, el:id=>document.getElementById(id)};
@@ -101,7 +120,41 @@ await test('mixed failure survives same-ID refresh even during final notificatio
   t.model.hook=async()=>{ await t.c.refreshGlobal(); await t.c.refresh(); };
   await t.c.startUnified(); await t.c.refresh(); await t.c.refreshGlobal();
   assert.equal(t.c.unifiedFinalState,'failed'); assert.equal(t.el('stRun').dataset.state,'failed');
-  assert.ok(t.el('stTail').textContent.includes('Global: 失敗')); noErrors(t);
+  assert.ok(t.el('stTail').textContent.includes('Global: 失敗'), t.el('stTail').textContent); noErrors(t);
+});
+await test('language redraw after unified sync keeps both results and the latest log', async()=>{
+  const t=setup(); t.model.globalResult='failed'; await t.c.startUnified();
+  const translations={'成功':'Success','失敗':'Failed','未実行':'Not run','Global: {global} / Project: {project}':'Global: {global} / Project: {project}'};
+  t.c.currentLang='en';
+  t.c.L=(key,vars)=>{let s=translations[key]||key; return s.replace(/\{([^{}]+)\}/g,(m,k)=>vars&&Object.prototype.hasOwnProperty.call(vars,k)?String(vars[k]):m);};
+  t.c.renderSyncState();
+  assert.equal(t.el('stRun').dataset.state,'failed');
+  assert.equal(t.el('stLog').textContent,'new-project');
+  assert.equal(t.el('stTail').textContent,'Global: Failed / Project: Success');
+});
+await test('refresh preserves project selections in both rebuilt tables',async()=>{
+  const t=setup();
+  t.model.projects=[{name:'A',displayName:'A',path:'C:\\A'}];
+  t.model.projectStatuses=[{name:'A',displayName:'A',enabled:true,result:'success'}];
+  await t.c.refresh();
+  t.el('rows').children[0].children[0].children[0].checked=true;
+  t.el('statusRows').children[0].children[0].children[0].checked=true;
+  await t.c.refresh();
+  assert.deepEqual(Array.from(t.c.selectedNames()),['A']);
+  assert.equal(t.el('rows').children[0].children[0].children[0].checked,true);
+  assert.equal(t.el('statusRows').children[0].children[0].children[0].checked,true);
+});
+await test('refresh does not copy a selection into the other project table',async()=>{
+  const t=setup();
+  t.model.projects=[{name:'A',displayName:'A',path:'C:\\A'}];
+  t.model.projectStatuses=[{name:'A',displayName:'A',enabled:true,result:'success'}];
+  await t.c.refresh();
+  t.el('rows').children[0].children[0].children[0].checked=true;
+  await t.c.refresh();
+  assert.equal(t.el('rows').children[0].children[0].children[0].checked,true);
+  assert.equal(t.el('statusRows').children[0].children[0].children[0].checked,false);
+  t.el('rows').children[0].children[0].children[0].checked=false;
+  assert.deepEqual(Array.from(t.c.selectedNames()),[]);
 });
 await test('confirmation-time observations become the baseline on Global interruption',async()=>{
   const t=setup(); await t.c.refresh(); await t.c.refreshGlobal();

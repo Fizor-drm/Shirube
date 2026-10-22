@@ -112,6 +112,7 @@ global.esc = function (s) { return s; };
 global.setMsg = function () {};
 global.refreshGlobal = async function () {};
 global.applySearchFilter = function () {};
+function L(s) { return s; }
 eval(sliceFn('var globalRestoreConfirms', 'document.getElementById("btnGlobalBackups")').split('let lastGlobalPlan').join('var lastGlobalPlan').split('let globalTargetsDirty').join('var globalTargetsDirty').split('let globalIntervalDirty').join('var globalIntervalDirty'));
 (async function () {
   await globalBackupDiff('bk1');
