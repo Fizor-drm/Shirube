@@ -210,7 +210,6 @@ JSON が壊れている・キーが無い・型が違う（数値や配列など
 | `examples\` | rulesync 設定のテンプレート |
 | `global-preview\` / `project-common-preview\` | rulesync の作業ディレクトリ。個人向け設定は `.gitignore` 対象 |
 | `LICENSE` | MIT ライセンス |
-| `AGENTS.md` | このリポジトリでの作業規約 |
 
 `source-repo\`・`trial\`・`.rulesync\`・`graft\` はローカル作業用で、公開対象外です。
 
