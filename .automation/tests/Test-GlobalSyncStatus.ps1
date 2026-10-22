@@ -190,7 +190,8 @@ exit /b 0
   Assert (($null -ne $st) -and ([string]$st.providers.codexcli.result -ceq 'success')) 'S2 codexcli success recorded'
   Assert (([string]$st.providers.codexcli.sourceCommit -ceq '0123456789abcdef0123456789abcdef01234567')) 'S2 source commit recorded from preview lock'
   Assert (([string]$st.providers.codexcli.backupId -ne '')) 'S2 backup id recorded'
-  Assert ($null -eq $st.providers.PSObject.Properties['opencode']) 'S2 unselected provider not reported'
+  $oc2 = $st.providers.PSObject.Properties['opencode'].Value
+  Assert (($null -ne $oc2) -and ([string]$oc2.result -ceq 'unknown')) 'S2 unselected provider kept as unknown history'
   $bdirs = @(Get-ChildItem -LiteralPath (Join-Path $auto 'backups'))
   Assert ((@($bdirs).Count -eq 1) -and (Test-Path -LiteralPath (Join-Path $bdirs[0].FullName 'manifest.json'))) 'S2 backup carries manifest'
 

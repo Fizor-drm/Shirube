@@ -214,7 +214,7 @@ try {
   $gc13 = Get-GlobalContent $fakeHome 'tok-G13' @('pi')
   Assert ((@($gc13.files).Count -eq 1) -and ([string]$gc13.files[0].target -ceq 'pi') -and ([string]$gc13.files[0].head).Contains('pi-body-G13')) 'G13 content reads selected new provider only'
   $st13 = Get-GlobalStatus $auto
-  Assert (($null -ne $st13.providers['pi']) -and ($null -eq $st13.providers['codexcli'])) 'G13 status rows follow selected targets'
+  Assert ((($null -ne $st13.providers['pi']) -and ($null -ne $st13.providers['codexcli'])) -and (@($st13.providers.Keys).Count -eq $ids13.Count)) 'G13 status keeps the full catalog independent of selection'
   $bk13 = New-GlobalBackup $auto $fakeHome @('pi')
   Assert ((Test-Path -LiteralPath (Join-Path $bk13 '.pi_agent_AGENTS.md')) -and (Test-Path -LiteralPath (Join-Path $bk13 'manifest.json'))) 'G13 new provider backup flattening+manifest'
   Set-Content -LiteralPath (Join-Path $fakeHome '.pi\agent\AGENTS.md') 'pi-body-CHANGED' -Encoding Ascii
@@ -234,6 +234,32 @@ try {
   $bad13 = $true
   try { New-GlobalRestoreConfirm $auto (Split-Path $bk13 -Leaf) $fakeHome | Out-Null; $bad13 = $false } catch { $bad13 = ($_.Exception.Message.Contains('信頼')) }
   Assert ($bad13) 'G13 unknown manifest target refused'
+  Set-GlobalTargets $auto (Get-GlobalDefaultTargets) | Out-Null
+
+  # G14: per-provider history is persisted independently of the selected
+  # targets; later selection changes and saves must not delete other rows.
+  Remove-Item -LiteralPath (Join-Path $auto 'global-status.json') -Force -ErrorAction SilentlyContinue
+  Set-GlobalTargets $auto (Get-GlobalDefaultTargets) | Out-Null
+  Save-GlobalProviderResult $auto 'pi' 'success' '' 'pi-commit-G14' | Out-Null
+  $pi1 = (Get-GlobalStatus $auto).providers['pi']
+  $piAttempt = [string]$pi1.lastAttemptAt
+  $piSuccess = [string]$pi1.lastSuccessAt
+  Start-Sleep -Milliseconds 5
+  Save-GlobalProviderResult $auto 'zed' 'failed' 'zed-error-G14' 'zed-commit-G14' | Out-Null
+  $zed1 = (Get-GlobalStatus $auto).providers['zed']
+  Set-GlobalTargets $auto @('zed') | Out-Null
+  $st14 = Get-GlobalStatus $auto
+  $pi14 = $st14.providers['pi']
+  $zed14 = $st14.providers['zed']
+  Assert ((([string]$pi14.result -ceq 'success') -and ([string]$pi14.lastAttemptAt -ceq $piAttempt) -and ([string]$pi14.lastSuccessAt -ceq $piSuccess) -and ([string]$pi14.sourceCommit -ceq 'pi-commit-G14'))) 'G14 unselected history preserved after selection change'
+  Assert ((([string]$zed14.result -ceq 'failed') -and ([string]$zed14.error -ceq 'zed-error-G14') -and ([string]$zed14.lastAttemptAt -ceq [string]$zed1.lastAttemptAt) -and ([string]$zed14.lastSuccessAt -ceq [string]$zed1.lastSuccessAt))) 'G14 selected failure row preserved'
+  Assert ((@($st14.providers.Keys).Count -eq @(Get-GlobalProviderIds).Count)) 'G14 status keeps full catalog rows'
+  Save-GlobalProviderResult $auto 'zed' 'success' '' 'zed-commit-G14b' | Out-Null
+  $st14b = Get-GlobalStatus $auto
+  Assert ((([string]$st14b.providers['pi'].result -ceq 'success') -and ([string]$st14b.providers['pi'].lastAttemptAt -ceq $piAttempt) -and ([string]$st14b.providers['pi'].lastSuccessAt -ceq $piSuccess))) 'G14 later save keeps the unselected row unchanged'
+  Assert (([string]$st14b.providers['zed'].result -ceq 'success')) 'G14 later save updates its own row'
+  $raw14 = Get-Content -LiteralPath (Join-Path $auto 'global-status.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+  Assert ((($null -ne $raw14.providers.PSObject.Properties['pi']) -and ($null -ne $raw14.providers.PSObject.Properties['zed']))) 'G14 status file stores full history'
   Set-GlobalTargets $auto (Get-GlobalDefaultTargets) | Out-Null
 
   # G10: interval validation + mocked scheduler (Global task only, 5..1440)

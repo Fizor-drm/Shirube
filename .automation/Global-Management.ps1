@@ -508,18 +508,17 @@ function Get-GlobalContent([string]$HomeBase, [string]$Token, $Targets = $null) 
 # Structured per-provider status. Unknown until a structured result exists:
 # lock timestamps, caches, and log tails never imply success.
 function Get-GlobalStatus([string]$AutoDir) {
-  $tg = @()
-  try { $tg = @((Get-GlobalSettings $AutoDir).targets) } catch { $tg = @(Get-GlobalDefaultTargets) }
-  if (-not (Test-GlobalTargetsValid $tg)) { $tg = @(Get-GlobalDefaultTargets) }
+  # Persistence is catalog-wide so a target change never deletes history;
+  # selection only filters the dashboard response. Old subset files merge in.
   $rows = @{}
-  foreach ($t in $tg) {
+  foreach ($t in @(Get-GlobalProviderIds)) {
     $rows[[string]$t] = @{ target = [string]$t; lastAttemptAt = $null; lastSuccessAt = $null; result = 'unknown'; sourceCommit = ''; error = ''; backupId = '' }
   }
   $f = Join-Path $AutoDir 'global-status.json'
   if ((Test-Path -LiteralPath $f -PathType Leaf) -and (-not (Global-Reparse $f))) {
     try {
       $o = Get-Content -LiteralPath $f -Raw -Encoding UTF8 | ConvertFrom-Json
-      foreach ($t in $tg) {
+      foreach ($t in @($rows.Keys)) {
         try {
           if ($o.providers.PSObject.Properties[$t]) {
             $r = $o.providers.$t
