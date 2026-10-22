@@ -3309,6 +3309,7 @@ const GLOBAL_LOGOS = Object.freeze({
   "pi":"data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA4MDAgODAwIj4KICAKICAKICA8cGF0aCBjbGFzcz0ibG9nby1tYXJrIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiIGQ9IgogICAgTTE2NS4yOSAxNjUuMjkKICAgIEg1MTcuMzYKICAgIFY0MDAKICAgIEg0MDAKICAgIFY1MTcuMzYKICAgIEgyODIuNjUKICAgIFY2MzQuNzIKICAgIEgxNjUuMjkKICAgIFoKICAgIE0yODIuNjUgMjgyLjY1CiAgICBWNDAwCiAgICBINDAwCiAgICBWMjgyLjY1CiAgICBaCiAgIi8+CiAgCiAgPHBhdGggY2xhc3M9ImxvZ28tbWFyayIgZD0iTTUxNy4zNiA0MDAgSDYzNC43MiBWNjM0LjcyIEg1MTcuMzYgWiIvPgo8L3N2Zz4=",
 });
 function updateGlobalUI(g){
+  const forceAdopt = arguments.length > 1 && !!arguments[1];
   currentGlobalStatus = g;
   updateCommonSyncState("global", g);
   renderGlobalTable(g.providers || []);
@@ -3319,13 +3320,14 @@ function updateGlobalUI(g){
   // Poll-driven status must never clobber unsaved edits: dirty inputs are
   // refreshed only after save or explicit reload. A missed change event still
   // shows up as a real difference, so detect it before adopting the server state.
-  try{ if(!globalTargetsDirty && globalTargetsDirtyNow()){ globalTargetsDirty = true; lastGlobalPlan = null; } }catch(e0){}
-  if(!globalTargetsDirty){
+  try{ if(!forceAdopt && !globalTargetsDirty && globalTargetsDirtyNow()){ globalTargetsDirty = true; lastGlobalPlan = null; } }catch(e0){}
+  if(!globalTargetsSaving && (forceAdopt || !globalTargetsDirty)){
     try{
       const wanted = (g.targets || []).slice();
       const cs = globalTargetCheckboxes();
       for(let i=0;i<cs.length;i++){ cs[i].checked = wanted.indexOf(cs[i].value) >= 0; }
       globalSavedTargets = wanted;
+      if(forceAdopt){ globalTargetsDirty = false; globalIntervalDirty = false; }
     }catch(e2){}
   }
   try{ renderGlobalTargetsUI(); }catch(e6){}
@@ -3515,12 +3517,12 @@ try{
 }catch(eT1){}
 renderGlobalTargetChoices();
 try{ document.getElementById("numGlobalInterval").addEventListener("input", function(){ globalIntervalDirty = true; }); }catch(eT3){}
-async function refreshGlobal(deadline){
+async function refreshGlobal(deadline, forceAdopt){
   try{
     let t = 8000;
     if(typeof deadline === "number"){ t = Math.min(8000, deadline - Date.now()); if(t <= 0) return; }
     const g = await api("/api/global-status", "GET", null, t);
-    updateGlobalUI(g);
+    updateGlobalUI(g, forceAdopt);
   }catch(e){ globalLogState = {loaded:true, tail:"", error:e.message}; renderGlobalLog(); }
 }
 async function pollGlobalUntilDone(syncId, tries, delayMs, deadline){
@@ -3624,7 +3626,7 @@ function renderGlobalPlan(plan){
     pa.appendChild(ph);
   }catch(e2){}
 }
-document.getElementById("btnGlobalReload").onclick = function(){ globalTargetsDirty = false; globalIntervalDirty = false; refreshGlobal(); };
+document.getElementById("btnGlobalReload").onclick = function(){ return refreshGlobal(undefined, true); };
 document.getElementById("btnGlobalSync").onclick = async function(){
   const b = document.getElementById("btnGlobalSync");
   const originallyDisabled = b.disabled;

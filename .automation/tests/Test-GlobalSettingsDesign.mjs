@@ -153,6 +153,7 @@ function harness() {
   };
   const model = {
     calls: [], confirm: true, targetsPostGate: null, targetsPostError: null,
+    statusGetGate: null, statusGetError: null,
     enabledGet: { enabled: true }, enabledGetError: null, enabledSetError: null,
     intervalSetError: null,
     globalStatus: { providers: [], targets: ['codexcli', 'opencode'], syncState: 'idle', intervalMinutes: 15, taskEnabled: true },
@@ -190,7 +191,11 @@ function harness() {
     },
     api: async (ep, method, body) => {
       model.calls.push({ ep, method, body });
-      if (ep === '/api/global-status') return JSON.parse(JSON.stringify(model.globalStatus));
+      if (ep === '/api/global-status') {
+        if (model.statusGetGate) await model.statusGetGate;
+        if (model.statusGetError) throw model.statusGetError;
+        return JSON.parse(JSON.stringify(model.globalStatus));
+      }
       if (ep === '/api/global-targets-set') {
         model.lastTargetsBody = body;
         if (model.targetsPostGate) await model.targetsPostGate;
@@ -220,6 +225,7 @@ function harness() {
     assignmentBlock('btnGlobalTargetsAll') + '\n' +
     assignmentBlock('btnGlobalTargetsNone') + '\n' +
     assignmentBlock('btnGlobalTargets') + '\n' +
+    assignmentBlock('btnGlobalReload') + '\n' +
     assignmentBlock('btnGlobalIntervalSet') + '\n' +
     assignmentBlock('btnGlobalEnabled') + '\n' +
     ';globalThis.__gs={renderGlobalTargetsUI:renderGlobalTargetsUI,' +
@@ -410,8 +416,51 @@ test('dirty selection survives status polls and locale rerenders; clean polls ad
   must(h.state().dirty === false && h.byId('btnGlobalTargets').disabled === true, 'clean poll keeps save disabled');
 });
 
+await testAsync('explicit reload adopts the saved selection only after a successful GET', async () => {
+  const h = harness();
+  h.checkFor('opencode').checked = false;
+  h.checkFor('pi').checked = true;
+  h.gs.markGlobalTargetsDirty();
+  must(h.state().selected.join('|') === 'codexcli|pi', 'setup: unsaved selection');
+  must(h.state().dirty === true, 'setup: dirty');
+  h.model.globalStatus.targets = ['claudecode', 'pi'];
+  let release;
+  h.model.statusGetGate = new Promise(resolve => { release = resolve; });
+  const pending = h.byId('btnGlobalReload').onclick();
+  must(h.model.calls.filter(c => c.ep === '/api/global-status').length === 1, 'reload issues one GET before adopting');
+  must(h.state().selected.join('|') === 'codexcli|pi', 'in-flight reload does not adopt early');
+  must(h.state().dirty === true, 'in-flight reload keeps unsaved dirty');
+  must(h.checkFor('pi').checked === true, 'in-flight reload keeps edited checkbox');
+  release();
+  await pending;
+  must(h.state().saved.join('|') === 'claudecode|pi', 'successful reload adopts saved baseline');
+  must(h.state().selected.join('|') === 'claudecode|pi', 'successful reload replaces the selection');
+  must(h.checkFor('claudecode').checked === true && h.checkFor('pi').checked === true && h.checkFor('codexcli').checked === false, 'successful reload replaces checkboxes');
+  must(h.state().dirty === false, 'successful reload clears dirty');
+  must(h.byId('globalTargetsDirty').textContent === '', 'successful reload clears the dirty status');
+  must(h.byId('globalTargetsCount').textContent === '2 / 18 件を選択中', 'successful reload updates the count');
+  must(h.byId('btnGlobalTargets').disabled === true, 'successful reload disables save');
+  h.checkFor('claudecode').checked = false;
+  h.checkFor('qoder').checked = true;
+  h.gs.markGlobalTargetsDirty();
+  h.gs.updateGlobalUI({ providers: [], targets: ['codexcli'], syncState: 'idle', intervalMinutes: 15, taskEnabled: true });
+  must(h.state().selected.join('|') === 'qoder|pi', 'normal poll keeps editing after a reload');
+  h.gs.renderGlobalTargetsUI();
+  must(h.checkFor('qoder').checked === true && h.checkFor('claudecode').checked === false, 'locale rerender keeps editing after a reload');
+  h.model.statusGetGate = null;
+  h.model.statusGetError = new Error('status GET failed');
+  const savedBefore = h.state().saved.join('|');
+  const selectedBefore = h.state().selected.join('|');
+  await h.byId('btnGlobalReload').onclick();
+  must(h.state().selected.join('|') === selectedBefore, 'failed reload keeps the current selection');
+  must(h.state().saved.join('|') === savedBefore, 'failed reload does not fake a saved baseline');
+  must(h.state().dirty === true, 'failed reload keeps dirty');
+  must(h.checkFor('qoder').checked === true && h.checkFor('claudecode').checked === false, 'failed reload keeps checkboxes');
+  must(h.byId('btnGlobalTargets').disabled === false, 'failed reload keeps save available');
+});
+
 // --- save flow -----------------------------------------------------------
-test('save sends only a real changed nonempty canonical selection', async () => {
+await testAsync('save sends only a real changed nonempty canonical selection', async () => {
   const h = harness();
   h.byId('btnGlobalTargets').onclick();
   must(h.model.calls.filter(c => c.ep === '/api/global-targets-set').length === 0, 'unchanged selection never posts');
@@ -437,9 +486,10 @@ test('save sends only a real changed nonempty canonical selection', async () => 
   must(h.state().dirty === false && h.byId('btnGlobalTargets').disabled === true, 'success clears dirty');
 });
 
-test('save failure keeps dirty and the current selection', async () => {
+await testAsync('save failure keeps dirty and the current selection', async () => {
   const h = harness();
   h.checkFor('codexcli').checked = false;
+  h.checkFor('opencode').checked = false;
   h.checkFor('pi').checked = true;
   h.gs.markGlobalTargetsDirty();
   h.model.targetsPostError = new Error('save failed hard');
@@ -451,7 +501,7 @@ test('save failure keeps dirty and the current selection', async () => {
   must(/save failed hard/.test(h.byId('msgGlobalTargets').children[0].textContent), 'failure message shown');
 });
 
-test('an in-flight save never loses toggles made while the backend is running', async () => {
+await testAsync('an in-flight save never loses toggles made while the backend is running', async () => {
   const h = harness();
   let release;
   h.model.targetsPostGate = new Promise(resolve => { release = resolve; });
@@ -475,8 +525,67 @@ test('an in-flight save never loses toggles made while the backend is running', 
   must(h.byId('btnGlobalTargets').disabled === false, 'save stays available for the remaining change');
 });
 
+await testAsync('background status during an in-flight save never overwrites a reverted selection', async () => {
+  const h = harness();
+  let release;
+  h.model.targetsPostGate = new Promise(resolve => { release = resolve; });
+  h.checkFor('opencode').checked = false;
+  h.gs.markGlobalTargetsDirty();
+  const pending = h.byId('btnGlobalTargets').onclick();
+  await new Promise(resolve => setTimeout(resolve, 0));
+  must(h.state().saving === true, 'save is in flight');
+  h.checkFor('opencode').checked = true;
+  h.gs.markGlobalTargetsDirty();
+  must(h.state().dirty === false, 'revert to the saved selection looks clean');
+  h.gs.updateGlobalUI({ providers: [], targets: ['codexcli'], syncState: 'idle', intervalMinutes: 15, taskEnabled: true });
+  must(h.state().selected.join('|') === 'codexcli|opencode', 'status poll does not overwrite the reverted selection');
+  must(h.checkFor('opencode').checked === true, 'status poll does not uncheck the reverted provider');
+  must(h.state().saved.join('|') === 'codexcli|opencode', 'status poll does not move the saved baseline while saving');
+  must(h.state().dirty === false, 'status poll never fakes a dirty revert');
+  release({ ok: true });
+  await pending;
+  const post = h.model.calls.filter(c => c.ep === '/api/global-targets-set')[0];
+  must(JSON.stringify(post.body.targets) === JSON.stringify(['codexcli']), 'in-flight payload stays the confirmed set');
+  must(h.state().saved.join('|') === 'codexcli', 'successful POST moves the saved baseline to the confirmed set');
+  must(h.state().selected.join('|') === 'codexcli|opencode', 'reverted selection is retained after success');
+  must(h.checkFor('opencode').checked === true, 'reverted checkbox survives the save response');
+  must(h.state().dirty === true, 'reverted selection differs from the new saved baseline');
+  must(h.byId('btnGlobalTargets').disabled === false, 'save stays available for the reverted difference');
+  must(h.byId('globalTargetsCount').textContent === '2 / 18 件を選択中', 'count still reflects the retained selection');
+});
+
+await testAsync('save cancel, deferred failure and repeated clicks preserve the edited selection', async () => {
+  const h = harness();
+  h.checkFor('opencode').checked = false;
+  h.gs.markGlobalTargetsDirty();
+  h.model.confirm = false;
+  await h.byId('btnGlobalTargets').onclick();
+  must(h.model.calls.filter(c => c.ep === '/api/global-targets-set').length === 0, 'cancel never posts');
+  must(h.state().saved.join('|') === 'codexcli|opencode', 'cancel keeps the saved baseline');
+  must(h.state().selected.join('|') === 'codexcli', 'cancel keeps the edited selection');
+  must(h.state().dirty === true, 'cancel keeps dirty');
+  h.model.confirm = true;
+  let release;
+  h.model.targetsPostGate = new Promise(resolve => { release = resolve; });
+  h.model.targetsPostError = new Error('save failed after in-flight');
+  const pending = h.byId('btnGlobalTargets').onclick();
+  await new Promise(resolve => setTimeout(resolve, 0));
+  must(h.state().saving === true, 'deferred save reports in flight');
+  await h.byId('btnGlobalTargets').onclick();
+  must(h.model.calls.filter(c => c.ep === '/api/global-targets-set').length === 1, 'repeated click is ignored while saving');
+  release();
+  await pending;
+  must(h.model.calls.filter(c => c.ep === '/api/global-targets-set').length === 1, 'failed save posts only once');
+  must(h.state().saved.join('|') === 'codexcli|opencode', 'failure keeps the saved baseline');
+  must(h.state().selected.join('|') === 'codexcli', 'failure keeps the edited selection');
+  must(h.state().dirty === true, 'failure keeps dirty');
+  must(h.state().saving === false, 'failure releases the in-flight lock');
+  must(h.byId('btnGlobalTargets').disabled === false, 'failure keeps save available');
+  must(/save failed after in-flight/.test(h.byId('msgGlobalTargets').children[0].textContent), 'failure message is shown');
+});
+
 // --- automatic sync switch ----------------------------------------------
-test('switch reports known state, stays disabled when unknown and never fakes a toggle', async () => {
+await testAsync('switch reports known state, stays disabled when unknown and never fakes a toggle', async () => {
   const h = harness();
   h.context.currentGlobalStatus = { providers: [], targets: ['codexcli', 'opencode'], syncState: 'idle', intervalMinutes: 15, taskEnabled: true };
   h.gs.renderGlobalStatus();
@@ -498,7 +607,7 @@ test('switch reports known state, stays disabled when unknown and never fakes a 
   must(/休止中/.test(h.byId('globalEnabledState').textContent), 'paused pill text');
 });
 
-test('confirmed enable flow toggles only after success; cancel and errors keep the old state', async () => {
+await testAsync('confirmed enable flow toggles only after success; cancel and errors keep the old state', async () => {
   const h = harness();
   h.context.currentGlobalStatus = { providers: [], targets: ['codexcli', 'opencode'], syncState: 'idle', intervalMinutes: 15, taskEnabled: true };
   h.gs.renderGlobalStatus();
@@ -514,13 +623,15 @@ test('confirmed enable flow toggles only after success; cancel and errors keep t
   must(/switch failed/.test(h.byId('msgGlobalInterval').children[0].textContent), 'switch error is shown');
   h.model.enabledSetError = null;
   h.model.confirm = true;
+  const postedBeforeSuccess = h.model.calls.filter(c => c.ep === '/api/global-enabled-set').length;
   await sw.onclick();
-  must(h.model.calls.filter(c => c.ep === '/api/global-enabled-set').length === 1, 'confirmed change posts once');
-  must(h.model.calls.filter(c => c.ep === '/api/global-enabled-set')[0].body.enabled === false, 'confirmed payload disables sync');
+  const enabledPosts = h.model.calls.filter(c => c.ep === '/api/global-enabled-set');
+  must(enabledPosts.length === postedBeforeSuccess + 1, 'confirmed change posts once');
+  must(enabledPosts[postedBeforeSuccess].body.enabled === false, 'confirmed payload disables sync');
   must(sw.getAttribute('aria-checked') === 'false', 'success reflects the refreshed status');
 });
 
-test('switch shows in-flight lock and releases it on cancel', async () => {
+await testAsync('switch shows in-flight lock and releases it on cancel', async () => {
   const h = harness();
   h.context.currentGlobalStatus = { providers: [], targets: ['codexcli', 'opencode'], syncState: 'idle', intervalMinutes: 15, taskEnabled: true };
   h.gs.renderGlobalStatus();
@@ -537,7 +648,7 @@ test('switch shows in-flight lock and releases it on cancel', async () => {
 });
 
 // --- interval controls ---------------------------------------------------
-test('interval controls validate the real 5..1440 range and never apply the demo minimum', async () => {
+await testAsync('interval controls validate the real 5..1440 range and never apply the demo minimum', async () => {
   const h = harness();
   const input = h.byId('numGlobalInterval');
   const btn = h.byId('btnGlobalIntervalSet');
@@ -561,4 +672,4 @@ test('interval controls validate the real 5..1440 range and never apply the demo
 });
 
 console.log(failures.length ? 'FAILURES: ' + failures.join('; ') : 'ALL GLOBAL SETTINGS DESIGN CHECKS PASSED');
-process.exit(failures.length ? 1 : 0);
+process.exitCode = failures.length ? 1 : 0;
