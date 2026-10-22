@@ -27,7 +27,8 @@ const names = ['stateJa', 'resultJa', 'updateSyncUI', 'updateCommonSyncState',
   'renderSyncState', 'renderUnifiedProgress', 'renderProjectLog', 'renderGlobalLog', 'renderGlobalStatus',
   'refresh', 'refreshGlobal', 'pollUntilDone', 'pollGlobalUntilDone',
   'afterSyncNotify', 'afterGlobalSyncNotify', 'setUnifiedProgress',
-  'globalProviderEntry', 'globalProviderLabel', 'renderGlobalTargetChoices',
+  'globalProviderEntry', 'globalProviderLabel', 'globalLogoInitials', 'globalProviderLogo',
+  'renderGlobalTargetChoices', 'renderGlobalTargetsUI', 'globalTargetsDirtyNow', 'globalTargetsSetAll',
   'globalTargetCheckboxes', 'markGlobalTargetsDirty', 'globalSelectedTargets', 'globalPlanIdForSelection',
   'globalSyncApplyEnabled', 'updateGlobalSyncApplyButton', 'singleSyncTerminal',
   'beginSingleSyncScope', 'finishSingleSyncScope', 'selectedNames', 'selectedNamesIn', 'planIdForSelection'];
@@ -103,6 +104,7 @@ function setup() {
     'var unifiedObservedProjectRunId=null,unifiedObservedGlobalRunId=null;' +
     'var unifiedBaselineProjectRunId=null,unifiedBaselineGlobalRunId=null;' +
     'var globalApplyInflight=false,globalTargetsDirty=false,globalIntervalDirty=false,lastGlobalPlan=null;' +
+    'var globalSavedTargets=["codexcli","opencode"],globalTargetsSaving=false,globalEnabledInflight=false;' +
     'var unifiedProgressState={completed:0,total:2,text:"0/2 待機中",key:null,vars:null,indeterminate:false,lang:"ja"};var lastPlan=null;' +
     names.map(actual).join('\n') +
     '\nrenderGlobalTargetChoices();' +
