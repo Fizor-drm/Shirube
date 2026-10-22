@@ -2692,6 +2692,7 @@ function beginSingleSyncScope(scope){
   unifiedStateLock = true;
   commonSyncSource = scope;
   setUnifiedProgress(0, 1, scope === "global" ? L("0/1 Global同期を実行中") : L("0/1 Project同期を実行中"), false);
+  renderSyncState();
 }
 function finishSingleSyncScope(scope, started){
   if(started && unifiedFinalState){

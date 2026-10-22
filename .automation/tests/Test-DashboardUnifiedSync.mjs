@@ -62,7 +62,7 @@ function setup() {
     project: {syncId:'P0',syncState:'success',count:2,logName:'old-project',tail:'old project'},
     global: {syncId:'G0',syncState:'success',providers:[],targets:['codexcli'],logName:'old-global'},
     globalResult: 'success', projectResult: 'success', globalResponse: null, projectResponse: null,
-    calls: [], notices: [], confirm: true, hook: null, projects: [], projectStatuses: []
+    calls: [], notices: [], confirm: true, hook: null, projects: [], projectStatuses: [], postGate: null
   };
   const c = vm.createContext({ document, console, Promise,
     Date: { now:()=>now, parse:Date.parse }, setTimeout(cb,ms) { now+=ms; queueMicrotask(cb); },
@@ -71,6 +71,7 @@ function setup() {
     showNotify: async(title,text)=>{ model.notices.push({title,text}); if(model.hook) await model.hook(); },
     api: async(ep, method, body) => {
       model.calls.push({ep,method,body});
+      if(method === 'POST' && model.postGate) await model.postGate;
       if(ep === '/api/global-sync') {
         if(model.globalResponse instanceof Error) throw model.globalResponse;
         if(model.globalResponse) return model.globalResponse;
@@ -359,6 +360,24 @@ await test('Project-only scope posts only its endpoint with 1-step progress',asy
   assert.ok(t.model.notices.some(n=>n.title==='同期が成功しました'));
   noErrors(t);
 });
+for(const scope of ['global','project']) {
+  await test(scope+'-only start shows running while its POST is still unresolved',async()=>{
+    const t=setup(); await t.c.startUnified();
+    assert.equal(t.el('stRun').dataset.state,'success');
+    let release; const gate=new Promise(r=>{release=r;});
+    t.model.postGate=gate; t.model.calls=[]; t.model.confirm=true;
+    const run=scope==='global'?t.c.startGlobalOnly():t.c.startProjectOnly();
+    for(let i=0;i<10 && !t.model.calls.some(x=>x.method==='POST');i++) await Promise.resolve();
+    assert.ok(t.model.calls.some(x=>x.method==='POST'),'POST reached');
+    assert.equal(t.el('stRun').dataset.state,'running');
+    assert.equal(t.el('syncProgress').max,1);
+    release();
+    await run;
+    assert.deepEqual(t.model.calls.filter(x=>x.method==='POST').map(x=>x.ep),[scope==='global'?'/api/global-sync':'/api/sync']);
+    assert.equal(t.el('stRun').dataset.state,'success');
+    assert.equal(t.el('syncProgress').value,1);
+  });
+}
 await test('single-scope unknown and failure never become success',async()=>{
   const g=setup(); g.model.globalResult='running'; await g.c.startGlobalOnly();
   assert.equal(g.el('stRun').dataset.state,'unconfirmed');
