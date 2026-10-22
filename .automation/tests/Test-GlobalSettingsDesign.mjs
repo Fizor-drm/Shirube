@@ -192,7 +192,8 @@ function harness() {
     api: async (ep, method, body) => {
       model.calls.push({ ep, method, body });
       if (ep === '/api/global-status') {
-        if (model.statusGetGate) await model.statusGetGate;
+        const gate = typeof model.statusGetGate === 'function' ? model.statusGetGate() : model.statusGetGate;
+        if (gate) await gate;
         if (model.statusGetError) throw model.statusGetError;
         return JSON.parse(JSON.stringify(model.globalStatus));
       }
@@ -608,6 +609,143 @@ await testAsync('a preserved reload edit equal to the response stays clean', asy
   must(h.state().saved.join('|') === 'codexcli|opencode', 'the equal response is the baseline');
   must(h.state().dirty === false, 'equal selections are clean');
   must(h.byId('btnGlobalTargets').disabled === true, 'equal selections keep save disabled');
+});
+
+// --- response ordering races ---------------------------------------------
+function statusGates(h) {
+  const gates = [];
+  h.model.statusGetGate = () => new Promise(resolve => gates.push(resolve));
+  return gates;
+}
+const tick = () => new Promise(resolve => setTimeout(resolve, 0));
+
+await testAsync('a stale ordinary response cannot overwrite a reverted edit protected by a pending reload', async () => {
+  const h = harness();
+  h.model.globalStatus.targets = ['claudecode', 'pi'];
+  h.model.globalStatus.intervalMinutes = 30;
+  const gates = statusGates(h);
+  const poll = h.context.refreshGlobal();
+  const reload = h.byId('btnGlobalReload').onclick();
+  must(gates.length === 2, 'the ordinary poll and explicit reload are both in flight');
+  h.checkFor('pi').checked = true;
+  h.gs.markGlobalTargetsDirty();
+  h.checkFor('pi').checked = false;
+  h.gs.markGlobalTargetsDirty();
+  must(h.state().dirty === false, 'setup: the toggled edit is reverted to the saved baseline');
+  gates[0]();
+  await tick();
+  must(h.state().selected.join('|') === 'codexcli|opencode', 'the stale poll keeps the reverted UI');
+  must(h.checkFor('claudecode').checked === false && h.checkFor('pi').checked === false, 'the stale poll does not apply the server targets');
+  must(h.state().saved.join('|') === 'claudecode|pi', 'the successful poll is still the server baseline');
+  must(h.state().dirty === true, 'the kept UI differs from the poll baseline');
+  must(h.byId('btnGlobalTargets').disabled === false, 'save is available for the kept UI');
+  gates[1]();
+  await Promise.all([poll, reload]);
+  must(h.state().selected.join('|') === 'codexcli|opencode', 'the reload response keeps the reverted UI');
+  must(h.state().saved.join('|') === 'claudecode|pi', 'the reload response is the baseline');
+  must(h.state().dirty === true, 'the reverted UI is dirty against the server');
+  must(h.byId('btnGlobalTargets').disabled === false, 'save stays available after the reload');
+  h.model.statusGetGate = null;
+  await h.context.refreshGlobal();
+  must(h.state().selected.join('|') === 'codexcli|opencode', 'a later poll keeps the reverted UI');
+  must(h.state().saved.join('|') === 'claudecode|pi', 'a later poll keeps the server baseline');
+  h.gs.renderGlobalTargetsUI();
+  must(h.checkFor('codexcli').checked === true && h.checkFor('opencode').checked === true, 'locale redraw keeps the reverted UI');
+  must(h.byId('btnGlobalTargets').disabled === false, 'locale redraw keeps save available');
+  await h.byId('btnGlobalTargets').onclick();
+  const posts = h.model.calls.filter(c => c.ep === '/api/global-targets-set');
+  must(posts.length === 1 && JSON.stringify(posts[0].body.targets) === JSON.stringify(['codexcli', 'opencode']), 'the kept UI saves its canonical selection');
+  must(h.state().saved.join('|') === 'codexcli|opencode' && h.state().dirty === false, 'saving the kept UI makes it the baseline');
+  h.model.globalStatus.targets = ['pi'];
+  await h.context.refreshGlobal();
+  must(h.state().saved.join('|') === 'pi' && h.state().selected.join('|') === 'pi', 'a clean ordinary poll still adopts server targets');
+  must(h.state().dirty === false, 'a clean ordinary poll stays clean');
+});
+
+await testAsync('a stale ordinary response equal to the kept edit stays clean', async () => {
+  const h = harness();
+  h.model.globalStatus.targets = ['codexcli', 'opencode'];
+  const gates = statusGates(h);
+  const poll = h.context.refreshGlobal();
+  const reload = h.byId('btnGlobalReload').onclick();
+  h.checkFor('pi').checked = true;
+  h.gs.markGlobalTargetsDirty();
+  h.checkFor('pi').checked = false;
+  h.gs.markGlobalTargetsDirty();
+  gates[0]();
+  await tick();
+  must(h.state().saved.join('|') === 'codexcli|opencode', 'the equal poll response is the baseline');
+  must(h.state().selected.join('|') === 'codexcli|opencode' && h.state().dirty === false, 'the equal stale response stays clean');
+  must(h.byId('btnGlobalTargets').disabled === true, 'the equal stale response keeps save disabled');
+  gates[1]();
+  await Promise.all([poll, reload]);
+  must(h.state().saved.join('|') === 'codexcli|opencode' && h.state().dirty === false, 'the equal reload response also stays clean');
+});
+
+await testAsync('a poll started after the edit cannot bypass a pending reload protection', async () => {
+  const h = harness();
+  h.model.globalStatus.targets = ['claudecode', 'pi'];
+  const gates = statusGates(h);
+  const oldPoll = h.context.refreshGlobal();
+  const reload = h.byId('btnGlobalReload').onclick();
+  h.checkFor('pi').checked = true;
+  h.gs.markGlobalTargetsDirty();
+  h.checkFor('pi').checked = false;
+  h.gs.markGlobalTargetsDirty();
+  const newPoll = h.context.refreshGlobal();
+  must(gates.length === 3, 'a new poll starts after the reverted edit while the reload is still pending');
+  gates[2]();
+  await tick();
+  must(h.state().selected.join('|') === 'codexcli|opencode', 'the newer poll does not apply server targets under a pending reload');
+  must(h.checkFor('claudecode').checked === false && h.checkFor('pi').checked === false, 'the newer poll keeps the reverted checkboxes');
+  must(h.state().dirty === false, 'the newer poll does not fake a dirty selection');
+  gates[1]();
+  await reload;
+  must(h.state().saved.join('|') === 'claudecode|pi', 'the reload response is the baseline');
+  must(h.state().selected.join('|') === 'codexcli|opencode' && h.state().dirty === true, 'the reload preserves the reverted UI against the baseline');
+  gates[0]();
+  await Promise.all([oldPoll, newPoll]);
+  must(h.state().saved.join('|') === 'claudecode|pi', 'the old poll does not roll the baseline back');
+  must(h.state().selected.join('|') === 'codexcli|opencode' && h.state().dirty === true, 'the old poll keeps the reload-protected UI');
+});
+
+await testAsync('a newer reload response is not rolled back by an older poll response', async () => {
+  const h = harness();
+  h.model.globalStatus.targets = ['claudecode', 'pi'];
+  const gates = statusGates(h);
+  const poll = h.context.refreshGlobal();
+  const reload = h.byId('btnGlobalReload').onclick();
+  h.checkFor('pi').checked = true;
+  h.gs.markGlobalTargetsDirty();
+  h.checkFor('pi').checked = false;
+  h.gs.markGlobalTargetsDirty();
+  h.model.globalStatus.targets = ['qoder', 'pi'];
+  gates[1]();
+  await reload;
+  must(h.state().saved.join('|') === 'qoder|pi', 'the reload response becomes the baseline');
+  must(h.state().selected.join('|') === 'codexcli|opencode' && h.state().dirty === true, 'the reload keeps the reverted UI');
+  h.model.globalStatus.targets = ['claudecode', 'pi'];
+  gates[0]();
+  await poll;
+  must(h.state().saved.join('|') === 'qoder|pi', 'the older poll cannot move the baseline back');
+  must(h.state().selected.join('|') === 'codexcli|opencode' && h.state().dirty === true, 'the older poll keeps the newer baseline');
+});
+
+await testAsync('an older poll cannot roll back the interval adopted by a newer reload', async () => {
+  const h = harness();
+  h.model.globalStatus.intervalMinutes = 15;
+  const gates = statusGates(h);
+  const poll = h.context.refreshGlobal();
+  const reload = h.byId('btnGlobalReload').onclick();
+  h.model.globalStatus.intervalMinutes = 30;
+  gates[1]();
+  await reload;
+  const input = h.byId('numGlobalInterval');
+  must(String(input.value) === '30', 'the newer reload adopts its interval');
+  h.model.globalStatus.intervalMinutes = 15;
+  gates[0]();
+  await poll;
+  must(String(input.value) === '30', 'the older poll cannot roll the interval back');
 });
 
 // --- save flow -----------------------------------------------------------

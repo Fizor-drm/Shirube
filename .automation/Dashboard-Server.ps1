@@ -3309,12 +3309,14 @@ const GLOBAL_LOGOS = Object.freeze({
   "pi":"data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA4MDAgODAwIj4KICAKICAKICA8cGF0aCBjbGFzcz0ibG9nby1tYXJrIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiIGQ9IgogICAgTTE2NS4yOSAxNjUuMjkKICAgIEg1MTcuMzYKICAgIFY0MDAKICAgIEg0MDAKICAgIFY1MTcuMzYKICAgIEgyODIuNjUKICAgIFY2MzQuNzIKICAgIEgxNjUuMjkKICAgIFoKICAgIE0yODIuNjUgMjgyLjY1CiAgICBWNDAwCiAgICBINDAwCiAgICBWMjgyLjY1CiAgICBaCiAgIi8+CiAgCiAgPHBhdGggY2xhc3M9ImxvZ28tbWFyayIgZD0iTTUxNy4zNiA0MDAgSDYzNC43MiBWNjM0LjcyIEg1MTcuMzYgWiIvPgo8L3N2Zz4=",
 });
 function updateGlobalUI(g){
-  const adoptGuard = arguments.length > 1 && arguments[1] ? arguments[1] : null;
-  const forceAdopt = !!adoptGuard;
-  // Explicit reload discards drafts only for fields the user did not touch
-  // while its GET was in flight; edits after the snapshot must survive.
-  const targetsEdited = !!(adoptGuard && typeof adoptGuard === "object" && adoptGuard.targetsGen !== undefined && adoptGuard.targetsGen !== globalTargetsEditGen);
-  const intervalEdited = !!(adoptGuard && typeof adoptGuard === "object" && adoptGuard.intervalGen !== undefined && adoptGuard.intervalGen !== globalIntervalEditGen);
+  const adoptGuard = arguments.length > 1 && arguments[1] && typeof arguments[1] === "object" ? arguments[1] : null;
+  const forceAdopt = !!(adoptGuard && adoptGuard.force);
+  // Every status GET carries the edit generations it saw when it started. A
+  // response may only adopt a field the user has not touched since then.
+  const targetsEdited = !!(adoptGuard && adoptGuard.targetsGen !== undefined && adoptGuard.targetsGen !== globalTargetsEditGen);
+  const intervalEdited = !!(adoptGuard && adoptGuard.intervalGen !== undefined && adoptGuard.intervalGen !== globalIntervalEditGen);
+  const targetsStale = !!(adoptGuard && adoptGuard.seq !== undefined && adoptGuard.seq < globalTargetsAppliedSeq);
+  const intervalStale = !!(adoptGuard && adoptGuard.seq !== undefined && adoptGuard.seq < globalIntervalAppliedSeq);
   currentGlobalStatus = g;
   updateCommonSyncState("global", g);
   renderGlobalTable(g.providers || []);
@@ -3326,25 +3328,32 @@ function updateGlobalUI(g){
   // refreshed only after save or explicit reload. A missed change event still
   // shows up as a real difference, so detect it before adopting the server state.
   try{ if(!forceAdopt && !globalTargetsDirty && globalTargetsDirtyNow()){ globalTargetsDirty = true; lastGlobalPlan = null; } }catch(e0){}
-  if(!globalTargetsSaving && (forceAdopt || !globalTargetsDirty)){
+  if(!globalTargetsSaving && !targetsStale){
     try{
       if(targetsEdited){
-        // Keep the user's checkboxes, but the successful GET is the new server truth to diff against.
+        // Keep the user's checkboxes, but the successful response is the new server truth to diff against.
         globalSavedTargets = (g.targets || []).slice();
         globalTargetsDirty = globalTargetsDirtyNow();
-      } else {
+        if(adoptGuard) globalTargetsAppliedSeq = adoptGuard.seq;
+      } else if(forceAdopt || (!globalTargetsDirty && !(adoptGuard && globalReloadProtectsTargets()))){
         const wanted = (g.targets || []).slice();
         const cs = globalTargetCheckboxes();
         for(let i=0;i<cs.length;i++){ cs[i].checked = wanted.indexOf(cs[i].value) >= 0; }
         globalSavedTargets = wanted;
         if(forceAdopt){ globalTargetsDirty = false; }
+        if(adoptGuard) globalTargetsAppliedSeq = adoptGuard.seq;
       }
     }catch(e2){}
   }
   try{ renderGlobalTargetsUI(); }catch(e6){}
-  const intervalAdoptable = !globalIntervalDirty || (forceAdopt && !globalTargetsSaving && !intervalEdited);
-  try{ if(g.intervalMinutes !== null && g.intervalMinutes !== undefined && intervalAdoptable) document.getElementById("numGlobalInterval").value = g.intervalMinutes; }catch(e4){}
-  if(forceAdopt && !globalTargetsSaving && !intervalEdited){ globalIntervalDirty = false; }
+  const intervalAdoptable = !intervalStale && !(adoptGuard && !forceAdopt && globalReloadProtectsInterval()) && (!globalIntervalDirty || (forceAdopt && !globalTargetsSaving && !intervalEdited));
+  try{
+    if(g.intervalMinutes !== null && g.intervalMinutes !== undefined && intervalAdoptable){
+      document.getElementById("numGlobalInterval").value = g.intervalMinutes;
+      if(adoptGuard) globalIntervalAppliedSeq = adoptGuard.seq;
+    }
+  }catch(e4){}
+  if(forceAdopt && !globalTargetsSaving && !intervalEdited && !intervalStale){ globalIntervalDirty = false; }
   try{ updateGlobalSyncApplyButton(); }catch(e5){}
 }
 function renderGlobalStatus(){
@@ -3411,6 +3420,22 @@ let globalEnabledInflight = false;
 let globalIntervalDirty = false;
 let globalTargetsEditGen = 0;
 let globalIntervalEditGen = 0;
+let globalReloadGuards = [];
+let globalStatusRequestSeq = 0;
+let globalTargetsAppliedSeq = 0;
+let globalIntervalAppliedSeq = 0;
+function globalReloadProtectsTargets(){
+  for(let i=0;i<globalReloadGuards.length;i++){
+    if(globalReloadGuards[i].targetsGen !== globalTargetsEditGen) return true;
+  }
+  return false;
+}
+function globalReloadProtectsInterval(){
+  for(let i=0;i<globalReloadGuards.length;i++){
+    if(globalReloadGuards[i].intervalGen !== globalIntervalEditGen) return true;
+  }
+  return false;
+}
 function globalProviderEntry(id){
   try{
     for(let i=0;i<GLOBAL_CATALOG.length;i++){ if(GLOBAL_CATALOG[i] && GLOBAL_CATALOG[i].id === id) return GLOBAL_CATALOG[i]; }
@@ -3534,13 +3559,20 @@ try{
 renderGlobalTargetChoices();
 try{ document.getElementById("numGlobalInterval").addEventListener("input", function(){ globalIntervalEditGen++; globalIntervalDirty = true; }); }catch(eT3){}
 async function refreshGlobal(deadline, forceAdopt){
+  const guard = {force:!!forceAdopt, targetsGen:globalTargetsEditGen, intervalGen:globalIntervalEditGen, seq:++globalStatusRequestSeq};
+  if(guard.force) globalReloadGuards.push(guard);
   try{
     let t = 8000;
     if(typeof deadline === "number"){ t = Math.min(8000, deadline - Date.now()); if(t <= 0) return; }
-    const adoptGuard = forceAdopt ? {targetsGen:globalTargetsEditGen, intervalGen:globalIntervalEditGen} : null;
     const g = await api("/api/global-status", "GET", null, t);
-    updateGlobalUI(g, adoptGuard);
+    updateGlobalUI(g, guard);
   }catch(e){ globalLogState = {loaded:true, tail:"", error:e.message}; renderGlobalLog(); }
+  finally{
+    if(guard.force){
+      const i = globalReloadGuards.indexOf(guard);
+      if(i >= 0) globalReloadGuards.splice(i, 1);
+    }
+  }
 }
 async function pollGlobalUntilDone(syncId, tries, delayMs, deadline){
   const dl = deadline || (Date.now() + 60000);
@@ -3554,9 +3586,10 @@ async function pollGlobalUntilDone(syncId, tries, delayMs, deadline){
     let rem = dl - Date.now();
     if(rem <= 0) return "unconfirmed";
     const to = Math.min(8000, rem);
+    const guard = {force:false, targetsGen:globalTargetsEditGen, intervalGen:globalIntervalEditGen, seq:++globalStatusRequestSeq};
     let s = null;
     try{ s = await api("/api/global-status?runId="+encodeURIComponent(syncId), "GET", null, to); }catch(e){ continue; }
-    try{ updateGlobalUI(s); }catch(e){}
+    try{ updateGlobalUI(s, guard); }catch(e){}
     if(!s || !s.syncId || !syncId) continue;
     if(s.syncId !== syncId) continue;
     if(s.syncState === "success" || s.syncState === "failed" || s.syncState === "skipped") return s.syncState;
