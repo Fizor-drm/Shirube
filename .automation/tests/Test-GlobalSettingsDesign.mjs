@@ -1,0 +1,564 @@
+// Global設定 (#gsettings) card selector + automatic-sync controls.
+// Runs the ACTUAL functions/handlers from Dashboard-Server.ps1 against a small
+// DOM stub. No server start, no browser, no real AppData/tasks/home access.
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import vm from 'node:vm';
+
+const src = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'Dashboard-Server.ps1'), 'utf8');
+const failures = [];
+function ok(cond, name) {
+  if (cond) { console.log('PASS: ' + name); return; }
+  console.log('FAIL: ' + name);
+  failures.push(name);
+}
+function test(name, fn) {
+  try { fn(); ok(true, name); }
+  catch (e) { ok(false, name + ' -> ' + (e && e.message || e)); }
+}
+async function testAsync(name, fn) {
+  try { await fn(); ok(true, name); }
+  catch (e) { ok(false, name + ' -> ' + (e && e.message || e)); }
+}
+function must(cond, message) { if (!cond) throw new Error(message); }
+
+const CATALOG = [
+  { id: 'codexcli', label: 'Codex', rel: '.codex\\AGENTS.md' },
+  { id: 'opencode', label: 'OpenCode', rel: '.config\\opencode\\AGENTS.md' },
+  { id: 'claudecode', label: 'Claude Code', rel: '.claude\\CLAUDE.md' },
+  { id: 'cline', label: 'Cline', rel: '.agents\\AGENTS.md' },
+  { id: 'copilotcli', label: 'GitHub Copilot CLI', rel: '.copilot\\copilot-instructions.md' },
+  { id: 'antigravity-cli', label: 'Antigravity CLI', rel: '.gemini\\GEMINI.md' },
+  { id: 'continue', label: 'Continue', rel: '.continue\\rules\\AGENTS.md' },
+  { id: 'roo', label: 'Roo Code', rel: '.roo\\rules\\AGENTS.md' },
+  { id: 'goose', label: 'Goose', rel: '.config\\goose\\.goosehints' },
+  { id: 'devin', label: 'Devin', rel: '.config\\devin\\AGENTS.md' },
+  { id: 'zed', label: 'Zed', rel: 'AppData\\Roaming\\Zed\\AGENTS.md' },
+  { id: 'crush', label: 'Crush', rel: '.config\\crush\\CRUSH.md' },
+  { id: 'codebuddy', label: 'CodeBuddy', rel: '.codebuddy\\CODEBUDDY.md' },
+  { id: 'commandcode', label: 'CommandCode', rel: '.commandcode\\AGENTS.md' },
+  { id: 'kimi-code', label: 'Kimi Code', rel: '.kimi-code\\AGENTS.md' },
+  { id: 'vibe', label: 'Vibe', rel: '.vibe\\AGENTS.md' },
+  { id: 'qoder', label: 'Qoder', rel: '.qoder\\AGENTS.md' },
+  { id: 'pi', label: 'Pi', rel: '.pi\\agent\\AGENTS.md' }
+];
+
+function sectionHtml() {
+  const m = /<section id="gsettings">([\s\S]*?)<\/section>/.exec(src);
+  must(m, '#gsettings section missing');
+  return m[1];
+}
+function gsCss() {
+  const start = src.indexOf('/* #gsettings');
+  must(start >= 0, '#gsettings css marker missing');
+  const end = src.indexOf('</style>', start);
+  must(end > start, 'css end missing');
+  return src.slice(start, end);
+}
+function logoLine() {
+  const start = src.indexOf('const GLOBAL_LOGOS =');
+  must(start >= 0, 'GLOBAL_LOGOS map missing');
+  const end = src.indexOf(');', start);
+  must(end > start, 'GLOBAL_LOGOS map end missing');
+  return src.slice(start, end + 2).replace(/^const /, 'var ');
+}
+function logos() {
+  const ctx = {};
+  vm.runInNewContext(logoLine() + '\n;globalThis.__logos=GLOBAL_LOGOS;', ctx);
+  return ctx.__logos;
+}
+function mainBlock() {
+  const start = src.indexOf('function updateGlobalUI(g){');
+  const end = src.indexOf('document.getElementById("btnGlobalContent")');
+  must(start >= 0 && end > start, 'global UI block missing');
+  return src.slice(start, end).split('let ').join('var ');
+}
+function assignmentBlock(id) {
+  const marker = 'document.getElementById("' + id + '").onclick = ';
+  const start = src.indexOf(marker);
+  must(start >= 0, 'handler missing: ' + id);
+  let i = src.indexOf('{', start + marker.length);
+  let level = 0;
+  for (; i < src.length; i++) {
+    if (src[i] === '{') level++;
+    else if (src[i] === '}' && --level === 0) break;
+  }
+  must(level === 0, 'handler body incomplete: ' + id);
+  return src.slice(start, i + 1) + ';';
+}
+
+function makeElement(tag) {
+  const el = {
+    tagName: String(tag || '').toUpperCase(), type: '', class: '',
+    children: [], attrs: {}, listeners: {},
+    className: '', textContent: '', value: '', checked: false, disabled: false,
+    hidden: false, title: '', alt: '', src: '', dir: '', tabIndex: 0,
+    style: { setProperty(k, v) { this[k] = String(v); } },
+    dataset: {}, focused: false, parentNode: null,
+    appendChild(c) { c.parentNode = this; this.children.push(c); return c; },
+    removeChild(c) {
+      const i = this.children.indexOf(c);
+      if (i >= 0) this.children.splice(i, 1);
+      if (c.parentNode === this) c.parentNode = null;
+      return c;
+    },
+    setAttribute(k, v) { this.attrs[k] = String(v); },
+    getAttribute(k) { return Object.prototype.hasOwnProperty.call(this.attrs, k) ? this.attrs[k] : null; },
+    removeAttribute(k) { delete this.attrs[k]; },
+    addEventListener(t, f) { this.listeners[t] = f; },
+    removeEventListener(t) { delete this.listeners[t]; },
+    focus() { this.focused = true; },
+    classList: {
+      add(c) { if (!String(this._el.className).split(/\s+/).includes(c)) this._el.className = (this._el.className + ' ' + c).trim(); },
+      remove(c) { this._el.className = String(this._el.className).split(/\s+/).filter(x => x && x !== c).join(' '); },
+      toggle(c, on) { if (on) this.add(c); else this.remove(c); },
+      contains(c) { return String(this._el.className).split(/\s+/).includes(c); }
+    }
+  };
+  el.classList._el = el;
+  Object.defineProperty(el, 'innerHTML', {
+    get() { return this._html || ''; },
+    set(v) { this._html = String(v); if (v === '') this.children = []; }
+  });
+  return el;
+}
+
+function harness() {
+  const elements = new Map();
+  function byId(id) {
+    if (!elements.has(id)) elements.set(id, makeElement('div'));
+    return elements.get(id);
+  }
+  const document = {
+    getElementById: byId,
+    createElement(tag) { return makeElement(tag); },
+    createTextNode(t) { return { nodeType: 3, nodeValue: String(t), textContent: String(t) }; },
+    querySelector() { return null; },
+    querySelectorAll(selector) {
+      if (String(selector).indexOf('#globalTargetsList') >= 0) {
+        const out = [];
+        const visit = n => {
+          if (n && n.type === 'checkbox') out.push(n);
+          (n && n.children || []).forEach(visit);
+        };
+        visit(byId('globalTargetsList'));
+        return out;
+      }
+      return [];
+    },
+    activeElement: null,
+    addEventListener() {},
+    removeEventListener() {}
+  };
+  const model = {
+    calls: [], confirm: true, targetsPostGate: null, targetsPostError: null,
+    enabledGet: { enabled: true }, enabledGetError: null, enabledSetError: null,
+    intervalSetError: null,
+    globalStatus: { providers: [], targets: ['codexcli', 'opencode'], syncState: 'idle', intervalMinutes: 15, taskEnabled: true },
+    lastTargetsBody: null
+  };
+  const context = vm.createContext({
+    document,
+    window: { addEventListener() {}, localStorage: { getItem() { return null; }, setItem() {} } },
+    console, Promise, Date, setTimeout, clearTimeout,
+    GLOBAL_CATALOG: CATALOG.map(e => Object.assign({}, e)),
+    GLOBAL_DEFAULT_TARGETS: ['codexcli', 'opencode'],
+    currentLang: 'ja', localizedText: { ja: new Map(), en: new Map(), 'zh-CN': new Map() }, I18N: {},
+    L(key, vars) {
+      return String(key).replace(/\{([^{}]+)\}/g, (m, k) =>
+        vars && Object.prototype.hasOwnProperty.call(vars, k) ? String(vars[k]) : m);
+    },
+    stateJa(s) { return s; },
+    resultJa(s) { return s; },
+    globalResultJa(s) { return s; },
+    renderGlobalTable() {}, applySearchFilter() {}, renderGlobalLog() {}, updateCommonSyncState() {},
+    showConfirm: async () => model.confirm,
+    showNotify: async () => {},
+    safeFocus() {},
+    esc(s) { return String(s == null ? '' : s); },
+    diffLinesLocal() { return { same: true, lines: [] }; },
+    renderDiffFrag() { return {}; },
+    setMsg(id, msg, ok) {
+      const d = byId(id);
+      d.textContent = '';
+      d.children = [];
+      const p = makeElement('p');
+      p.className = ok ? 'ok' : 'err';
+      p.textContent = msg;
+      d.appendChild(p);
+    },
+    api: async (ep, method, body) => {
+      model.calls.push({ ep, method, body });
+      if (ep === '/api/global-status') return JSON.parse(JSON.stringify(model.globalStatus));
+      if (ep === '/api/global-targets-set') {
+        model.lastTargetsBody = body;
+        if (model.targetsPostGate) await model.targetsPostGate;
+        if (model.targetsPostError) throw model.targetsPostError;
+        model.globalStatus.targets = ((body && body.targets) || []).slice();
+        return { ok: true, targets: model.globalStatus.targets };
+      }
+      if (ep === '/api/global-enabled-get') {
+        if (model.enabledGetError) throw model.enabledGetError;
+        return model.enabledGet;
+      }
+      if (ep === '/api/global-enabled-set') {
+        if (model.enabledSetError) throw model.enabledSetError;
+        model.globalStatus.taskEnabled = body.enabled;
+        return { ok: true, enabled: body.enabled };
+      }
+      if (ep === '/api/global-interval-get') return { minutes: model.globalStatus.intervalMinutes };
+      if (ep === '/api/global-interval-set') {
+        if (model.intervalSetError) throw model.intervalSetError;
+        model.globalStatus.intervalMinutes = body.minutes;
+        return { ok: true, minutes: body.minutes };
+      }
+      return {};
+    }
+  });
+  const code = logoLine() + '\n' + mainBlock() + '\n' +
+    assignmentBlock('btnGlobalTargetsAll') + '\n' +
+    assignmentBlock('btnGlobalTargetsNone') + '\n' +
+    assignmentBlock('btnGlobalTargets') + '\n' +
+    assignmentBlock('btnGlobalIntervalSet') + '\n' +
+    assignmentBlock('btnGlobalEnabled') + '\n' +
+    ';globalThis.__gs={renderGlobalTargetsUI:renderGlobalTargetsUI,' +
+    'renderGlobalTargetChoices:renderGlobalTargetChoices,globalTargetsSetAll:globalTargetsSetAll,' +
+    'markGlobalTargetsDirty:markGlobalTargetsDirty,globalSelectedTargets:globalSelectedTargets,' +
+    'globalTargetCheckboxes:globalTargetCheckboxes,updateGlobalUI:updateGlobalUI,' +
+    'renderGlobalStatus:renderGlobalStatus,globalProviderLogo:globalProviderLogo,' +
+    'globalLogoInitials:globalLogoInitials,renderGlobalTargetsUI:renderGlobalTargetsUI,' +
+    'globalSavedTargets:globalSavedTargets,globalTargetsDirty:globalTargetsDirty,' +
+    'globalTargetsSaving:globalTargetsSaving,globalEnabledInflight:globalEnabledInflight,' +
+    'lastGlobalPlan:lastGlobalPlan};';
+  vm.runInContext(code, context);
+  const checks = () => {
+    const out = [];
+    const visit = n => {
+      if (n && n.type === 'checkbox') out.push(n);
+      (n && n.children || []).forEach(visit);
+    };
+    visit(byId('globalTargetsList'));
+    return out;
+  };
+  const checkFor = id => checks().filter(c => c.value === id)[0];
+  const state = () => ({
+    saved: Array.from(context.globalSavedTargets || []),
+    dirty: context.globalTargetsDirty,
+    selected: Array.from(context.globalSelectedTargets()),
+    saving: context.globalTargetsSaving,
+    inflight: context.globalEnabledInflight
+  });
+  return { context, model, document, byId, checks, checkFor, state, gs: context.__gs, elements };
+}
+
+// --- static markup / CSS / logo contract ----------------------------------
+test('Global settings markup exposes the card list, toolbar, save state and switch', () => {
+  const html = sectionHtml();
+  must(/<div id="globalTargetsList" class="gs-grid" role="group"/.test(html), 'card grid with group role');
+  must(/id="globalTargetsCount"[^>]*aria-live="polite"/.test(html), 'translated live count');
+  must(/id="btnGlobalTargetsAll"[^>]*data-i18n="すべて選択"/.test(html), 'select all');
+  must(/id="btnGlobalTargetsNone"[^>]*data-i18n="すべて解除"/.test(html), 'clear all');
+  must(/id="btnGlobalTargets"[^>]*disabled/.test(html), 'save starts disabled');
+  must(/id="globalTargetsDirty"[^>]*role="status"/.test(html), 'dirty status');
+  must(/id="btnGlobalEnabled"[^>]*role="switch"[^>]*aria-checked="false"/.test(html), 'real accessible switch');
+  must(/id="globalSyncPill"/.test(html), 'status pill');
+  must(/id="globalEnabledState"/.test(html), 'current sync state text');
+  must(/id="numGlobalInterval"[^>]*min="5"[^>]*max="1440"/.test(html), 'actual interval range 5..1440');
+  must(!/id="numGlobalInterval"[^>]*min="1"/.test(html), 'demo interval min=1 not used');
+  must(/id="msgGlobalInterval"[^>]*role="status"/.test(html), 'interval status message');
+});
+
+test('Global settings styles are scoped, scroll-bounded, responsive and reduced-motion aware', () => {
+  const css = gsCss();
+  must(/max-height:272px/.test(css), '272px bounded height');
+  must(/overflow-y:auto/.test(css), 'vertical scroll');
+  must(/repeat\(auto-fill,minmax\(230px,1fr\)\)/.test(css), 'responsive columns');
+  must(/:focus-visible \+ \.gs-card/.test(css), 'keyboard focus ring on card');
+  must(/prefers-reduced-motion:reduce/.test(css), 'reduced motion');
+  must(!/\n\s*\.(?:card|grid|path|provider|toolbar|switch)\s*\{/.test(css), 'new generic classes are not unscoped');
+  const selectors = [];
+  const noComments = css.replace(/\/\*[\s\S]*?\*\//g, '');
+  for (const part of noComments.split('}')) {
+    const brace = part.indexOf('{');
+    if (brace < 0) continue;
+    const sel = part.slice(0, brace).trim();
+    if (sel) selectors.push(sel);
+  }
+  must(selectors.length > 0, 'css rules found');
+  for (const sel of selectors) {
+    if (sel.startsWith('@media')) continue;
+    must(sel.indexOf('#gsettings') >= 0, 'rule is scoped: ' + sel);
+  }
+});
+
+test('logo map is fixed, self-contained and never embeds the invalid CommandCode asset', () => {
+  const map = logos();
+  const expected = ['codexcli', 'opencode', 'claudecode', 'cline', 'copilotcli', 'antigravity-cli',
+    'roo', 'goose', 'devin', 'zed', 'codebuddy', 'kimi-code', 'qoder', 'pi'].sort();
+  const keys = Object.keys(map).sort();
+  must(keys.join('|') === expected.join('|'), 'exact canonical logo keys: ' + keys.join(','));
+  must(!Object.prototype.hasOwnProperty.call(map, 'commandcode'), 'CommandCode invalid asset excluded');
+  must(!Object.prototype.hasOwnProperty.call(map, 'continue'), 'missing logo is not fabricated');
+  must(!Object.prototype.hasOwnProperty.call(map, 'crush'), 'missing logo is not fabricated');
+  must(!Object.prototype.hasOwnProperty.call(map, 'vibe'), 'missing logo is not fabricated');
+  for (const key of keys) {
+    const url = map[key];
+    must(/^data:image\/svg\+xml;base64,[A-Za-z0-9+/=]+$/.test(url), key + ' is a fixed data URL');
+    const svg = Buffer.from(url.split(',')[1], 'base64').toString('utf8');
+    must(/<svg[\s>]/.test(svg), key + ' has an svg root');
+    must(!/<script/i.test(svg), key + ' has no script');
+    must(!/<foreignObject/i.test(svg), key + ' has no foreignObject');
+    must(!/href\s*=/i.test(svg) && !/xlink:href/i.test(svg), key + ' has no external href');
+    must(!/<image/i.test(svg), key + ' has no embedded image');
+    must(!/@import/i.test(svg), key + ' has no css import');
+    must(!/url\(\s*['"]?(?:https?:|\/\/|data:)/i.test(svg), key + ' has no external url()');
+    must(!/<style/i.test(svg), key + ' has no embedded style (logo tile is decorative)');
+  }
+});
+
+test('card renderer keeps canonical IDs, decorative logos and deterministic initials fallback', () => {
+  const h = harness();
+  const boxes = h.checks();
+  must(boxes.length === 18, '18 canonical provider checkboxes');
+  must(boxes.map(b => b.value).join('|') === CATALOG.map(e => e.id).join('|'), 'catalog order and canonical IDs preserved');
+  for (const box of boxes) {
+    const label = box.parentNode;
+    must(label && label.className === 'gs-provider', box.value + ' is wrapped by a keyboard label');
+    const card = label.children[1];
+    must(card && card.className === 'gs-card', box.value + ' has a scoped card');
+    must(card.children[0] && card.children[0].className.indexOf('gs-logo') === 0, box.value + ' has a logo tile');
+    must(card.children[2] && card.children[2].className === 'gs-check', box.value + ' has a visual check');
+  }
+  const codex = h.checkFor('codexcli').parentNode.children[1];
+  must(codex.children[0].children[0] && codex.children[0].children[0].tagName === 'IMG', 'mapped logo uses img');
+  must(codex.children[0].children[0].alt === '', 'logo img is decorative alt=""');
+  must(/^data:image\/svg\+xml;base64,/.test(codex.children[0].children[0].src), 'logo uses data URL only');
+  must(codex.children[0].getAttribute('aria-hidden') === 'true', 'logo tile is aria-hidden');
+  for (const [id, initials] of [['continue', 'CO'], ['crush', 'CR'], ['vibe', 'VI'], ['commandcode', 'CO']]) {
+    const card = h.checkFor(id).parentNode.children[1];
+    must(card.children[0].children.length === 0, id + ' has no fabricated image');
+    must(card.children[0].textContent === initials, id + ' initials fallback');
+  }
+  const failTile = makeElement('span');
+  const failed = h.gs.globalProviderLogo({ id: 'goose', label: 'Goose', rel: 'x' });
+  const img = failed.children[0];
+  must(img && img.tagName === 'IMG', 'goose maps to an image');
+  failed.appendChild(failTile);
+  if (img.onerror) img.onerror();
+  must(failed.children.indexOf(img) < 0 || failed.children.length === 0, 'failed logo image is removed');
+  must(failed.textContent === 'GO', 'failed logo keeps initials fallback');
+  must(failed.className.indexOf('gs-has-img') < 0, 'failed logo drops image styling');
+});
+
+// --- selection / dirty / preview -----------------------------------------
+test('count, select all/none, revert and preview invalidation share one change path', () => {
+  const h = harness();
+  const count = h.byId('globalTargetsCount');
+  must(count.textContent === '2 / 18 件を選択中', 'initial translated count: ' + count.textContent);
+  must(h.byId('btnGlobalTargets').disabled === true, 'initial save disabled');
+  h.context.lastGlobalPlan = { id: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', names: ['codexcli', 'opencode'] };
+  h.byId('btnGlobalTargetsAll').onclick();
+  must(h.state().selected.length === 18, 'select all selects 18');
+  must(count.textContent === '18 / 18 件を選択中', 'select all count');
+  must(h.state().dirty === true, 'select all marks dirty');
+  must(h.byId('btnGlobalTargets').disabled === false, 'select all enables save');
+  must(h.context.lastGlobalPlan === null, 'select all invalidates approved preview');
+  h.context.lastGlobalPlan = { id: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', names: CATALOG.map(e => e.id) };
+  h.byId('btnGlobalTargetsNone').onclick();
+  must(h.state().selected.length === 0, 'clear all clears selection');
+  must(count.textContent === '0 / 18 件を選択中', 'clear all count');
+  must(h.state().dirty === true, 'clear all marks dirty for editing');
+  must(h.byId('btnGlobalTargets').disabled === true, 'empty selection cannot save');
+  must(h.context.lastGlobalPlan === null, 'clear all invalidates approved preview');
+  h.checkFor('codexcli').checked = true;
+  h.checkFor('opencode').checked = true;
+  h.gs.markGlobalTargetsDirty();
+  must(h.state().dirty === false, 'reverting to saved selection clears dirty');
+  must(h.byId('btnGlobalTargets').disabled === true, 'reverted state disables save');
+  must(h.context.lastGlobalPlan === null, 'revert still keeps preview invalidated');
+});
+
+test('dirty selection survives status polls and locale rerenders; clean polls adopt saved state', () => {
+  const h = harness();
+  h.checkFor('codexcli').checked = false;
+  h.checkFor('opencode').checked = false;
+  h.checkFor('pi').checked = true;
+  h.gs.markGlobalTargetsDirty();
+  must(h.state().dirty === true, 'unsaved pi selection is dirty');
+  h.gs.updateGlobalUI({ providers: [], targets: ['codexcli', 'opencode'], syncState: 'idle', intervalMinutes: 15, taskEnabled: true });
+  must(h.state().selected.join('|') === 'pi', 'poll does not clobber unsaved selection');
+  must(h.state().saved.join('|') === 'codexcli|opencode', 'poll does not move the saved baseline while dirty');
+  must(h.checkFor('pi').checked === true, 'pi stays checked after poll');
+  h.context.L = (key, vars) => String(key)
+    .replace('{selected} / {total} 件を選択中', '{selected} / {total} selected')
+    .replace('未保存の変更があります', 'You have unsaved changes.')
+    .replace(/\{([^{}]+)\}/g, (m, k) => vars && Object.prototype.hasOwnProperty.call(vars, k) ? String(vars[k]) : m);
+  h.gs.renderGlobalTargetsUI();
+  must(h.byId('globalTargetsCount').textContent === '1 / 18 selected', 'count follows the locale');
+  must(h.byId('globalTargetsDirty').textContent === 'You have unsaved changes.', 'dirty text follows the locale');
+  must(h.checkFor('pi').checked === true, 'locale rerender keeps unsaved selection');
+  h.context.L = (key, vars) => String(key).replace(/\{([^{}]+)\}/g, (m, k) => vars && Object.prototype.hasOwnProperty.call(vars, k) ? String(vars[k]) : m);
+  h.checkFor('codexcli').checked = true;
+  h.checkFor('opencode').checked = true;
+  h.checkFor('pi').checked = false;
+  h.gs.markGlobalTargetsDirty();
+  must(h.state().dirty === false, 'revert after locale change clears dirty');
+  h.gs.updateGlobalUI({ providers: [], targets: ['pi'], syncState: 'idle', intervalMinutes: 15, taskEnabled: true });
+  must(h.state().saved.join('|') === 'pi', 'clean poll adopts server saved selection');
+  must(h.checkFor('pi').checked === true && h.checkFor('codexcli').checked === false, 'clean poll updates selection');
+  must(h.state().dirty === false && h.byId('btnGlobalTargets').disabled === true, 'clean poll keeps save disabled');
+});
+
+// --- save flow -----------------------------------------------------------
+test('save sends only a real changed nonempty canonical selection', async () => {
+  const h = harness();
+  h.byId('btnGlobalTargets').onclick();
+  must(h.model.calls.filter(c => c.ep === '/api/global-targets-set').length === 0, 'unchanged selection never posts');
+  h.byId('btnGlobalTargetsNone').onclick();
+  h.byId('btnGlobalTargets').onclick();
+  must(h.model.calls.filter(c => c.ep === '/api/global-targets-set').length === 0, 'empty selection never posts');
+  must(h.state().dirty === true, 'empty save keeps dirty for editing');
+  must(/1つ以上/.test(h.byId('msgGlobalTargets').children[0].textContent), 'empty save is refused with a message');
+  h.checkFor('codexcli').checked = true;
+  h.gs.markGlobalTargetsDirty();
+  h.checkFor('claudecode').checked = true;
+  h.gs.markGlobalTargetsDirty();
+  h.model.confirm = false;
+  await h.byId('btnGlobalTargets').onclick();
+  must(h.model.calls.filter(c => c.ep === '/api/global-targets-set').length === 0, 'cancel never posts');
+  must(h.state().dirty === true, 'cancel keeps dirty');
+  h.model.confirm = true;
+  await h.byId('btnGlobalTargets').onclick();
+  const post = h.model.calls.filter(c => c.ep === '/api/global-targets-set')[0];
+  must(post && post.method === 'POST', 'confirmed change posts once');
+  must(JSON.stringify(post.body) === JSON.stringify({ targets: ['codexcli', 'claudecode'], confirm: true }), 'canonical payload and confirm flag');
+  must(h.state().saved.join('|') === 'codexcli|claudecode', 'success moves the saved baseline');
+  must(h.state().dirty === false && h.byId('btnGlobalTargets').disabled === true, 'success clears dirty');
+});
+
+test('save failure keeps dirty and the current selection', async () => {
+  const h = harness();
+  h.checkFor('codexcli').checked = false;
+  h.checkFor('pi').checked = true;
+  h.gs.markGlobalTargetsDirty();
+  h.model.targetsPostError = new Error('save failed hard');
+  await h.byId('btnGlobalTargets').onclick();
+  must(h.state().dirty === true, 'failure keeps dirty');
+  must(h.state().selected.join('|') === 'pi', 'failure keeps current selection');
+  must(h.state().saved.join('|') === 'codexcli|opencode', 'failure keeps saved baseline');
+  must(h.byId('btnGlobalTargets').disabled === false, 'failure keeps save available');
+  must(/save failed hard/.test(h.byId('msgGlobalTargets').children[0].textContent), 'failure message shown');
+});
+
+test('an in-flight save never loses toggles made while the backend is running', async () => {
+  const h = harness();
+  let release;
+  h.model.targetsPostGate = new Promise(resolve => { release = resolve; });
+  h.checkFor('opencode').checked = false;
+  h.gs.markGlobalTargetsDirty();
+  const pending = h.byId('btnGlobalTargets').onclick();
+  await new Promise(resolve => setTimeout(resolve, 0));
+  must(h.byId('btnGlobalTargets').disabled === true, 'save disabled while in flight');
+  must(h.checkFor('pi').disabled === false, 'provider toggles stay editable while saving');
+  h.checkFor('pi').checked = true;
+  h.gs.markGlobalTargetsDirty();
+  must(h.state().dirty === true, 'in-flight toggle marks dirty again');
+  release({ ok: true });
+  await pending;
+  const post = h.model.calls.filter(c => c.ep === '/api/global-targets-set')[0];
+  must(JSON.stringify(post.body.targets) === JSON.stringify(['codexcli']), 'in-flight payload stays the confirmed set');
+  must(h.state().saved.join('|') === 'codexcli', 'saved baseline is the confirmed set');
+  must(h.state().selected.join('|') === 'codexcli|pi', 'toggle made during save survives');
+  must(h.checkFor('pi').checked === true, 'in-flight toggle checkbox survives the response');
+  must(h.state().dirty === true, 'remaining difference keeps dirty after success');
+  must(h.byId('btnGlobalTargets').disabled === false, 'save stays available for the remaining change');
+});
+
+// --- automatic sync switch ----------------------------------------------
+test('switch reports known state, stays disabled when unknown and never fakes a toggle', async () => {
+  const h = harness();
+  h.context.currentGlobalStatus = { providers: [], targets: ['codexcli', 'opencode'], syncState: 'idle', intervalMinutes: 15, taskEnabled: true };
+  h.gs.renderGlobalStatus();
+  const sw = h.byId('btnGlobalEnabled');
+  must(sw.getAttribute('aria-checked') === 'true' && sw.disabled === false, 'enabled state reflected');
+  must(/有効/.test(sw.getAttribute('aria-label')), 'switch name includes the current state');
+  must(h.byId('globalSyncPill').className.indexOf('on') >= 0, 'enabled pill');
+  h.context.currentGlobalStatus = { providers: [], targets: ['codexcli', 'opencode'], syncState: 'idle', intervalMinutes: 15, taskEnabled: null };
+  h.gs.renderGlobalStatus();
+  must(sw.getAttribute('aria-checked') === 'false' && sw.disabled === true, 'unknown state is never shown as on');
+  must(/状態不明/.test(sw.getAttribute('aria-label')), 'unknown state is named');
+  must(/取得できません/.test(h.byId('globalEnabledState').textContent), 'unknown state pill text');
+  const before = h.model.calls.length;
+  sw.onclick();
+  must(h.model.calls.length === before, 'unknown switch is not actionable');
+  h.context.currentGlobalStatus = { providers: [], targets: ['codexcli', 'opencode'], syncState: 'idle', intervalMinutes: 15, taskEnabled: false };
+  h.gs.renderGlobalStatus();
+  must(sw.getAttribute('aria-checked') === 'false' && sw.disabled === false, 'paused state reflected');
+  must(/休止中/.test(h.byId('globalEnabledState').textContent), 'paused pill text');
+});
+
+test('confirmed enable flow toggles only after success; cancel and errors keep the old state', async () => {
+  const h = harness();
+  h.context.currentGlobalStatus = { providers: [], targets: ['codexcli', 'opencode'], syncState: 'idle', intervalMinutes: 15, taskEnabled: true };
+  h.gs.renderGlobalStatus();
+  const sw = h.byId('btnGlobalEnabled');
+  h.model.confirm = false;
+  await sw.onclick();
+  must(sw.getAttribute('aria-checked') === 'true', 'cancel keeps the current state');
+  must(h.model.calls.filter(c => c.ep === '/api/global-enabled-set').length === 0, 'cancel never posts');
+  h.model.confirm = true;
+  h.model.enabledSetError = new Error('switch failed');
+  await sw.onclick();
+  must(sw.getAttribute('aria-checked') === 'true', 'error keeps the current state');
+  must(/switch failed/.test(h.byId('msgGlobalInterval').children[0].textContent), 'switch error is shown');
+  h.model.enabledSetError = null;
+  h.model.confirm = true;
+  await sw.onclick();
+  must(h.model.calls.filter(c => c.ep === '/api/global-enabled-set').length === 1, 'confirmed change posts once');
+  must(h.model.calls.filter(c => c.ep === '/api/global-enabled-set')[0].body.enabled === false, 'confirmed payload disables sync');
+  must(sw.getAttribute('aria-checked') === 'false', 'success reflects the refreshed status');
+});
+
+test('switch shows in-flight lock and releases it on cancel', async () => {
+  const h = harness();
+  h.context.currentGlobalStatus = { providers: [], targets: ['codexcli', 'opencode'], syncState: 'idle', intervalMinutes: 15, taskEnabled: true };
+  h.gs.renderGlobalStatus();
+  const sw = h.byId('btnGlobalEnabled');
+  let resolveConfirm;
+  h.context.showConfirm = () => new Promise(resolve => { resolveConfirm = resolve; });
+  const pending = sw.onclick();
+  await new Promise(resolve => setTimeout(resolve, 0));
+  must(sw.disabled === true, 'switch disabled while confirming');
+  resolveConfirm(false);
+  await pending;
+  must(sw.disabled === false, 'switch released after cancel');
+  must(sw.getAttribute('aria-checked') === 'true', 'cancel did not toggle');
+});
+
+// --- interval controls ---------------------------------------------------
+test('interval controls validate the real 5..1440 range and never apply the demo minimum', async () => {
+  const h = harness();
+  const input = h.byId('numGlobalInterval');
+  const btn = h.byId('btnGlobalIntervalSet');
+  input.value = '4';
+  await btn.onclick();
+  must(h.model.calls.filter(c => c.ep === '/api/global-interval-set').length === 0, '4 minutes refused');
+  must(input.focused === true, 'invalid interval focuses the input');
+  input.focused = false;
+  input.value = '1441';
+  await btn.onclick();
+  must(h.model.calls.filter(c => c.ep === '/api/global-interval-set').length === 0, '1441 minutes refused');
+  input.focused = false;
+  input.value = '5';
+  await btn.onclick();
+  must(h.model.calls.filter(c => c.ep === '/api/global-interval-set').length === 1, '5 minutes applied');
+  must(h.model.calls.filter(c => c.ep === '/api/global-interval-set')[0].body.minutes === 5, 'actual 5-minute value sent');
+  input.value = '1440';
+  await btn.onclick();
+  must(h.model.calls.filter(c => c.ep === '/api/global-interval-set').length === 2, '1440 minutes applied');
+  must(h.model.calls.filter(c => c.ep === '/api/global-interval-set')[1].body.minutes === 1440, 'actual 1440-minute value sent');
+});
+
+console.log(failures.length ? 'FAILURES: ' + failures.join('; ') : 'ALL GLOBAL SETTINGS DESIGN CHECKS PASSED');
+process.exit(failures.length ? 1 : 0);
