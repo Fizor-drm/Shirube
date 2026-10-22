@@ -15,6 +15,7 @@ $scratch = Join-Path $testBase ('run-' + [System.Guid]::NewGuid().ToString('N'))
 $auto = Join-Path $scratch 'auto'
 New-Item -ItemType Directory -Force -Path $auto | Out-Null
 $script:taskIntervals = @{}
+$script:taskErrors = @{}
 $script:taskCalls = @()
 $script:setCalls = @()
 $script:enabledCalls = @()
@@ -23,7 +24,14 @@ $script:enabledCalls = @()
 function Get-ScheduledTask {
   [CmdletBinding()] param([string]$TaskName)
   $script:taskCalls += $TaskName
-  if (-not $script:taskIntervals.ContainsKey($TaskName)) { throw 'task not found' }
+  if ($script:taskErrors.ContainsKey($TaskName)) { throw $script:taskErrors[$TaskName] }
+  if (-not $script:taskIntervals.ContainsKey($TaskName)) {
+    throw ([System.Management.Automation.ErrorRecord]::new(
+      [System.Exception]::new('No MSFT_ScheduledTask objects found with property TaskName equal to ' + $TaskName),
+      'CmdletizationQuery_NotFound_TaskName,Get-ScheduledTask',
+      [System.Management.Automation.ErrorCategory]::ObjectNotFound,
+      $TaskName))
+  }
   $rep = New-Object PSObject -Property @{ Interval = ('PT' + [int]$script:taskIntervals[$TaskName] + 'M') }
   $tr = [pscustomobject]@{ CimClass = [pscustomobject]@{ CimClassName = 'MSFT_TaskTimeTrigger' }; Repetition = $rep }
   return [pscustomobject]@{ TaskName = $TaskName; State = 'Ready'; Triggers = @($tr) }
@@ -75,6 +83,18 @@ try {
   Set-GlobalTaskEnabled $false | Out-Null
   Assert ([string]$script:enabledCalls[0] -ceq 'disable:Shirube Global Auto Sync') 'R2 global enable toggle resolves the new default first'
 
+  # Access denied on the new default must not be mistaken for "task absent".
+  $script:taskIntervals = @{ 'Rulesync Global Auto Sync' = 15 }
+  $script:taskErrors = @{ 'Shirube Global Auto Sync' = [System.Management.Automation.ErrorRecord]::new(
+      [System.Exception]::new('Access is denied.'), 'TaskLookupDenied,Get-ScheduledTask',
+      [System.Management.Automation.ErrorCategory]::PermissionDenied, 'Shirube Global Auto Sync') }
+  $script:taskCalls = @()
+  $deniedGlobal = $false
+  try { Get-GlobalInterval | Out-Null } catch { $deniedGlobal = $_.Exception.Message.Contains('Access is denied') }
+  Assert $deniedGlobal 'R2 global access-denied lookup propagates the original error'
+  Assert (-not (@($script:taskCalls) -contains 'Rulesync Global Auto Sync')) 'R2 global access-denied lookup never falls back to legacy'
+  $script:taskErrors = @{}
+
   # R3: Project has the same fallback; custom configured names never fall back.
   Remove-Item -LiteralPath (Join-Path $auto 'settings.json') -Force -ErrorAction SilentlyContinue
   $script:taskIntervals = @{ 'Rulesync Project Auto Sync' = 15 }
@@ -82,6 +102,17 @@ try {
   $script:setCalls = @()
   Set-MgmtProjectInterval 'Shirube Project Auto Sync' 30 | Out-Null
   Assert ((@($script:setCalls).Count -eq 1) -and ([string]$script:setCalls[0] -ceq 'Rulesync Project Auto Sync')) 'R3 project legacy task is updated in place'
+
+  $script:taskIntervals = @{ 'Rulesync Project Auto Sync' = 15 }
+  $script:taskErrors = @{ 'Shirube Project Auto Sync' = [System.Management.Automation.ErrorRecord]::new(
+      [System.Exception]::new('Access is denied.'), 'TaskLookupDenied,Get-ScheduledTask',
+      [System.Management.Automation.ErrorCategory]::PermissionDenied, 'Shirube Project Auto Sync') }
+  $script:taskCalls = @()
+  $deniedProject = $false
+  try { Get-MgmtProjectInterval | Out-Null } catch { $deniedProject = $_.Exception.Message.Contains('Access is denied') }
+  Assert $deniedProject 'R3 project access-denied lookup propagates the original error'
+  Assert (-not (@($script:taskCalls) -contains 'Rulesync Project Auto Sync')) 'R3 project access-denied lookup never falls back to legacy'
+  $script:taskErrors = @{}
   $script:taskIntervals = @{ 'Rulesync Project Auto Sync' = 15; 'Shirube Project Auto Sync' = 25 }
   $script:setCalls = @()
   Assert ((Get-MgmtProjectInterval) -eq 25) 'R3 new project task wins when both exist'

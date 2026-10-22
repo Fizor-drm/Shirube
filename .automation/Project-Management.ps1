@@ -1047,6 +1047,8 @@ function Get-MgmtProjectScheduledTask([string]$TaskName) {
   catch {
     $original = $_
     if ($TaskName -cne 'Shirube Project Auto Sync') { throw $original }
+    # Only a missing task means "not migrated yet"; access denied etc. must surface.
+    if ($_.CategoryInfo.Category -ne [System.Management.Automation.ErrorCategory]::ObjectNotFound) { throw $original }
     $legacy = 'Rulesync Project Auto Sync'
     try { return @{ name = $legacy; task = (Get-ScheduledTask -TaskName $legacy -ErrorAction Stop) } }
     catch { throw $original }

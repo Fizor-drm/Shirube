@@ -47,7 +47,11 @@ try {
   function Get-ScheduledTask {
     param([string]$TaskName)
     if ($TaskName -ceq 'Rulesync Global Auto Sync') { return [pscustomobject]@{ TaskName = $TaskName; State = 'Ready'; Triggers = @() } }
-    throw ('Task not found: ' + $TaskName)
+    throw ([System.Management.Automation.ErrorRecord]::new(
+      [System.Exception]::new('Task not found: ' + $TaskName),
+      'CmdletizationQuery_NotFound_TaskName,Get-ScheduledTask',
+      [System.Management.Automation.ErrorCategory]::ObjectNotFound,
+      $TaskName))
   }
   function Disable-ScheduledTask { param([string]$TaskName) }
   function Enable-ScheduledTask { param([string]$TaskName) }

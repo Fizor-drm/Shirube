@@ -316,6 +316,8 @@ function Get-GlobalScheduledTask {
   catch {
     $original = $_
     if ($name -cne 'Shirube Global Auto Sync') { throw $original }
+    # Only a missing task means "not migrated yet"; access denied etc. must surface.
+    if ($_.CategoryInfo.Category -ne [System.Management.Automation.ErrorCategory]::ObjectNotFound) { throw $original }
     $legacy = 'Rulesync Global Auto Sync'
     try { return @{ name = $legacy; task = (Get-ScheduledTask -TaskName $legacy -ErrorAction Stop) } }
     catch { throw $original }
