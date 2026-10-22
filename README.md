@@ -25,23 +25,23 @@ Shirube は、ルールの正本を GitHub とプロジェクト内のファイ�
 
 ```mermaid
 flowchart TB
-  subgraph S["ルールの正本"]
+  subgraph S [ルールの正本]
     G["GitHub: rules/global.md"]
     P["GitHub: rules/project.md"]
     L["プロジェクト: .rulesync/rules/project-local.md"]
   end
 
-  subgraph T["Windows スケジュールタスク"]
+  subgraph T [Windows スケジュールタスク]
     TG["Shirube Global Auto Sync<br/>ログオン時 + 15 分ごと"]
     TP["Shirube Project Auto Sync<br/>ログオン時 + 15 分ごと"]
   end
 
-  subgraph C["rulesync 設定"]
+  subgraph C [rulesync 設定]
     CG["global-preview/rulesync.jsonc"]
     CP["project-common-preview/rulesync.jsonc"]
   end
 
-  subgraph O["生成される AGENTS.md"]
+  subgraph O [生成される AGENTS.md]
     OG["%USERPROFILE%/.codex/AGENTS.md"]
     OO["%USERPROFILE%/.config/opencode/AGENTS.md"]
     OP["プロジェクト直下/AGENTS.md"]
