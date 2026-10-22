@@ -153,7 +153,7 @@ function harness() {
   };
   const model = {
     calls: [], confirm: true, targetsPostGate: null, targetsPostError: null,
-    statusGetGate: null, statusGetError: null,
+    statusGetGate: null, statusGetError: null, statusSnapshotAtStart: false,
     enabledGet: { enabled: true }, enabledGetError: null, enabledSetError: null,
     intervalSetError: null,
     globalStatus: { providers: [], targets: ['codexcli', 'opencode'], syncState: 'idle', intervalMinutes: 15, taskEnabled: true },
@@ -192,10 +192,11 @@ function harness() {
     api: async (ep, method, body) => {
       model.calls.push({ ep, method, body });
       if (ep === '/api/global-status') {
+        const snapshot = model.statusSnapshotAtStart ? JSON.parse(JSON.stringify(model.globalStatus)) : null;
         const gate = typeof model.statusGetGate === 'function' ? model.statusGetGate() : model.statusGetGate;
         if (gate) await gate;
         if (model.statusGetError) throw model.statusGetError;
-        return JSON.parse(JSON.stringify(model.globalStatus));
+        return snapshot || JSON.parse(JSON.stringify(model.globalStatus));
       }
       if (ep === '/api/global-targets-set') {
         model.lastTargetsBody = body;
@@ -841,6 +842,79 @@ await testAsync('background status during an in-flight save never overwrites a r
   must(h.state().dirty === true, 'reverted selection differs from the new saved baseline');
   must(h.byId('btnGlobalTargets').disabled === false, 'save stays available for the reverted difference');
   must(h.byId('globalTargetsCount').textContent === '2 / 18 件を選択中', 'count still reflects the retained selection');
+});
+
+await testAsync('a successful save invalidates target responses started before it', async () => {
+  const h = harness();
+  h.model.statusSnapshotAtStart = true;
+  const gates = statusGates(h);
+  const oldPoll = h.context.refreshGlobal();
+  must(gates.length === 1, 'setup: a pre-save target GET is in flight');
+  h.checkFor('opencode').checked = false;
+  h.gs.markGlobalTargetsDirty();
+  must(h.state().selected.join('|') === 'codexcli', 'setup: the save selection is B');
+  const saving = h.byId('btnGlobalTargets').onclick();
+  await tick();
+  must(gates.length === 2, 'the successful save issued its own target GET');
+  must(h.state().saving === true, 'the save is still in flight when its own GET completes');
+  gates[1]();
+  await saving;
+  must(h.state().saved.join('|') === 'codexcli', 'the save moves the baseline to B');
+  must(h.state().dirty === false, 'setup: the save leaves a clean B');
+  h.checkFor('opencode').checked = true;
+  h.gs.markGlobalTargetsDirty();
+  must(h.state().selected.join('|') === 'codexcli|opencode', 'setup: the next edit restores A in the UI');
+  must(h.state().dirty === true && h.byId('btnGlobalTargets').disabled === false, 'setup: A is dirty against B');
+  gates[0]();
+  await oldPoll;
+  must(h.state().saved.join('|') === 'codexcli', 'the pre-save response cannot move the baseline back to A');
+  must(h.state().selected.join('|') === 'codexcli|opencode', 'the pre-save response cannot replace the current edit');
+  must(h.checkFor('opencode').checked === true, 'the pre-save response cannot uncheck the current edit');
+  must(h.state().dirty === true, 'the current edit stays dirty after the pre-save response');
+  must(h.byId('btnGlobalTargets').disabled === false, 'the current edit stays saveable after the pre-save response');
+  h.model.statusGetGate = null;
+  await h.context.refreshGlobal();
+  must(h.state().saved.join('|') === 'codexcli', 'a later ordinary poll keeps the saved baseline B');
+  must(h.state().selected.join('|') === 'codexcli|opencode', 'a later ordinary poll keeps the current edit A');
+  must(h.state().dirty === true, 'a later ordinary poll keeps A dirty against B');
+  h.context.L = (key, vars) => String(key)
+    .replace('{selected} / {total} 件を選択中', '{selected} / {total} selected')
+    .replace('未保存の変更があります', 'You have unsaved changes.')
+    .replace(/\{([^{}]+)\}/g, (m, k) => vars && Object.prototype.hasOwnProperty.call(vars, k) ? String(vars[k]) : m);
+  h.gs.renderGlobalTargetsUI();
+  must(h.byId('globalTargetsCount').textContent === '2 / 18 selected', 'the locale redraw keeps the current edit count');
+  must(h.byId('globalTargetsDirty').textContent === 'You have unsaved changes.', 'the locale redraw keeps the dirty state');
+  must(h.checkFor('opencode').checked === true, 'the locale redraw keeps the current edit checked');
+  must(h.byId('btnGlobalTargets').disabled === false, 'the locale redraw keeps the current edit saveable');
+  await h.byId('btnGlobalTargets').onclick();
+  const posts = h.model.calls.filter(c => c.ep === '/api/global-targets-set');
+  must(posts.length === 2, 'the current edit is the second successful save');
+  must(JSON.stringify(posts[1].body) === JSON.stringify({ targets: ['codexcli', 'opencode'], confirm: true }), 'the current edit saves A');
+  must(h.state().saved.join('|') === 'codexcli|opencode', 'saving the current edit makes A the baseline');
+  must(h.state().dirty === false && h.byId('btnGlobalTargets').disabled === true, 'saving the current edit clears the difference');
+});
+
+await testAsync('a save boundary only invalidates older target responses, not their interval', async () => {
+  const h = harness();
+  h.model.statusSnapshotAtStart = true;
+  h.model.globalStatus.intervalMinutes = 30;
+  const gates = statusGates(h);
+  const oldPoll = h.context.refreshGlobal();
+  h.model.globalStatus.intervalMinutes = 45;
+  h.checkFor('opencode').checked = false;
+  h.gs.markGlobalTargetsDirty();
+  const saving = h.byId('btnGlobalTargets').onclick();
+  await tick();
+  must(gates.length === 2, 'setup: the save issued its own target GET');
+  gates[0]();
+  await oldPoll;
+  must(String(h.byId('numGlobalInterval').value) === '30', 'the pre-save response still applies its untouched interval');
+  must(h.state().saved.join('|') === 'codexcli', 'the pre-save target response stays invalidated');
+  must(h.state().selected.join('|') === 'codexcli' && h.state().dirty === false, 'the saved target selection stays authoritative');
+  gates[1]();
+  await saving;
+  must(String(h.byId('numGlobalInterval').value) === '45', 'the save response applies the newer interval');
+  must(h.state().saved.join('|') === 'codexcli' && h.state().dirty === false, 'the save completes with its own baseline');
 });
 
 await testAsync('save cancel, deferred failure and repeated clicks preserve the edited selection', async () => {

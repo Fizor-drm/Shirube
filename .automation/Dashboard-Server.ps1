@@ -3776,6 +3776,8 @@ document.getElementById("btnGlobalTargets").onclick = async function(){
     const okGo = await showConfirm(L("対象の変更"), L("配る対象を「{targets}」に変更します。よろしいですか。", {targets:names.join(L("・"))}), L("変更する"), L("やめる"));
     if(!okGo){ return; }
     await api("/api/global-targets-set","POST",{targets:confirmed, confirm:true});
+    // The successful POST is newer than every status GET already in flight.
+    globalTargetsAppliedSeq = ++globalStatusRequestSeq;
     globalSavedTargets = confirmed.slice();
     globalTargetsDirty = globalTargetsDirtyNow();
     setMsg("msgGlobalTargets", L("対象を保存しました。"), true);
