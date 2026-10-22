@@ -7,6 +7,7 @@ $origGithub = $env:GITHUB_TOKEN
 $origGh = $env:GH_TOKEN
 $origPath = $env:PATH
 $origHomeDir = $env:HOME_DIR
+$origKimiHome = $env:KIMI_CODE_HOME
 $initCwd = (Get-Location).Path
 
 $failures = @()
@@ -108,6 +109,7 @@ exit /b 0
 '@ -Encoding Ascii
 
   $env:PATH = ($bin + ';' + $env:PATH)
+  Remove-Item Env:KIMI_CODE_HOME -ErrorAction SilentlyContinue
   $env:DUMMY_DIR = $scratch
   $env:HOME_DIR = $fakeHome
   $env:DUMMY_NODE_HOME = $fakeHome
@@ -300,6 +302,49 @@ exit /b 0
   Assert (([string]$st.providers.codexcli.result -ceq 'failed') -and ([string]$st.providers.opencode.result -ceq 'failed')) 'S9 both providers failed'
   Assert ($env:GITHUB_TOKEN -eq 'dummy-pre-token-AAA') 'S9 pre-existing token kept'
 
+  # S11: selected Kimi Code with KIMI_CODE_HOME fails closed before any CLI
+  # or pre-preview write; the external override and fake home stay untouched.
+  Reset-Case @(0, 0, 0)
+  Set-Content -LiteralPath (Join-Path $auto 'global-settings.json') '{"schemaVersion":1,"targets":["kimi-code"]}' -Encoding Ascii
+  $extKimi = Join-Path $scratch 'kimi-external'
+  New-Item -ItemType Directory -Force -Path $extKimi | Out-Null
+  $sentinel11 = Join-Path $extKimi 'AGENTS.md'
+  Set-Content -LiteralPath $sentinel11 'external-sentinel-S11' -Encoding Ascii
+  $env:KIMI_CODE_HOME = $extKimi
+  $planId11 = [System.Guid]::NewGuid().ToString('N')
+  $planFile11 = Join-Path $auto ("dashboard.global-plan-" + $planId11 + ".json")
+  $codePrev11 = Invoke-GlobalSync -PreviewOnly -PlanPath $planFile11
+  Assert ($codePrev11 -eq 1) 'S11 preview with KIMI_CODE_HOME exits 1'
+  Assert ((@(Get-Calls).Count -eq 0)) 'S11 preview launches no CLI'
+  Assert (-not (Test-Path -LiteralPath $planFile11)) 'S11 preview writes no plan'
+  Assert ((@(Get-ChildItem -LiteralPath $auto -Filter 'preview-home-*' -ErrorAction SilentlyContinue).Count -eq 0)) 'S11 preview creates no isolated home'
+  $codeApply11 = Invoke-GlobalSync
+  Assert ($codeApply11 -eq 1) 'S11 apply with KIMI_CODE_HOME exits 1'
+  Assert ((@(Get-Calls).Count -eq 0)) 'S11 apply launches no CLI'
+  Assert ((Get-Content -LiteralPath $sentinel11 -Raw).Trim() -ceq 'external-sentinel-S11') 'S11 external override untouched'
+  Assert (-not (Test-Path -LiteralPath (Join-Path $fakeHome '.kimi-code'))) 'S11 fake home Kimi path untouched'
+  $st11 = Read-Status
+  $k11 = $st11.providers.PSObject.Properties['kimi-code'].Value
+  Assert (([string]$k11.result -ceq 'failed') -and ([string]$k11.error -match 'KIMI_CODE_HOME')) 'S11 apply records failed status with env reason'
+
+  # S12: only a meaningful override conflicts, and an unselected Kimi never
+  # blocks the other selected providers.
+  Reset-Case @(0, 0)
+  Set-Content -LiteralPath (Join-Path $auto 'global-settings.json') '{"schemaVersion":1,"targets":["codexcli"]}' -Encoding Ascii
+  $env:KIMI_CODE_HOME = $extKimi
+  $code12a = Invoke-GlobalSync
+  $st12a = Read-Status
+  $k12a = $st12a.providers.PSObject.Properties['kimi-code'].Value
+  Assert ((($code12a -eq 0) -and (@(Get-Calls).Count -gt 0) -and ([string]$st12a.providers.codexcli.result -ceq 'success'))) 'S12 unselected Kimi conflict does not block other providers'
+  Assert (($null -eq $k12a) -or ([string]$k12a.result -cne 'success')) 'S12 unselected Kimi is not marked success'
+  Reset-Case @(0, 0)
+  Set-Content -LiteralPath (Join-Path $auto 'global-settings.json') '{"schemaVersion":1,"targets":["kimi-code"]}' -Encoding Ascii
+  $env:KIMI_CODE_HOME = '   '
+  $code12b = Invoke-GlobalSync
+  $st12b = Read-Status
+  $k12b = $st12b.providers.PSObject.Properties['kimi-code'].Value
+  Assert ((($code12b -eq 0) -and (@(Get-Calls).Count -gt 0) -and ($null -ne $k12b) -and ([string]$k12b.result -ceq 'success'))) 'S12 whitespace override is not a conflict'
+
   Assert (((Get-Location).Path) -eq $initCwd) 'S10 cwd restored at end'
   Assert ($env:HOME_DIR -eq $fakeHome) 'S10 HOME_DIR kept for harness restore'
   Assert (Test-Path -LiteralPath $scratch) 'S10 scratch exists before cleanup'
@@ -318,6 +363,8 @@ finally {
   $env:PATH = $origPath
   $env:HOME_DIR = $origHomeDir
   if ($null -eq $origHomeDir) { Remove-Item Env:HOME_DIR -ErrorAction SilentlyContinue }
+  $env:KIMI_CODE_HOME = $origKimiHome
+  if ($null -eq $origKimiHome) { Remove-Item Env:KIMI_CODE_HOME -ErrorAction SilentlyContinue }
   Set-Location -LiteralPath $initCwd -ErrorAction SilentlyContinue
 }
 

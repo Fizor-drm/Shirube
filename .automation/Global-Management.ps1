@@ -443,6 +443,17 @@ function Resolve-GlobalHomeBase([string]$NodeExe = '') {
   return $hb
 }
 
+# rulesync 32.0.0 resolves KIMI_CODE_HOME before HOME_DIR for global kimi-code
+# output, so a set override would write outside the confirmed home. Fail closed
+# before any CLI or preview write; whitespace is ignored by rulesync itself.
+function Assert-GlobalProviderEnvironment([string[]]$Targets = @()) {
+  if (-not (@($Targets) -ccontains 'kimi-code')) { return }
+  $override = $env:KIMI_CODE_HOME
+  if (($null -ne $override) -and (([string]$override).Trim() -ne '')) {
+    throw 'Kimi Code は KIMI_CODE_HOME が設定されているため安全に同期できません。KIMI_CODE_HOME を解除してから再実行してください。'
+  }
+}
+
 # Deployment paths resolved from the CURRENT home on every call (never cached).
 # Only the catalog's generated rules files; config files are never deployment paths.
 function Get-GlobalContentPaths([string]$HomeBase) {

@@ -133,22 +133,6 @@ function Invoke-GlobalSync {
   }
 
   try {
-    $npx = Resolve-Exe 'npx.cmd' 'npx'
-    $gh = Resolve-Exe 'gh' $null
-    $nodeExe = Resolve-Exe 'node' $null
-
-    # Home must match CLI: HOME_DIR if set, else current Node os.homedir().
-    $HomeBase = $env:HOME_DIR
-    if (-not $HomeBase) {
-      $prevEapNode = $ErrorActionPreference
-      $ErrorActionPreference = 'SilentlyContinue'
-      try {
-        $HomeBase = (& $nodeExe -e "process.stdout.write(require('node:os').homedir())" 2>$null | Out-String).Trim()
-        $nodeCode = $LASTEXITCODE
-      }
-      finally { $ErrorActionPreference = $prevEapNode }
-      if (($null -eq $nodeCode) -or ($nodeCode -ne 0) -or (-not $HomeBase)) { throw 'Failed to resolve home via node os.homedir().' }
-    }
     # Dashboard request file (selection/preview/plan). Fixed name inside AutoDir only.
     $ReqTargets = @()
     $ReqPreviewOnly = $false
@@ -183,6 +167,25 @@ function Invoke-GlobalSync {
     $script:GblEffTargets = $EffArr
     $script:GblHaveTargets = $true
     $Targets = ($EffArr -join ',')
+    # Provider env overrides are checked before ANY CLI process or home write.
+    Assert-GlobalProviderEnvironment $EffArr
+
+    $npx = Resolve-Exe 'npx.cmd' 'npx'
+    $gh = Resolve-Exe 'gh' $null
+    $nodeExe = Resolve-Exe 'node' $null
+
+    # Home must match CLI: HOME_DIR if set, else current Node os.homedir().
+    $HomeBase = $env:HOME_DIR
+    if (-not $HomeBase) {
+      $prevEapNode = $ErrorActionPreference
+      $ErrorActionPreference = 'SilentlyContinue'
+      try {
+        $HomeBase = (& $nodeExe -e "process.stdout.write(require('node:os').homedir())" 2>$null | Out-String).Trim()
+        $nodeCode = $LASTEXITCODE
+      }
+      finally { $ErrorActionPreference = $prevEapNode }
+      if (($null -eq $nodeCode) -or ($nodeCode -ne 0) -or (-not $HomeBase)) { throw 'Failed to resolve home via node os.homedir().' }
+    }
     $ContentPaths = Get-GlobalContentPaths $HomeBase
 
     # Selected real-home paths (incl parents) are inspected BEFORE any CLI
