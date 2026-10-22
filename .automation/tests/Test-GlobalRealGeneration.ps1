@@ -115,6 +115,12 @@ try {
   "features": ["rules"]
 }
 '@
+  $pinnedConfig = @'
+{
+  "targets": ["codexcli", "opencode"],
+  "features": ["rules"]
+}
+'@
 
   # R1: omitted targets -> all 18 catalog providers get real content, with no
   # unbacked extra config files (notably no Claude settings.json).
@@ -139,10 +145,12 @@ try {
   Assert ((@(Get-RelFiles $c1.appdata).Count -eq 0) -and (@(Get-RelFiles $c1.localappdata).Count -eq 0) -and (@(Get-RelFiles $c1.xdg).Count -eq 0)) 'R1 no writes outside HOME_DIR'
 
   # R2: explicit wildcard is the documented alternative and reaches Pi/Claude.
+  # The example config's pinned targets do not matter because the dashboard
+  # passes --targets explicitly, so the template needs no change.
   $c2 = New-IsolatedCase 'wildcard-pi-claude'
   $marker2 = 'REAL-GLOBAL-WILDCARD-MARKER'
   Set-CaseRule $c2 "targets: [`"*`"]`n" $marker2
-  Set-CaseConfig $c2 $quietConfig
+  Set-CaseConfig $c2 $pinnedConfig
   $r2 = Invoke-RealRulesync $c2 @('pi', 'claudecode')
   Assert ($r2.code -eq 0) 'R2 wildcard generation exits 0'
   foreach ($id in @('pi', 'claudecode')) {
@@ -150,6 +158,7 @@ try {
     $p = Join-Path $c2.home $rel
     Assert ((Test-Path -LiteralPath $p -PathType Leaf) -and ((Get-Content -LiteralPath $p -Raw -Encoding UTF8).Contains($marker2))) ('R2 ' + $id + ' receives wildcard content')
   }
+  Assert (-not (Test-Path -LiteralPath (Join-Path $c2.home '.codex\AGENTS.md'))) 'R2 CLI targets override the template config targets'
 
   # R3: the old fixed frontmatter filters Pi/Claude out even when CLI --targets
   # names them; this is the migration the READMEs must call out.

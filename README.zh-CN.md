@@ -101,7 +101,7 @@ git clone https://github.com/Fizor-drm/Shirube.git
 
 ### 2. 创建 rulesync 配置
 
-复制 [`examples`](examples) 中的模板，并将 `sources[0].source` 替换为自己的规则仓库的 `owner/repo`。Global 的 `rules` 保持 `global`，Project 保持 `project`。
+复制 [`examples`](examples) 中的模板，并将 `sources[0].source` 替换为自己的规则仓库的 `owner/repo`。Global 的 `rules` 保持 `global`，Project 保持 `project`。管理界面会用所选目标覆盖 `targets`，因此 Global 模板中的 `targets` 无需修改。
 
 | 用途 | 模板 | 放置位置 |
 | --- | --- | --- |
@@ -187,20 +187,35 @@ Copy-Item 管理.bat $root
 
 | 文件 | 适用范围 | frontmatter |
 | --- | --- | --- |
-| 规则仓库中的 `rules/global.md` | 所有项目 | `root: true` |
-| 规则仓库中的 `rules/project.md` | 所有已注册项目 | `root: true` |
-| `<项目>\.rulesync\rules\project-local.md` | 仅该项目 | `localRoot: true` |
+| 规则仓库中的 `rules/global.md` | 所有项目（Global 18 种） | `root: true`；不要写 `targets`（或使用 `["*"]`） |
+| 规则仓库中的 `rules/project.md` | 所有已注册项目（Project 2 种） | `root: true` 和 `targets: ["codexcli", "opencode"]` |
+| `<项目>\.rulesync\rules\project-local.md` | 仅该项目 | `localRoot: true` 和 `targets: ["codexcli", "opencode"]` |
+
+Global 与 Project 对 `targets` 的处理不同。Global 会分发到管理界面所选的 18 种目标，因此规则侧不要固定目标。省略 `targets` 时使用 rulesync 的默认值 `["*"]`（全部），显式写 `targets: ["*"]` 也一样。若固定为 `["codexcli", "opencode"]`，之后选择的 Pi、Claude Code 等将收不到内容。现有 Global 规则如果固定了 `targets`，请删除该行或改为 `["*"]`，然后 push 到 GitHub。
+
+Project 只支持 Codex / OpenCode 两种固定目标，因此 Project 规则必须保留 `targets: ["codexcli", "opencode"]`。
 
 <details>
 <summary>frontmatter 示例</summary>
 
-通用规则：
+Global 规则（`rules/global.md`）：
+
+```markdown
+---
+root: true
+description: "全局通用规则"
+---
+
+- 请用中文回答。
+```
+
+Project 通用规则（`rules/project.md`）：
 
 ```markdown
 ---
 root: true
 targets: ["codexcli", "opencode"]
-description: "全局通用规则"
+description: "项目通用规则"
 ---
 
 - 请用中文回答。
@@ -220,7 +235,7 @@ description: "此项目专用的规则"
 
 </details>
 
-frontmatter 只接受固定格式。请将 3 个键各写一行，不要缩进。带引号的键、块格式（`|` / `>`）、未知键以及同时使用 `root` 和 `localRoot` 都会被拒绝。`targets` 保持为 `["codexcli", "opencode"]`，`description` 使用双引号。正文用 Markdown 编写规则。
+Project 的 frontmatter 只接受固定格式。请将 3 个键各写一行，不要缩进。带引号的键、块格式（`|` / `>`）、未知键以及同时使用 `root` 和 `localRoot` 都会被拒绝。`targets` 保持为 `["codexcli", "opencode"]`，`description` 使用双引号。正文用 Markdown 编写规则。Global 的 frontmatter 遵循 rulesync 的 YAML 格式：写 `root: true` 和 `description`，不要固定 `targets`。
 
 修改通用规则后，GitHub 上的内容会在下次同步时获取。项目专用规则会直接使用本地文件的下次同步结果。`AGENTS.md` 是生成文件，请不要编辑。
 

@@ -101,7 +101,7 @@ git clone https://github.com/Fizor-drm/Shirube.git
 
 ### 2. Create the rulesync settings
 
-Copy the templates in [`examples`](examples) and replace `sources[0].source` with the `owner/repo` of your rules repository. Leave `rules` as `global` for Global and `project` for Project.
+Copy the templates in [`examples`](examples) and replace `sources[0].source` with the `owner/repo` of your rules repository. Leave `rules` as `global` for Global and `project` for Project. The dashboard overrides `targets` with its selection, so the Global template's `targets` needs no change.
 
 | Purpose | Template | Destination |
 | --- | --- | --- |
@@ -187,20 +187,35 @@ Use Preview before applying to check the generated result without writing real f
 
 | File | Applies to | frontmatter |
 | --- | --- | --- |
-| `rules/global.md` in the rules repository | Every project | `root: true` |
-| `rules/project.md` in the rules repository | All registered projects | `root: true` |
-| `<project>\.rulesync\rules\project-local.md` | That project only | `localRoot: true` |
+| `rules/global.md` in the rules repository | Every project (18 Global targets) | `root: true`; omit `targets` (or use `["*"]`) |
+| `rules/project.md` in the rules repository | All registered projects (2 Project targets) | `root: true` and `targets: ["codexcli", "opencode"]` |
+| `<project>\.rulesync\rules\project-local.md` | That project only | `localRoot: true` and `targets: ["codexcli", "opencode"]` |
+
+Global and Project rules treat `targets` differently. Global distributes to whichever of the 18 providers are selected in the dashboard, so the rule must not pin them. Omitting `targets` uses rulesync's default `["*"]` (all); writing `targets: ["*"]` explicitly is equivalent. A fixed list such as `["codexcli", "opencode"]` silently excludes providers added later, including Pi and Claude Code. If an existing Global rule pins `targets`, remove that line or change it to `["*"]` and push it to GitHub.
+
+Project supports only Codex and OpenCode, so Project rules must keep `targets: ["codexcli", "opencode"]`.
 
 <details>
 <summary>frontmatter examples</summary>
 
-Shared rules:
+Global rule (`rules/global.md`):
+
+```markdown
+---
+root: true
+description: "Shared global rules"
+---
+
+- Write answers in English.
+```
+
+Project shared rule (`rules/project.md`):
 
 ```markdown
 ---
 root: true
 targets: ["codexcli", "opencode"]
-description: "Shared global rules"
+description: "Shared project rules"
 ---
 
 - Write answers in English.
@@ -220,7 +235,7 @@ description: "Rules specific to this project"
 
 </details>
 
-frontmatter accepts only the fixed format. Write the three keys one per line with no indentation. Quoted keys, block scalars (`|` / `>`), unknown keys, and mixing `root` with `localRoot` are rejected. Keep `targets` as `["codexcli", "opencode"]` and wrap `description` in double quotes. Write the rules themselves as Markdown in the body.
+Project frontmatter accepts only the fixed format. Write the three keys one per line with no indentation. Quoted keys, block scalars (`|` / `>`), unknown keys, and mixing `root` with `localRoot` are rejected. Keep `targets` as `["codexcli", "opencode"]` and wrap `description` in double quotes. Write the rules themselves as Markdown in the body. Global frontmatter follows rulesync's YAML format: include `root: true` and `description`, and do not pin `targets`.
 
 Changes to shared rules are picked up from GitHub on the next sync. For project-specific rules, local file changes take effect on the next sync. `AGENTS.md` is generated, so do not edit it.
 

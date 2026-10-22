@@ -101,7 +101,7 @@ git clone https://github.com/Fizor-drm/Shirube.git
 
 ### 2. rulesync の設定を作る
 
-[`examples`](examples) のテンプレートをコピーし、`sources[0].source` を自分のルールリポジトリの `owner/repo` に差し替えます。`rules` は Global 側が `global`、Project 側が `project` のままにします。
+[`examples`](examples) のテンプレートをコピーし、`sources[0].source` を自分のルールリポジトリの `owner/repo` に差し替えます。`rules` は Global 側が `global`、Project 側が `project` のままにします。`targets` は管理画面の選択で上書きされるため、Global テンプレートでは変更不要です。
 
 | 用途 | テンプレート | 配置先 |
 | --- | --- | --- |
@@ -187,20 +187,35 @@ Copy-Item 管理.bat $root
 
 | ファイル | 適用範囲 | frontmatter |
 | --- | --- | --- |
-| ルールリポジトリの `rules/global.md` | すべてのプロジェクト | `root: true` |
-| ルールリポジトリの `rules/project.md` | 登録したプロジェクト全体 | `root: true` |
-| `<プロジェクト>\.rulesync\rules\project-local.md` | そのプロジェクトのみ | `localRoot: true` |
+| ルールリポジトリの `rules/global.md` | すべてのプロジェクト（Global 18 種） | `root: true`。`targets` は書かない（または `["*"]`） |
+| ルールリポジトリの `rules/project.md` | 登録したプロジェクト全体（Project 2 種） | `root: true` と `targets: ["codexcli", "opencode"]` |
+| `<プロジェクト>\.rulesync\rules\project-local.md` | そのプロジェクトのみ | `localRoot: true` と `targets: ["codexcli", "opencode"]` |
+
+Global と Project では `targets` の扱いが異なります。Global は管理画面で選んだ 18 種へ配布するため、ルール側で対象を固定しません。`targets` を省略すると rulesync の既定値 `["*"]`（すべて）になり、`targets: ["*"]` と明示しても同じです。`["codexcli", "opencode"]` のように固定すると、あとから選んだ Pi や Claude Code などには内容が配られません。既存の Global ルールが固定 `targets` になっている場合は、その行を削除するか `["*"]` に変更して GitHub へ push してください。
+
+Project は Codex / OpenCode の 2 種だけを対象にする固定仕様です。Project のルールには `targets: ["codexcli", "opencode"]` を必ず書きます。
 
 <details>
 <summary>frontmatter の例</summary>
 
-共通ルール:
+Global ルール（`rules/global.md`）:
+
+```markdown
+---
+root: true
+description: "グローバル共通ルール"
+---
+
+- 回答は日本語で書いてください。
+```
+
+Project 共通ルール（`rules/project.md`）:
 
 ```markdown
 ---
 root: true
 targets: ["codexcli", "opencode"]
-description: "グローバル共通ルール"
+description: "プロジェクト共通ルール"
 ---
 
 - 回答は日本語で書いてください。
@@ -220,7 +235,7 @@ description: "このプロジェクト固有のルール"
 
 </details>
 
-frontmatter は決まった形式だけを受け付けます。3 つのキーを 1 行ずつ、インデントなしで書いてください。キーの引用、ブロック形式（`|` / `>`）、未知のキー、`root` と `localRoot` の混在は拒否されます。`targets` は `["codexcli", "opencode"]` のままにし、`description` は二重引用符で囲みます。本文には Markdown でルールを書きます。
+Project の frontmatter は決まった形式だけを受け付けます。3 つのキーを 1 行ずつ、インデントなしで書いてください。キーの引用、ブロック形式（`|` / `>`）、未知のキー、`root` と `localRoot` の混在は拒否されます。`targets` は `["codexcli", "opencode"]` のままにし、`description` は二重引用符で囲みます。本文には Markdown でルールを書きます。Global の frontmatter は rulesync の YAML 形式に従い、`root: true` と `description` を書き、`targets` は固定しません。
 
 共通ルールを変えた場合は、GitHub へ反映した内容が次の同期で取得されます。プロジェクト固有ルールはローカルファイルの変更がそのまま次の同期で反映されます。`AGENTS.md` は生成物なので編集しないでください。
 
