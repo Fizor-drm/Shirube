@@ -178,6 +178,45 @@ await test('cancel retains previous aggregate, IDs and progress without POST',as
   assert.deepEqual([t.c.unifiedFinalState,t.c.unifiedProjectRunId,t.c.unifiedGlobalRunId,t.el('syncProgress').value],saved);
   assert.ok(!t.model.calls.some(x=>x.method==='POST'));
 });
+for(const scope of ['global','project']) {
+  await test(scope+'-only cancel keeps the previous aggregate through refresh and language redraw',async()=>{
+    const t=setup(); await t.c.startUnified();
+    const saved={
+      final:t.c.unifiedFinalState,
+      display:JSON.parse(JSON.stringify(t.c.syncDisplayState)),
+      projectId:t.c.unifiedProjectRunId,
+      globalId:t.c.unifiedGlobalRunId,
+      progressValue:t.el('syncProgress').value,
+      progressMax:t.el('syncProgress').max,
+      progressText:t.el('syncProgressText').textContent,
+      run:t.el('stRun').dataset.state,
+      log:t.el('stLog').textContent,
+      tail:t.el('stTail').textContent
+    };
+    t.model.calls=[]; t.model.confirm=false;
+    await (scope==='global'?t.c.startGlobalOnly():t.c.startProjectOnly());
+    await t.c.refresh(); await t.c.refreshGlobal();
+    assert.ok(!t.model.calls.some(x=>x.method==='POST'));
+    assert.equal(t.c.unifiedFinalState,saved.final);
+    assert.deepEqual(JSON.parse(JSON.stringify(t.c.syncDisplayState)),saved.display);
+    assert.equal(t.c.unifiedProjectRunId,saved.projectId);
+    assert.equal(t.c.unifiedGlobalRunId,saved.globalId);
+    assert.equal(t.el('syncProgress').value,saved.progressValue);
+    assert.equal(t.el('syncProgress').max,saved.progressMax);
+    assert.equal(t.el('syncProgressText').textContent,saved.progressText);
+    assert.equal(t.el('stRun').dataset.state,saved.run);
+    assert.equal(t.el('stLog').textContent,saved.log);
+    assert.equal(t.el('stTail').textContent,saved.tail);
+    const translations={'成功':'Success','失敗':'Failed','未実行':'Not run','Global: {global} / Project: {project}':'Global: {global} / Project: {project}'};
+    t.c.currentLang='en';
+    t.c.L=(key,vars)=>{let s=translations[key]||key; return s.replace(/\{([^{}]+)\}/g,(m,k)=>vars&&Object.prototype.hasOwnProperty.call(vars,k)?String(vars[k]):m);};
+    t.c.renderSyncState();
+    assert.equal(t.el('stRun').dataset.state,saved.run);
+    assert.equal(t.el('stLog').textContent,saved.log);
+    assert.equal(t.el('stTail').textContent,'Global: Success / Project: Success');
+    assert.equal(t.el('syncProgress').value,saved.progressValue);
+  });
+}
 await test('new Global owns summary across old Project refresh and settles progress',async()=>{
   const t=setup(); await t.c.startUnified();
   t.model.global={...t.model.global,syncId:'G2',syncState:'running'};

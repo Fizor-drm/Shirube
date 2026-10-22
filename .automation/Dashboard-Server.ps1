@@ -2710,11 +2710,12 @@ document.getElementById("btnSyncGlobalOnly").onclick = async function(){
   if(globalApplyInflight){ await showNotify(L("同期中"), L("Globalプレビュー適用中です。")); return; }
   const originallyDisabled = b.disabled;
   unifiedSyncActive = true;
-  unifiedFinalState = null;
   b.disabled = true;
+  let started = false;
   try{
     const okGo = await showConfirm(L("Globalのみ同期の確認"), L("Global同期（保存済み対象へ配布）を実行します。よろしいですか。"), L("同期する"), L("やめる"));
     if(!okGo){ return; }
+    started = true;
     beginSingleSyncScope("global");
     let gr = null;
     try{ gr = await api("/api/global-sync","POST",{}); }
@@ -2747,7 +2748,7 @@ document.getElementById("btnSyncGlobalOnly").onclick = async function(){
     try{ setUnifiedProgress(0, 1, L("0/1 Global同期: {state}", {state:stateJa(unifiedFinalState)}), false); }catch(e3){}
   }
   finally{
-    finishSingleSyncScope("global");
+    if(started) finishSingleSyncScope("global");
     try{ b.disabled = originallyDisabled; }catch(e4){}
     try{ safeFocus(b); }catch(e5){}
   }
@@ -2758,11 +2759,12 @@ document.getElementById("btnSyncProjectOnly").onclick = async function(){
   if(globalApplyInflight){ await showNotify(L("同期中"), L("Globalプレビュー適用中です。")); return; }
   const originallyDisabled = b.disabled;
   unifiedSyncActive = true;
-  unifiedFinalState = null;
   b.disabled = true;
+  let started = false;
   try{
     const okGo = await showConfirm(L("Projectのみ同期の確認"), L("Projectのみの同期を実行します。よろしいですか。"), L("同期する"), L("やめる"));
     if(!okGo){ return; }
+    started = true;
     beginSingleSyncScope("project");
     let pr = null;
     try{ pr = await api("/api/sync","POST",{}); }
@@ -2795,7 +2797,7 @@ document.getElementById("btnSyncProjectOnly").onclick = async function(){
     try{ setUnifiedProgress(0, 1, L("0/1 Project同期: {state}", {state:stateJa(unifiedFinalState)}), false); }catch(e3){}
   }
   finally{
-    finishSingleSyncScope("project");
+    if(started) finishSingleSyncScope("project");
     try{ b.disabled = originallyDisabled; }catch(e4){}
     try{ safeFocus(b); }catch(e5){}
   }
