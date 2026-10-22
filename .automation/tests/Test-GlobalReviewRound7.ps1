@@ -30,6 +30,13 @@ $origPath = $env:PATH
 $devAuto = Split-Path -Parent $PSScriptRoot
 try {
   . (Join-Path $devAuto 'Global-Management.ps1')
+  # Get-ScheduledTask stays mocked too: autoloading ScheduledTasks re-registers
+  # its cmdlets and would let the real Disable-ScheduledTask replace the mock.
+  function Get-ScheduledTask {
+    param([string]$TaskName)
+    if ($TaskName -ceq 'Rulesync Global Auto Sync') { return [pscustomobject]@{ TaskName = $TaskName; State = 'Ready'; Triggers = @() } }
+    throw ('Task not found: ' + $TaskName)
+  }
   function Disable-ScheduledTask { param([string]$TaskName) }
   function Enable-ScheduledTask { param([string]$TaskName) }
   $cmdExe = Join-Path $env:SystemRoot 'System32\cmd.exe'
@@ -201,6 +208,7 @@ finally {
   $env:PATH = $origPath
   Remove-Item Env:FAKE_AUTO_DIR -ErrorAction SilentlyContinue
   Remove-Item Env:FAKE_HOME_DIR -ErrorAction SilentlyContinue
+  Remove-Item -Path 'function:Get-ScheduledTask' -Force -ErrorAction SilentlyContinue
   Remove-Item -Path 'function:Disable-ScheduledTask' -Force -ErrorAction SilentlyContinue
   Remove-Item -Path 'function:Enable-ScheduledTask' -Force -ErrorAction SilentlyContinue
   Set-Location -LiteralPath $initCwd -ErrorAction SilentlyContinue
