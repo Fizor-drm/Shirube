@@ -2693,8 +2693,8 @@ function beginSingleSyncScope(scope){
   commonSyncSource = scope;
   setUnifiedProgress(0, 1, scope === "global" ? L("0/1 Global同期を実行中") : L("0/1 Project同期を実行中"), false);
 }
-function finishSingleSyncScope(scope){
-  if(unifiedFinalState){
+function finishSingleSyncScope(scope, started){
+  if(started && unifiedFinalState){
     const cur = commonSyncStates[scope];
     const rid = scope === "global" ? unifiedGlobalRunId : unifiedProjectRunId;
     const match = cur && rid && cur.syncId === rid;
@@ -2748,7 +2748,7 @@ document.getElementById("btnSyncGlobalOnly").onclick = async function(){
     try{ setUnifiedProgress(0, 1, L("0/1 Global同期: {state}", {state:stateJa(unifiedFinalState)}), false); }catch(e3){}
   }
   finally{
-    if(started) finishSingleSyncScope("global");
+    finishSingleSyncScope("global", started);
     try{ b.disabled = originallyDisabled; }catch(e4){}
     try{ safeFocus(b); }catch(e5){}
   }
@@ -2797,7 +2797,7 @@ document.getElementById("btnSyncProjectOnly").onclick = async function(){
     try{ setUnifiedProgress(0, 1, L("0/1 Project同期: {state}", {state:stateJa(unifiedFinalState)}), false); }catch(e3){}
   }
   finally{
-    if(started) finishSingleSyncScope("project");
+    finishSingleSyncScope("project", started);
     try{ b.disabled = originallyDisabled; }catch(e4){}
     try{ safeFocus(b); }catch(e5){}
   }

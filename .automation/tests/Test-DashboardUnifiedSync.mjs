@@ -30,7 +30,7 @@ const names = ['stateJa', 'resultJa', 'updateSyncUI', 'updateCommonSyncState',
   'globalProviderEntry', 'globalProviderLabel', 'renderGlobalTargetChoices',
   'globalTargetCheckboxes', 'markGlobalTargetsDirty', 'globalSelectedTargets', 'globalPlanIdForSelection',
   'globalSyncApplyEnabled', 'updateGlobalSyncApplyButton', 'singleSyncTerminal',
-  'beginSingleSyncScope', 'finishSingleSyncScope', 'selectedNames', 'selectedNamesIn'];
+  'beginSingleSyncScope', 'finishSingleSyncScope', 'selectedNames', 'selectedNamesIn', 'planIdForSelection'];
 function setup() {
   const elements = new Map();
   function element() {
@@ -102,11 +102,12 @@ function setup() {
     'var unifiedObservedProjectRunId=null,unifiedObservedGlobalRunId=null;' +
     'var unifiedBaselineProjectRunId=null,unifiedBaselineGlobalRunId=null;' +
     'var globalApplyInflight=false,globalTargetsDirty=false,globalIntervalDirty=false,lastGlobalPlan=null;' +
-    'var unifiedProgressState={completed:0,total:2,text:"0/2 待機中",key:null,vars:null,indeterminate:false,lang:"ja"};' +
+    'var unifiedProgressState={completed:0,total:2,text:"0/2 待機中",key:null,vars:null,indeterminate:false,lang:"ja"};var lastPlan=null;' +
     names.map(actual).join('\n') +
     '\nrenderGlobalTargetChoices();' +
     '\nvar startUnified='+handler('btnSync')+';var applyGlobal='+handler('btnGlobalSync')+';' +
-    'var startGlobalOnly='+handler('btnSyncGlobalOnly')+';var startProjectOnly='+handler('btnSyncProjectOnly')+';', c);
+    'var startGlobalOnly='+handler('btnSyncGlobalOnly')+';var startProjectOnly='+handler('btnSyncProjectOnly')+';' +
+    'var startSelected='+handler('btnSyncSel')+';', c);
   return {c, model, document, el:id=>document.getElementById(id)};
 }
 async function test(name, f) { await f(); console.log('PASS: '+name); }
@@ -217,6 +218,59 @@ for(const scope of ['global','project']) {
     assert.equal(t.el('syncProgress').value,saved.progressValue);
   });
 }
+for(const scope of ['global','project']) {
+  await test(scope+'-only cancel releases the guard so the same action can succeed',async()=>{
+    const t=setup();
+    t.model.confirm=false;
+    await (scope==='global'?t.c.startGlobalOnly():t.c.startProjectOnly());
+    assert.equal(t.c.unifiedSyncActive,false,'guard released after cancel');
+    assert.equal(t.c.unifiedStateLock,false,'state lock released after cancel');
+    assert.equal(t.el(scope==='global'?'btnSyncGlobalOnly':'btnSyncProjectOnly').disabled,false,'button re-enabled after cancel');
+    t.model.calls=[]; t.model.confirm=true;
+    await (scope==='global'?t.c.startGlobalOnly():t.c.startProjectOnly());
+    assert.deepEqual(t.model.calls.filter(x=>x.method==='POST').map(x=>x.ep),[scope==='global'?'/api/global-sync':'/api/sync']);
+    assert.equal(t.el('stRun').dataset.state,'success');
+  });
+  await test(scope+'-only cancel lets all-scope sync run and succeed',async()=>{
+    const t=setup();
+    t.model.confirm=false;
+    await (scope==='global'?t.c.startGlobalOnly():t.c.startProjectOnly());
+    assert.equal(t.c.unifiedSyncActive,false,'guard released after cancel');
+    t.model.calls=[]; t.model.confirm=true;
+    await t.c.startUnified();
+    assert.deepEqual(t.model.calls.filter(x=>x.method==='POST').map(x=>x.ep),['/api/global-sync','/api/sync']);
+    assert.equal(t.el('stRun').dataset.state,'success');
+  });
+  await test(scope+'-only cancel lets selected sync run and succeed',async()=>{
+    const t=setup();
+    const box=t.document.createElement('input'); box.type='checkbox'; box.className='selbox'; box.value='A'; box.checked=true;
+    t.el('statusRows').appendChild(box);
+    t.model.confirm=false;
+    await (scope==='global'?t.c.startGlobalOnly():t.c.startProjectOnly());
+    assert.equal(t.c.unifiedSyncActive,false,'guard released after cancel');
+    t.model.calls=[]; t.model.confirm=true;
+    await t.c.startSelected();
+    const posts=t.model.calls.filter(x=>x.method==='POST');
+    assert.deepEqual(posts.map(x=>x.ep),['/api/sync']);
+    assert.deepEqual(Array.from(posts[0].body.projectNames),['A']);
+    assert.equal(t.c.unifiedSyncActive,false,'guard released after selected sync');
+    await t.c.refresh();
+    assert.equal(t.el('stRun').dataset.state,'success');
+  });
+  await test(scope+'-only cancel lets Global plan apply run and succeed',async()=>{
+    const t=setup();
+    t.model.confirm=false;
+    await (scope==='global'?t.c.startGlobalOnly():t.c.startProjectOnly());
+    assert.equal(t.c.unifiedSyncActive,false,'guard released after cancel');
+    t.model.globalResult='success'; t.c.lastGlobalPlan={id:'approved',names:['codexcli']};
+    t.model.global.targets=['codexcli']; await t.c.refreshGlobal();
+    t.model.calls=[]; t.model.confirm=true;
+    await t.c.applyGlobal();
+    assert.deepEqual(t.model.calls.filter(x=>x.method==='POST').map(x=>x.ep),['/api/global-sync']);
+    assert.equal(t.el('stRun').dataset.state,'success');
+  });
+}
+
 await test('new Global owns summary across old Project refresh and settles progress',async()=>{
   const t=setup(); await t.c.startUnified();
   t.model.global={...t.model.global,syncId:'G2',syncState:'running'};
