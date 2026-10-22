@@ -1,4 +1,4 @@
-# Test-RebrandMigration.ps1 - Shirube rename invariants: task defaults, legacy
+﻿# Test-RebrandMigration.ps1 - Shirube rename invariants: task defaults, legacy
 # task fallback, AppData launcher paths, and migration documentation.
 # Scratch-only. Scheduler cmdlets are shadowed; no real task or AppData is read.
 $ErrorActionPreference = 'Stop'
@@ -161,6 +161,9 @@ try {
   $readme = Get-Content -LiteralPath (Join-Path $devRoot 'README.md') -Raw -Encoding UTF8
   Assert (($readme.Contains('%LOCALAPPDATA%\Rulesync')) -and ($readme.Contains('%LOCALAPPDATA%\Shirube'))) 'R6 README documents both old and new AppData paths'
   Assert (($readme.Contains('projects.json')) -and ($readme.Contains('global-preview')) -and ($readme.Contains('project-common-preview'))) 'R6 README preserves registry and preview configuration in migration'
+  Assert (($readme.Contains('実際のタスク名')) -and ($readme.Contains('有効/無効状態を記録'))) 'R6 README identifies the configured task names and records their state before stopping'
+  Assert ($readme.Contains('元が有効なら有効化')) 'R6 README restores the recorded task state after verification'
+  Assert (($readme.Contains('.automation\*.ps1') -and $readme.Contains('%LOCALAPPDATA%\Shirube\.automation') -and $readme.Contains('`管理.bat` と `Shirube-Manager.bat` は `%LOCALAPPDATA%\Shirube`'))) 'R6 README places scripts under .automation and both launchers at the Shirube root'
 } finally {
   $env:LOCALAPPDATA = $origLocal
   Remove-Item -Path 'function:Get-ScheduledTask' -Force -ErrorAction SilentlyContinue

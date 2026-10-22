@@ -137,13 +137,13 @@ Copy-Item 管理.bat $root
 
 以前の `%LOCALAPPDATA%\Rulesync` を使っている場合は、データと個人設定を保ったまま次の順で移行します。フォルダを分割・削除せず、1 つの単位として移動してください。
 
-1. 管理画面と実行中の同期を終了し、タスク スケジューラで旧 `Rulesync Global Auto Sync` / `Rulesync Project Auto Sync` を無効化します。
+1. 管理画面と実行中の同期を終了します。`%LOCALAPPDATA%\Rulesync\.automation\settings.json` の `taskNameGlobal` / `taskNameProject` に設定されている実際のタスク名（未設定なら旧既定の `Rulesync Global Auto Sync` / `Rulesync Project Auto Sync`）を確認します。その 2 つのタスクの現在の有効/無効状態を記録してから無効化します。旧既定名だけを止めると、独自名のタスクが有効なまま残ります。
 2. `settings.json` の `taskNameGlobal` / `taskNameProject` が旧既定値のままなら、`Shirube Global Auto Sync` / `Shirube Project Auto Sync` に更新します。独自のタスク名を使っている場合はその名前を変えず、タスク スケジューラ側と一致させます。
 3. `%LOCALAPPDATA%\Rulesync` を `%LOCALAPPDATA%\Shirube` へフォルダごと移動します。`projects.json`、ログ、バックアップ、状態ファイル、`global-preview` / `project-common-preview` の個人設定（`rulesync.jsonc`）はそのまま残ります。
-4. リポジトリ側の `.automation\*.ps1`・`*.vbs` と `管理.bat` を `%LOCALAPPDATA%\Shirube` へ配置します。`settings.json`・`projects.json`・ログ・バックアップ・プレビュー設定は移動済みのものを使うため、上書きしないでください。
+4. リポジトリ側の `.automation\*.ps1`・`*.vbs` は `%LOCALAPPDATA%\Shirube\.automation` へ、ランチャーの `管理.bat` と `Shirube-Manager.bat` は `%LOCALAPPDATA%\Shirube` へ配置します。`settings.json`・`projects.json`・ログ・バックアップ・プレビュー設定は移動済みのものを使うため、上書きしないでください。
 5. タスク スケジューラで 2 つのタスクの名前と操作を Shirube の値へ変更します（または新しい名前で作り直します）。操作は新しい `<Shirube>\.automation\Run-GlobalRules.vbs` / `Run-ProjectRules.vbs` を指します。
 6. 管理画面を起動し、Global / Project の両方が新しいタスク名・操作・間隔を参照していることを確認します。新しい既定タスクが無い場合、アプリは旧既定名のタスクを互換参照しますが、移行後は旧タスクを残さないでください。
-7. 新しいタスクで 1 回ずつ同期し、登録プロジェクト、ログ、バックアップ、プレビュー設定が残っていることを確認してから旧タスクを削除します。旧 `%LOCALAPPDATA%\Rulesync` をコピーで残した場合は、確認が終わるまで削除しないでください。
+7. 新しいタスクで 1 回ずつ同期し、登録プロジェクト、ログ、バックアップ、プレビュー設定が残っていることを確認します。Shirube のコードと操作、データの検証が終わったら、手順 1 で記録した有効/無効状態へ 2 つのタスクを戻します（元が有効なら有効化、無効なら無効のまま）。残っている旧タスクを削除し、旧 `%LOCALAPPDATA%\Rulesync` をコピーで残した場合は、確認が終わるまで削除しないでください。
 
 ## 4. ルールの書き方
 
