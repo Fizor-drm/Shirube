@@ -12,6 +12,89 @@ $GlobalMgmtFile = Join-Path $PSScriptRoot 'Global-Management.ps1'
 if (-not (Test-Path -LiteralPath $GlobalMgmtFile -PathType Leaf)) { throw 'Global-Management.ps1 missing next to Sync-GlobalRules.ps1.' }
 . $GlobalMgmtFile
 
+# rulesync resolves rulesync.jsonc plus the merged rulesync.local.jsonc from
+# the Global preview cwd. Parse JSONC (comments/trailing commas) so a real
+# top-level language key cannot hide behind comments, strings or nesting.
+function ConvertFrom-GlobalJsoncText([string]$Text) {
+  $src = [string]$Text
+  $sb = New-Object System.Text.StringBuilder
+  $inString = $false
+  $escape = $false
+  $i = 0
+  while ($i -lt $src.Length) {
+    $ch = $src[$i]
+    if ($inString) {
+      [void]$sb.Append($ch)
+      if ($escape) { $escape = $false }
+      elseif ($ch -eq '\') { $escape = $true }
+      elseif ($ch -eq '"') { $inString = $false }
+      $i++
+      continue
+    }
+    if ($ch -eq '"') { $inString = $true; [void]$sb.Append($ch); $i++; continue }
+    if (($ch -eq '/') -and (($i + 1) -lt $src.Length)) {
+      $next = $src[$i + 1]
+      if ($next -eq '/') {
+        $i += 2
+        while (($i -lt $src.Length) -and ($src[$i] -ne "`r") -and ($src[$i] -ne "`n")) { $i++ }
+        continue
+      }
+      if ($next -eq '*') {
+        $i += 2
+        while ((($i + 1) -lt $src.Length) -and -not (($src[$i] -eq '*') -and ($src[$i + 1] -eq '/'))) { $i++ }
+        if (($i + 1) -lt $src.Length) { $i += 2 } else { $i = $src.Length }
+        continue
+      }
+    }
+    [void]$sb.Append($ch)
+    $i++
+  }
+  $clean = $sb.ToString()
+  $out = New-Object System.Text.StringBuilder
+  $inString = $false
+  $escape = $false
+  for ($j = 0; $j -lt $clean.Length; $j++) {
+    $ch = $clean[$j]
+    if ($inString) {
+      [void]$out.Append($ch)
+      if ($escape) { $escape = $false }
+      elseif ($ch -eq '\') { $escape = $true }
+      elseif ($ch -eq '"') { $inString = $false }
+      continue
+    }
+    if ($ch -eq '"') { $inString = $true; [void]$out.Append($ch); continue }
+    if ($ch -eq ',') {
+      $k = $j + 1
+      while (($k -lt $clean.Length) -and [char]::IsWhiteSpace($clean[$k])) { $k++ }
+      if (($k -lt $clean.Length) -and (($clean[$k] -eq '}') -or ($clean[$k] -eq ']'))) { continue }
+    }
+    [void]$out.Append($ch)
+  }
+  $json = $out.ToString().Trim()
+  if ($json -eq '') { return $null }
+  return ($json | ConvertFrom-Json)
+}
+
+function Get-GlobalRulesyncLanguage([string]$PreviewDir) {
+  $language = $null
+  foreach ($name in @('rulesync.jsonc', 'rulesync.local.jsonc')) {
+    $file = Join-Path $PreviewDir $name
+    if (-not (Test-Path -LiteralPath $file -PathType Leaf)) { continue }
+    try {
+      $obj = ConvertFrom-GlobalJsoncText (Get-Content -LiteralPath $file -Raw -Encoding UTF8)
+    }
+    catch { throw ('rulesync setting is unreadable: ' + $name) }
+    if ($null -eq $obj) { continue }
+    $prop = $null
+    try { $prop = $obj.PSObject.Properties['language'] } catch {}
+    if ($null -eq $prop) { continue }
+    $value = $prop.Value
+    if ($null -eq $value) { $language = $null; continue }
+    $language = [string]$value
+  }
+  return $language
+}
+
 function Invoke-GlobalSync {
   param([switch]$DryRun, [switch]$ReportSkip, [string[]]$TargetNames = @(), [switch]$PreviewOnly, [string]$PlanPath = "", [string]$RequestPath = "")
 
@@ -169,6 +252,17 @@ function Invoke-GlobalSync {
     $Targets = ($EffArr -join ',')
     # Provider env overrides are checked before ANY CLI process or home write.
     Assert-GlobalProviderEnvironment $EffArr
+    # rulesync 32 also patches a top-level language into Claude's shared
+    # ~/.claude/settings.json under --features rules. That file is outside the
+    # reviewed/backed-up fixed rule paths, so refuse rather than write it
+    # unpreviewed. Only the selected target matters, and both config files
+    # (base + local merge) are inspected.
+    if ($EffArr -contains 'claudecode') {
+      $confLanguage = Get-GlobalRulesyncLanguage $PreviewDir
+      if ($null -ne $confLanguage) {
+        throw 'Claude Code cannot be synced while rulesync has a language setting: it also writes ~/.claude/settings.json, which is not previewed or backed up. Remove language from rulesync.jsonc/rulesync.local.jsonc, or deselect Claude Code.'
+      }
+    }
 
     $npx = Resolve-Exe 'npx.cmd' 'npx'
     $gh = Resolve-Exe 'gh' $null

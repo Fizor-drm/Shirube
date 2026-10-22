@@ -90,6 +90,8 @@ if !ISGEN! equ 1 (
     echo generated-opencode-marker-!N! > "%HOME_DIR%\.config\opencode\AGENTS.md"
     if not exist "%HOME_DIR%\.pi\agent" mkdir "%HOME_DIR%\.pi\agent" >nul 2>&1
     echo generated-pi-marker-!N! > "%HOME_DIR%\.pi\agent\AGENTS.md"
+    if not exist "%HOME_DIR%\.claude" mkdir "%HOME_DIR%\.claude" >nul 2>&1
+    echo generated-claude-marker-!N! > "%HOME_DIR%\.claude\CLAUDE.md"
   )
 )
 endlocal & exit /b %CODE%
@@ -136,6 +138,10 @@ exit /b 0
       $p = Join-Path $script:auto $sf
       if (Test-Path -LiteralPath $p) { Remove-Item -LiteralPath $p -Force }
     }
+    foreach ($cf in @('rulesync.jsonc', 'rulesync.local.jsonc')) {
+      $p = Join-Path $script:preview $cf
+      if (Test-Path -LiteralPath $p) { Remove-Item -LiteralPath $p -Force }
+    }
     $lp = Join-Path $script:auto 'Sync-GlobalRules.lock'
     if (Test-Path -LiteralPath $lp) { Remove-Item -LiteralPath $lp -Force -ErrorAction SilentlyContinue }
     $olds = @(Get-ChildItem -LiteralPath $script:auto -Filter 'dashboard.global-*.json' -ErrorAction SilentlyContinue)
@@ -151,6 +157,9 @@ exit /b 0
     Set-Content -LiteralPath (Join-Path $script:fakeHome '.config\opencode\opencode.jsonc') '{"fake":2}' -Encoding Ascii
     New-Item -ItemType Directory -Force -Path (Join-Path $script:fakeHome '.pi\agent') | Out-Null
     Set-Content -LiteralPath (Join-Path $script:fakeHome '.pi\agent\AGENTS.md') 'fake-pi-agents' -Encoding Ascii
+    New-Item -ItemType Directory -Force -Path (Join-Path $script:fakeHome '.claude') | Out-Null
+    Set-Content -LiteralPath (Join-Path $script:fakeHome '.claude\CLAUDE.md') 'fake-claude-agents' -Encoding Ascii
+    Set-Content -LiteralPath (Join-Path $script:fakeHome '.claude\settings.json') '{"sentinel":"keep","permissions":{"allow":["Bash"]}}' -Encoding Ascii
   }
   function Get-Calls() {
     $p = Join-Path $script:scratch 'calls.log'
@@ -345,6 +354,106 @@ exit /b 0
   $st12b = Read-Status
   $k12b = $st12b.providers.PSObject.Properties['kimi-code'].Value
   Assert ((($code12b -eq 0) -and (@(Get-Calls).Count -gt 0) -and ($null -ne $k12b) -and ([string]$k12b.result -ceq 'success'))) 'S12 whitespace override is not a conflict'
+
+  # S13: a top-level JSONC language setting makes Claude write its shared
+  # settings file, so the whole run must stop before any CLI or home write.
+  Reset-Case @(0, 0)
+  Set-Content -LiteralPath (Join-Path $auto 'global-settings.json') '{"schemaVersion":1,"targets":["claudecode"]}' -Encoding Ascii
+  $cfg13 = @'
+{
+  // a comment must not hide the real key below
+  "features": ["rules"],
+  "language": "ja",
+}
+'@
+  Set-Content -LiteralPath (Join-Path $preview 'rulesync.jsonc') $cfg13 -Encoding UTF8
+  $beforeSettings13 = Get-Content -LiteralPath (Join-Path $fakeHome '.claude\settings.json') -Raw
+  $beforeClaude13 = Get-Content -LiteralPath (Join-Path $fakeHome '.claude\CLAUDE.md') -Raw
+  $planId13 = [System.Guid]::NewGuid().ToString('N')
+  $planFile13 = Join-Path $auto ("dashboard.global-plan-" + $planId13 + ".json")
+  $codePrev13 = Invoke-GlobalSync -PreviewOnly -PlanPath $planFile13
+  Assert ($codePrev13 -eq 1) 'S13 language config rejects Claude preview'
+  Assert ((@(Get-Calls).Count -eq 0)) 'S13 preview launches no CLI'
+  Assert (-not (Test-Path -LiteralPath $planFile13)) 'S13 preview writes no plan'
+  Assert ((@(Get-ChildItem -LiteralPath $auto -Filter 'preview-home-*' -ErrorAction SilentlyContinue).Count -eq 0)) 'S13 preview creates no isolated home'
+  $codeApply13 = Invoke-GlobalSync
+  Assert ($codeApply13 -eq 1) 'S13 language config rejects Claude apply'
+  Assert ((@(Get-Calls).Count -eq 0)) 'S13 apply launches no CLI'
+  Assert (-not (Test-Path -LiteralPath (Join-Path $auto 'backups'))) 'S13 apply writes no backup'
+  Assert ((Get-Content -LiteralPath (Join-Path $fakeHome '.claude\settings.json') -Raw) -ceq $beforeSettings13) 'S13 settings sentinel untouched'
+  Assert ((Get-Content -LiteralPath (Join-Path $fakeHome '.claude\CLAUDE.md') -Raw) -ceq $beforeClaude13) 'S13 Claude rule untouched'
+  $st13 = Read-Status
+  $c13 = $st13.providers.PSObject.Properties['claudecode'].Value
+  Assert (([string]$c13.result -ceq 'failed') -and ([string]$c13.error -match 'language')) 'S13 status records language reason'
+
+  # S14: rulesync.local.jsonc is merged into the resolved config, and a base
+  # language still applies when the local file does not override it.
+  $cfgBase14 = @'
+{
+  "features": ["rules"]
+}
+'@
+  $cfgLocal14 = @'
+{
+  // local override still counts
+  "language": "ja",
+}
+'@
+  $cfgBase14B = @'
+{
+  "features": ["rules"],
+  "language": "ja",
+}
+'@
+  Reset-Case @(0, 0)
+  Set-Content -LiteralPath (Join-Path $auto 'global-settings.json') '{"schemaVersion":1,"targets":["claudecode"]}' -Encoding Ascii
+  Set-Content -LiteralPath (Join-Path $preview 'rulesync.jsonc') $cfgBase14 -Encoding UTF8
+  Set-Content -LiteralPath (Join-Path $preview 'rulesync.local.jsonc') $cfgLocal14 -Encoding UTF8
+  $code14a = Invoke-GlobalSync
+  Assert ($code14a -eq 1) 'S14 local language override rejects Claude'
+  Assert ((@(Get-Calls).Count -eq 0)) 'S14 local language launches no CLI'
+  Reset-Case @(0, 0)
+  Set-Content -LiteralPath (Join-Path $auto 'global-settings.json') '{"schemaVersion":1,"targets":["claudecode"]}' -Encoding Ascii
+  Set-Content -LiteralPath (Join-Path $preview 'rulesync.jsonc') $cfgBase14B -Encoding UTF8
+  $code14b = Invoke-GlobalSync
+  Assert ($code14b -eq 1) 'S14 base language without local override rejects Claude'
+  Assert ((@(Get-Calls).Count -eq 0)) 'S14 base language launches no CLI'
+  Assert ((Get-Content -LiteralPath (Join-Path $fakeHome '.claude\settings.json') -Raw) -match 'sentinel') 'S14 settings sentinel kept'
+
+  # S15: comment text, nested keys and quoted strings are not a language
+  # setting; the normal Claude rules path must still generate and back up.
+  Reset-Case @(0, 1, 0, 0, 0)
+  Set-Content -LiteralPath (Join-Path $auto 'global-settings.json') '{"schemaVersion":1,"targets":["claudecode"]}' -Encoding Ascii
+  $cfg15 = @'
+{
+  "features": ["rules"],
+  // "language": "ja",
+  "note": "\"language\": \"ja\"",
+  "nested": { "language": "ja" }
+}
+'@
+  Set-Content -LiteralPath (Join-Path $preview 'rulesync.jsonc') $cfg15 -Encoding UTF8
+  $beforeSettings15 = Get-Content -LiteralPath (Join-Path $fakeHome '.claude\settings.json') -Raw
+  $code15 = Invoke-GlobalSync
+  $calls15 = @(Get-Calls)
+  $gen15 = @($calls15 | Where-Object { $_.Contains('generate') -and (-not $_.Contains('--check')) -and (-not $_.Contains('--dry-run')) })
+  Assert ($code15 -eq 0) 'S15 decoy language text does not block normal Claude sync'
+  Assert (@($gen15).Count -ge 1) 'S15 normal Claude generation ran'
+  Assert ((Get-Content -LiteralPath (Join-Path $fakeHome '.claude\CLAUDE.md') -Raw).Contains('generated-claude-marker')) 'S15 Claude rule written'
+  Assert ((Get-Content -LiteralPath (Join-Path $fakeHome '.claude\settings.json') -Raw) -ceq $beforeSettings15) 'S15 settings sentinel untouched'
+  Assert ((@(Get-ChildItem -LiteralPath (Join-Path $auto 'backups') -Directory -ErrorAction SilentlyContinue).Count -eq 1)) 'S15 Claude apply backed up'
+  $st15 = Read-Status
+  Assert ([string]$st15.providers.claudecode.result -ceq 'success') 'S15 Claude status success'
+
+  # S16: an unselected Claude target never blocks other selected providers.
+  Reset-Case @(0, 0)
+  Set-Content -LiteralPath (Join-Path $auto 'global-settings.json') '{"schemaVersion":1,"targets":["codexcli"]}' -Encoding Ascii
+  Set-Content -LiteralPath (Join-Path $preview 'rulesync.jsonc') $cfgBase14B -Encoding UTF8
+  $beforeSettings16 = Get-Content -LiteralPath (Join-Path $fakeHome '.claude\settings.json') -Raw
+  $code16 = Invoke-GlobalSync
+  $st16 = Read-Status
+  Assert ((($code16 -eq 0) -and (@(Get-Calls).Count -gt 0) -and ([string]$st16.providers.codexcli.result -ceq 'success'))) 'S16 unselected Claude language does not block other providers'
+  Assert ((Get-Content -LiteralPath (Join-Path $fakeHome '.claude\settings.json') -Raw) -ceq $beforeSettings16) 'S16 unselected Claude settings untouched'
 
   Assert (((Get-Location).Path) -eq $initCwd) 'S10 cwd restored at end'
   Assert ($env:HOME_DIR -eq $fakeHome) 'S10 HOME_DIR kept for harness restore'
