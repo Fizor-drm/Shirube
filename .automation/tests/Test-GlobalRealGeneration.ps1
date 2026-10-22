@@ -87,13 +87,15 @@ try {
   function Set-CaseConfig([hashtable]$Case, [string]$Json) {
     Set-Content -LiteralPath (Join-Path $Case.preview 'rulesync.jsonc') $Json -Encoding UTF8
   }
-  function Invoke-RealRulesync([hashtable]$Case, [string[]]$Targets) {
+  function Invoke-RealRulesync([hashtable]$Case, [string[]]$Targets, [string]$ConfigPath = '') {
+    $argv = @('generate', '--global', '--targets', ($Targets -join ','), '--features', 'rules')
+    if ($ConfigPath) { $argv += @('--config', $ConfigPath) }
     Push-Location -LiteralPath $Case.preview
     try {
       $prevEap = $ErrorActionPreference
       $ErrorActionPreference = 'Continue'
       try {
-        $out = & $script:nodeExe $script:cli 'generate' '--global' '--targets' ($Targets -join ',') '--features' 'rules' 2>&1 | Out-String
+        $out = & $script:nodeExe $script:cli @argv 2>&1 | Out-String
         $code = $LASTEXITCODE
       }
       finally { $ErrorActionPreference = $prevEap }
@@ -194,6 +196,35 @@ try {
   Assert (($null -ne $s4) -and ([string]$s4.language -ceq 'japanese')) 'R4 merged local language patches Claude settings'
   Assert (($null -ne $s4) -and ([bool]$s4.sentinel)) 'R4 existing Claude settings preserved'
   Assert ((Get-Content -LiteralPath (Join-Path $c4.home '.claude\CLAUDE.md') -Raw -Encoding UTF8).Contains($marker4)) 'R4 Claude rule content written'
+
+  # R5: --config selects the base file AND rulesync merges rulesync.local.jsonc
+  # from that file's directory (ConfigResolver). A safe pinned copy therefore
+  # keeps a language-bearing live local config out of generation, and a local
+  # next to the pinned base is still merged.
+  $c5 = New-IsolatedCase 'pinned-config-resolution'
+  $marker5 = 'REAL-GLOBAL-PIN-MARKER'
+  Set-CaseRule $c5 '' $marker5
+  Set-CaseConfig $c5 $quietConfig
+  $local5 = @'
+{
+  "language": "ja"
+}
+'@
+  Set-Content -LiteralPath (Join-Path $c5.preview 'rulesync.local.jsonc') $local5 -Encoding UTF8
+  $pin5 = Join-Path $c5.preview ('.config-pin-' + [System.Guid]::NewGuid().ToString('N'))
+  New-Item -ItemType Directory -Force -Path $pin5 | Out-Null
+  Copy-Item -LiteralPath (Join-Path $c5.preview 'rulesync.jsonc') -Destination (Join-Path $pin5 'rulesync.jsonc') -Force
+  $settings5 = Join-Path $c5.home '.claude\settings.json'
+  $r5a = Invoke-RealRulesync $c5 @('claudecode') (Join-Path $pin5 'rulesync.jsonc')
+  Assert ($r5a.code -eq 0) 'R5 pinned base generation exits 0'
+  Assert ((Get-Content -LiteralPath (Join-Path $c5.home '.claude\CLAUDE.md') -Raw -Encoding UTF8).Contains($marker5)) 'R5 pinned base writes Claude rule'
+  Assert (-not (Test-Path -LiteralPath $settings5)) 'R5 cwd local language is not merged from the pinned base directory'
+  Copy-Item -LiteralPath (Join-Path $c5.preview 'rulesync.local.jsonc') -Destination (Join-Path $pin5 'rulesync.local.jsonc') -Force
+  $r5b = Invoke-RealRulesync $c5 @('claudecode') (Join-Path $pin5 'rulesync.jsonc')
+  Assert ($r5b.code -eq 0) 'R5 pinned base plus local exits 0'
+  $s5 = $null
+  if (Test-Path -LiteralPath $settings5) { $s5 = Get-Content -LiteralPath $settings5 -Raw -Encoding UTF8 | ConvertFrom-Json }
+  Assert (($null -ne $s5) -and ([string]$s5.language -ceq 'japanese')) 'R5 local next to the pinned base is merged'
 }
 finally {
   foreach ($n in $envNames) {

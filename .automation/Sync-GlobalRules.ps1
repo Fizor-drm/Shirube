@@ -256,7 +256,9 @@ function Invoke-GlobalSync {
     # ~/.claude/settings.json under --features rules. That file is outside the
     # reviewed/backed-up fixed rule paths, so refuse rather than write it
     # unpreviewed. Only the selected target matters, and both config files
-    # (base + local merge) are inspected.
+    # (base + local merge) are inspected. This is the pre-install fast path;
+    # the authoritative pin below is taken after install, because rulesync
+    # re-reads the config for every CLI call.
     if ($EffArr -contains 'claudecode') {
       $confLanguage = Get-GlobalRulesyncLanguage $PreviewDir
       if ($null -ne $confLanguage) {
@@ -312,6 +314,8 @@ function Invoke-GlobalSync {
       if ((Test-Path -LiteralPath $PlanPath) -and (Test-ReparseLocal $PlanPath)) { throw 'plan is a reparse point.' }
     }
 
+    $PinnedConfigDir = ''
+    $PinnedConfigArgv = @()
     $prevGithubToken = $env:GITHUB_TOKEN
     $prevGhToken = $env:GH_TOKEN
     $addedToken = $false
@@ -356,6 +360,32 @@ function Invoke-GlobalSync {
             Write-Log (Redact('FAIL: plan inputs changed: ' + [string]$gateChk.error))
             return 1
           }
+        }
+
+        # rulesync re-reads the resolved base+local config for every CLI call,
+        # so the pre-install check can be defeated by a change during install
+        # or between steps. Pin the exact bytes generation will read:
+        # rulesync merges rulesync.local.jsonc from the --config file's
+        # directory, so both files are copied into one private dir under the
+        # preview cwd (a --config path outside cwd is rejected as traversal)
+        # and the copied bytes are checked again AFTER the copy. Every later
+        # generate/check/dry-run passes this config, so later live edits cannot
+        # reach the write path.
+        if ($EffArr -contains 'claudecode') {
+          $PinnedConfigDir = Join-Path $PreviewDir ('.config-pin-' + [System.Guid]::NewGuid().ToString('N'))
+          if (-not (Test-ContainedLocal $PinnedConfigDir $PreviewDir)) { throw 'pinned config escaped preview root.' }
+          New-Item -ItemType Directory -Force -Path $PinnedConfigDir | Out-Null
+          if (Test-ReparseLocal $PinnedConfigDir) { throw 'pinned config is a reparse point.' }
+          foreach ($cfgName in @('rulesync.jsonc', 'rulesync.local.jsonc')) {
+            $cfgSrc = Join-Path $PreviewDir $cfgName
+            if (Test-Path -LiteralPath $cfgSrc -PathType Leaf) {
+              Copy-Item -LiteralPath $cfgSrc -Destination (Join-Path $PinnedConfigDir $cfgName) -Force
+            }
+          }
+          if ($null -ne (Get-GlobalRulesyncLanguage $PinnedConfigDir)) {
+            throw 'Claude Code cannot be synced while rulesync has a language setting: it also writes ~/.claude/settings.json, which is not previewed or backed up. Remove language from rulesync.jsonc/rulesync.local.jsonc, or deselect Claude Code.'
+          }
+          $PinnedConfigArgv = @('--config', (Join-Path $PinnedConfigDir 'rulesync.jsonc'))
         }
 
         # Preview: same fetch above, generate into an isolated GUID home, compare
@@ -416,7 +446,7 @@ function Invoke-GlobalSync {
             # home itself must stay rooted at the trusted AutoDir.
             Assert-GlobalCliParents 'preview generate --global'
             Global-AssertNoLinkChain $iso $AutoDir 'preview'
-            $genArgv = Get-GlobalGenerateArgv $Targets '' $ShirubeVersion
+            $genArgv = @(Get-GlobalGenerateArgv $Targets '' $ShirubeVersion) + $PinnedConfigArgv
             Write-Log 'STEP: preview generate --global'
             $prevEap2 = $ErrorActionPreference
             $ErrorActionPreference = 'Continue'
@@ -528,7 +558,7 @@ function Invoke-GlobalSync {
           return 0
         }
 
-        $check = Invoke-Step 'generate --global --check' $npx (Get-GlobalGenerateArgv $Targets 'check' $ShirubeVersion)
+        $check = Invoke-Step 'generate --global --check' $npx (@(Get-GlobalGenerateArgv $Targets 'check' $ShirubeVersion) + $PinnedConfigArgv)
         if ($check -eq 0) {
           Save-GlobalRunStatus 'success' '' ''
           Write-Log 'OK: no changes.'
@@ -539,7 +569,7 @@ function Invoke-GlobalSync {
           throw ("check failed with exit=" + $check + '.')
         }
         # Exit 1 means drift OR error, so confirm with --dry-run before touching home.
-        if ((Invoke-Step 'generate --global --dry-run' $npx (Get-GlobalGenerateArgv $Targets 'dry-run' $ShirubeVersion)) -ne 0) {
+        if ((Invoke-Step 'generate --global --dry-run' $npx (@(Get-GlobalGenerateArgv $Targets 'dry-run' $ShirubeVersion) + $PinnedConfigArgv)) -ne 0) {
           Save-GlobalRunStatus 'failed' ('dry-run failed; not a clean update candidate. ' + $script:LastStepTail) ''
           throw 'dry-run failed; not a clean update candidate.'
         }
@@ -635,7 +665,7 @@ function Invoke-GlobalSync {
         }
         try {
           # global.md only (global-preview config); never --delete.
-          if ((Invoke-Step 'generate --global' $npx (Get-GlobalGenerateArgv $Targets '' $ShirubeVersion)) -ne 0) {
+          if ((Invoke-Step 'generate --global' $npx (@(Get-GlobalGenerateArgv $Targets '' $ShirubeVersion) + $PinnedConfigArgv)) -ne 0) {
             throw 'generate --global failed.'
           }
           # Plan-bound apply: fresh output must equal the approved output.
@@ -652,7 +682,7 @@ function Invoke-GlobalSync {
               if ($freshT -cne [string]$pj[0].generatedText) { throw ($t + ': generated output differs from the approved plan.') }
             }
           }
-          if ((Invoke-Step 'final generate --global --check' $npx (Get-GlobalGenerateArgv $Targets 'check' $ShirubeVersion)) -ne 0) {
+          if ((Invoke-Step 'final generate --global --check' $npx (@(Get-GlobalGenerateArgv $Targets 'check' $ShirubeVersion) + $PinnedConfigArgv)) -ne 0) {
             throw 'final check failed.'
           }
         }
@@ -670,7 +700,17 @@ function Invoke-GlobalSync {
         Write-Log 'OK: global rules updated.'
         return 0
       }
-      finally { Pop-Location }
+      finally {
+        Pop-Location
+        if ($PinnedConfigDir) {
+          try {
+            Global-AssertNoLinkChain $PinnedConfigDir $PreviewDir 'pinned config'
+            if ((Test-Path -LiteralPath $PinnedConfigDir) -and (Test-ContainedLocal $PinnedConfigDir $PreviewDir) -and (-not (Test-ReparseLocal $PinnedConfigDir))) {
+              Remove-Item -LiteralPath $PinnedConfigDir -Recurse -Force
+            }
+          } catch { Write-Log (Redact('pinned config cleanup skipped (unsafe root): ' + $_.Exception.Message)) }
+        }
+      }
     }
     finally {
       if ($addedToken) { Remove-Item Env:GITHUB_TOKEN -ErrorAction SilentlyContinue }
