@@ -933,7 +933,7 @@ main{flex:1;min-width:0;display:flex;flex-direction:column;background:#0a0a0a;bo
 .syncprogress .muted{margin:0;white-space:normal;overflow-wrap:anywhere;word-break:break-word}
 .helper{display:inherit}
 .topbar .sub{color:#9a9a9a;font-size:12px}
-.lang{font-size:12px;color:#cfcfcf;border:1px solid #2a2a2a;border-radius:6px;padding:5px 10px;flex:none}
+.lang{font-size:12px;color:#f5f5f5;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;padding:5px 10px;flex:none;width:auto;max-width:140px}
 h1{font-size:22px;margin:0 0 6px}
 .lead{color:#b5b5b5;margin:0 0 14px}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px}
@@ -1004,80 +1004,80 @@ input[type=number]{width:120px;background:#0a0a0a;border:1px solid #2c2c2c;color
 <aside>
 <div class="brand">Shirube Console</div>
 <nav>
-<a href="#top" class="active" aria-current="page">概要</a>
-<a href="#projects">プロジェクト</a>
-<a href="#global">Global同期</a>
-<a href="#backups">バックアップ</a>
-<a href="#local">ローカル編集</a>
-<a href="#logs">同期ログ</a>
-<a href="#settings">設定・ヘルプ</a>
+<a href="#top" class="active" aria-current="page" data-i18n="概要">概要</a>
+<a href="#projects" data-i18n="プロジェクト">プロジェクト</a>
+<a href="#global" data-i18n="Global同期">Global同期</a>
+<a href="#backups" data-i18n="バックアップ">バックアップ</a>
+<a href="#local" data-i18n="ローカル編集">ローカル編集</a>
+<a href="#logs" data-i18n="同期ログ">同期ログ</a>
+<a href="#settings" data-i18n="設定・ヘルプ">設定・ヘルプ</a>
 </nav>
-<div class="side-note">このPC専用。外部送信なし。<br>AGENTS.md は直接編集しません。</div>
+<div class="side-note"><span data-i18n="このPC専用。外部送信なし。">このPC専用。外部送信なし。</span><br><span data-i18n="AGENTS.md は直接編集しません。">AGENTS.md は直接編集しません。</span></div>
 </aside>
 <main>
-<div class="topbar"><div><strong>Shirube 管理</strong> <span class="sub">プロジェクト同期ダッシュボード</span></div><span class="lang">日本語</span></div>
-<nav class="topnav" aria-label="画面切替">
-<a href="#top" class="active" aria-current="page">概要</a>
-<a href="#projects">プロジェクト</a>
-<a href="#global">Global同期</a>
-<a href="#backups">バックアップ</a>
-<a href="#local">ローカル編集</a>
-<a href="#logs">同期ログ</a>
-<a href="#settings">設定・ヘルプ</a>
+<div class="topbar"><div><strong data-i18n="Shirube 管理">Shirube 管理</strong> <span class="sub" data-i18n="プロジェクト同期ダッシュボード">プロジェクト同期ダッシュボード</span></div><select id="selLang" class="lang" aria-label="表示言語" data-i18n-aria="表示言語"><option value="ja">日本語</option><option value="en">English</option><option value="zh-CN">简体中文</option></select></div>
+<nav class="topnav" aria-label="画面切替" data-i18n-aria="画面切替">
+<a href="#top" class="active" aria-current="page" data-i18n="概要">概要</a>
+<a href="#projects" data-i18n="プロジェクト">プロジェクト</a>
+<a href="#global" data-i18n="Global同期">Global同期</a>
+<a href="#backups" data-i18n="バックアップ">バックアップ</a>
+<a href="#local" data-i18n="ローカル編集">ローカル編集</a>
+<a href="#logs" data-i18n="同期ログ">同期ログ</a>
+<a href="#settings" data-i18n="設定・ヘルプ">設定・ヘルプ</a>
 </nav>
 <div class="summarybar">
 <section aria-label="summary">
 <div class="grid3">
-<div class="card"><h2>登録プロジェクト数</h2><p class="big" id="stCount">読込中</p><p class="muted helper">projects.json が正本です</p></div>
-<div class="card"><h2>同期状態</h2><p class="big" id="stRun">読込中</p><p class="muted helper" id="stLog">-</p><div class="syncprogress"><progress id="syncProgress" max="2" value="0" aria-label="同期進捗" aria-valuetext="0/2 待機中"></progress><span class="muted" id="syncProgressText" aria-live="polite">0/2 待機中</span></div></div>
-<div class="card"><h2>最終結果</h2><p class="muted" id="stTail">読込中</p><div class="btnrow"><button id="btnSync" class="primary">今すぐ同期</button></div></div>
+<div class="card"><h2 data-i18n="登録プロジェクト数">登録プロジェクト数</h2><p class="big" id="stCount">読込中</p><p class="muted helper" data-i18n="projects.json が正本です">projects.json が正本です</p></div>
+<div class="card"><h2 data-i18n="同期状態">同期状態</h2><p class="big" id="stRun">読込中</p><p class="muted helper" id="stLog">-</p><div class="syncprogress"><progress id="syncProgress" max="2" value="0" aria-label="同期進捗" aria-valuetext="0/2 待機中" data-i18n-aria="同期進捗"></progress><span class="muted" id="syncProgressText" aria-live="polite">0/2 待機中</span></div></div>
+<div class="card"><h2 data-i18n="最終結果">最終結果</h2><p class="muted" id="stTail">読込中</p><div class="btnrow"><button id="btnSync" class="primary" data-i18n="今すぐ同期">今すぐ同期</button></div></div>
 </div>
 <p class="muted helper" id="ovGlobal">Global同期: 読込中</p>
 </section>
 </div>
 <div class="mainscroll">
 <div id="top">
-<h1>プロジェクト同期ダッシュボード</h1>
-<p class="lead">登録一覧の管理と今すぐ同期を行います。配布ファイルの直接編集はしません。開始した処理はUIを閉じても継続しますが、両方の完了確認には画面を開いたままにしてください。</p>
+<h1 data-i18n="プロジェクト同期ダッシュボード">プロジェクト同期ダッシュボード</h1>
+<p class="lead" data-i18n="登録一覧の管理と今すぐ同期を行います。配布ファイルの直接編集はしません。開始した処理はUIを閉じても継続しますが、両方の完了確認には画面を開いたままにしてください。">登録一覧の管理と今すぐ同期を行います。配布ファイルの直接編集はしません。開始した処理はUIを閉じても継続しますが、両方の完了確認には画面を開いたままにしてください。</p>
 </div>
 <div id="projects" hidden>
 <div class="cols2">
 <section>
-<div class="card"><h2>プロジェクト一覧</h2>
-<p class="muted" id="emptyProj" hidden>まだ登録がありません。右の新規登録から追加してください。</p>
-<div class="searchrow"><input type="text" id="inpSearch" placeholder="検索で絞り込み（名前・パス）" autocomplete="off"></div>
-<div class="tablewrap"><table id="tbl" hidden><thead><tr><th>選択</th><th>名前</th><th>パス</th><th>有効</th><th>操作</th></tr></thead><tbody id="rows"></tbody></table></div>
-<p class="muted">解除は一覧からのみ削除し、リポジトリ内のファイルは削除しません。「開く」で登録フォルダを開けます。</p>
-<div class="btnrow"><a href="#register" class="btnlink">新規登録へ</a></div>
+<div class="card"><h2 data-i18n="プロジェクト一覧">プロジェクト一覧</h2>
+<p class="muted" id="emptyProj" hidden data-i18n="まだ登録がありません。右の新規登録から追加してください。">まだ登録がありません。右の新規登録から追加してください。</p>
+<div class="searchrow"><input type="text" id="inpSearch" placeholder="検索で絞り込み（名前・パス）" data-i18n-placeholder="検索で絞り込み（名前・パス）" autocomplete="off"></div>
+<div class="tablewrap"><table id="tbl" hidden><thead><tr><th data-i18n="選択">選択</th><th data-i18n="名前">名前</th><th data-i18n="パス">パス</th><th data-i18n="有効">有効</th><th data-i18n="操作">操作</th></tr></thead><tbody id="rows"></tbody></table></div>
+<p class="muted" data-i18n="解除は一覧からのみ削除し、リポジトリ内のファイルは削除しません。「開く」で登録フォルダを開けます。">解除は一覧からのみ削除し、リポジトリ内のファイルは削除しません。「開く」で登録フォルダを開けます。</p>
+<div class="btnrow"><a href="#register" class="btnlink" data-i18n="新規登録へ">新規登録へ</a></div>
 <div id="msgList" role="status"></div>
 </div>
 </section>
 <section id="register">
-<div class="card"><h2>新規登録</h2>
-<p class="muted">フォルダのパスを入力するか「参照」で選択し、プレビューで内容を確認してから登録します。選択だけでは登録されません。既存 AGENTS.md がある場合は原則登録停止します（手動整理が必要）。登録後の同期で AGENTS.md は生成・再生成されます。</p>
-<div class="pathrow"><input type="text" id="inpPath" placeholder="例 C:\Project\MyRepo" autocomplete="off"><button id="btnBrowse">参照...</button></div>
-<label class="chk"><input type="checkbox" id="ckForceReplace"> 既存 AGENTS.md の置き換えを許可（バックアップ後、同期で再生成）</label>
-<div class="btnrow"><button id="btnPrev" class="primary">プレビュー</button></div>
+<div class="card"><h2 data-i18n="新規登録">新規登録</h2>
+<p class="muted" data-i18n="フォルダのパスを入力するか「参照」で選択し、プレビューで内容を確認してから登録します。選択だけでは登録されません。既存 AGENTS.md がある場合は原則登録停止します（手動整理が必要）。登録後の同期で AGENTS.md は生成・再生成されます。">フォルダのパスを入力するか「参照」で選択し、プレビューで内容を確認してから登録します。選択だけでは登録されません。既存 AGENTS.md がある場合は原則登録停止します（手動整理が必要）。登録後の同期で AGENTS.md は生成・再生成されます。</p>
+<div class="pathrow"><input type="text" id="inpPath" placeholder="例 C:\Project\MyRepo" data-i18n-placeholder="例 C:\Project\MyRepo" autocomplete="off"><button id="btnBrowse" data-i18n="参照...">参照...</button></div>
+<label class="chk"><input type="checkbox" id="ckForceReplace"> <span data-i18n="既存 AGENTS.md の置き換えを許可（バックアップ後、同期で再生成）">既存 AGENTS.md の置き換えを許可（バックアップ後、同期で再生成）</span></label>
+<div class="btnrow"><button id="btnPrev" class="primary" data-i18n="プレビュー">プレビュー</button></div>
 <div id="browseArea" class="muted"></div>
 <div id="prevArea"></div>
 <hr style="border:0;border-top:1px solid #1d1d1d;margin:16px 0">
-<p class="muted">複数まとめて登録（1行1パス、最大20件。新規のみ。AGENTS.md ありは個別取込）。</p>
-<textarea id="inpBatch" placeholder="例 C:\Project\A"></textarea>
-<div class="btnrow"><button id="btnBatchPrev">まとめてプレビュー</button></div>
+<p class="muted" data-i18n="複数まとめて登録（1行1パス、最大20件。新規のみ。AGENTS.md ありは個別取込）。">複数まとめて登録（1行1パス、最大20件。新規のみ。AGENTS.md ありは個別取込）。</p>
+<textarea id="inpBatch" placeholder="例 C:\Project\A" data-i18n-placeholder="例 C:\Project\A"></textarea>
+<div class="btnrow"><button id="btnBatchPrev" data-i18n="まとめてプレビュー">まとめてプレビュー</button></div>
 <div id="batchArea"></div>
 <hr style="border:0;border-top:1px solid #1d1d1d;margin:16px 0">
-<p class="muted">既存 AGENTS.md の取込（無損失：原本を退避し固有分を project-local.md へ転記）。</p>
-<div class="btnrow"><button id="btnImportPrev">取込プレビュー</button></div>
+<p class="muted" data-i18n="既存 AGENTS.md の取込（無損失：原本を退避し固有分を project-local.md へ転記）。">既存 AGENTS.md の取込（無損失：原本を退避し固有分を project-local.md へ転記）。</p>
+<div class="btnrow"><button id="btnImportPrev" data-i18n="取込プレビュー">取込プレビュー</button></div>
 <div id="importArea"></div>
 </div>
 </section>
 </div>
 <section id="status">
-<div class="card"><h2>状態と再試行</h2>
-<p class="muted">最終試行・最終成功・取得SHA・失敗理由の一覧です。選択した同期・差分はチェック欄で選びます。</p>
-<div class="btnrow"><button id="btnStatusReload">状態を更新</button><button id="btnSyncSel" class="primary">選択を同期</button><button id="btnPlanSel">選択の反映前差分</button></div>
-<div class="tablewrap"><table id="tblStatus" hidden><thead><tr><th>選択</th><th>名前</th><th>有効</th><th>最終試行</th><th>最終成功</th><th>取得SHA</th><th>結果</th><th>失敗理由</th></tr></thead><tbody id="statusRows"></tbody></table></div>
-<p class="muted" id="emptyStatus">まだ同期状態がありません。今すぐ同期で初回実行できます。</p>
+<div class="card"><h2 data-i18n="状態と再試行">状態と再試行</h2>
+<p class="muted" data-i18n="最終試行・最終成功・取得SHA・失敗理由の一覧です。選択した同期・差分はチェック欄で選びます。">最終試行・最終成功・取得SHA・失敗理由の一覧です。選択した同期・差分はチェック欄で選びます。</p>
+<div class="btnrow"><button id="btnStatusReload" data-i18n="状態を更新">状態を更新</button><button id="btnSyncSel" class="primary" data-i18n="選択を同期">選択を同期</button><button id="btnPlanSel" data-i18n="選択の反映前差分">選択の反映前差分</button></div>
+<div class="tablewrap"><table id="tblStatus" hidden><thead><tr><th data-i18n="選択">選択</th><th data-i18n="名前">名前</th><th data-i18n="有効">有効</th><th data-i18n="最終試行">最終試行</th><th data-i18n="最終成功">最終成功</th><th data-i18n="取得SHA">取得SHA</th><th data-i18n="結果">結果</th><th data-i18n="失敗理由">失敗理由</th></tr></thead><tbody id="statusRows"></tbody></table></div>
+<p class="muted" id="emptyStatus" data-i18n="まだ同期状態がありません。今すぐ同期で初回実行できます。">まだ同期状態がありません。今すぐ同期で初回実行できます。</p>
 <div id="msgStatus" role="status"></div>
 <div id="planArea"></div>
 </div>
@@ -1086,32 +1086,32 @@ input[type=number]{width:120px;background:#0a0a0a;border:1px solid #2c2c2c;color
 <div id="global" hidden>
 <div class="cols2">
 <section>
-<div class="card"><h2>Global同期（Codex/OpenCode 共通）</h2>
-<p class="muted">PC全体の共通ルールを配ります。Projectとは別の状態（最終成功・取得元・失敗理由）を持ちます。配布ファイルの直接編集はしません。</p>
-<p class="muted" id="emptyGlobal">まだGlobal同期の状態がありません。今すぐ同期で初回実行できます。</p>
-<div class="tablewrap"><table id="tblGlobal" hidden><thead><tr><th>対象</th><th>配置先</th><th>最終試行</th><th>最終成功</th><th>取得元</th><th>結果</th><th>失敗理由</th></tr></thead><tbody id="globalRows"></tbody></table></div>
+<div class="card"><h2 data-i18n="Global同期（Codex/OpenCode 共通）">Global同期（Codex/OpenCode 共通）</h2>
+<p class="muted" data-i18n="PC全体の共通ルールを配ります。Projectとは別の状態（最終成功・取得元・失敗理由）を持ちます。配布ファイルの直接編集はしません。">PC全体の共通ルールを配ります。Projectとは別の状態（最終成功・取得元・失敗理由）を持ちます。配布ファイルの直接編集はしません。</p>
+<p class="muted" id="emptyGlobal" data-i18n="まだGlobal同期の状態がありません。今すぐ同期で初回実行できます。">まだGlobal同期の状態がありません。今すぐ同期で初回実行できます。</p>
+<div class="tablewrap"><table id="tblGlobal" hidden><thead><tr><th data-i18n="対象">対象</th><th data-i18n="配置先">配置先</th><th data-i18n="最終試行">最終試行</th><th data-i18n="最終成功">最終成功</th><th data-i18n="取得元">取得元</th><th data-i18n="結果">結果</th><th data-i18n="失敗理由">失敗理由</th></tr></thead><tbody id="globalRows"></tbody></table></div>
 <p class="muted" id="globalSummary">読込中</p>
-<div class="btnrow"><button id="btnGlobalSync" class="primary" disabled>プレビューを適用</button><button id="btnGlobalPreview">反映前プレビュー</button><button id="btnGlobalReload">状態を更新</button></div>
+<div class="btnrow"><button id="btnGlobalSync" class="primary" disabled data-i18n="プレビューを適用">プレビューを適用</button><button id="btnGlobalPreview" data-i18n="反映前プレビュー">反映前プレビュー</button><button id="btnGlobalReload" data-i18n="状態を更新">状態を更新</button></div>
 <div id="msgGlobal" role="status"></div>
 <div id="globalPlanArea"></div>
 <hr style="border:0;border-top:1px solid #1d1d1d;margin:16px 0">
-<p class="muted">現在の内容と配置先（実ファイルの先頭のみ表示）。設定ファイルの中身は表示しません。</p>
-<div class="btnrow"><button id="btnGlobalContent">内容を表示</button></div>
+<p class="muted" data-i18n="現在の内容と配置先（実ファイルの先頭のみ表示）。設定ファイルの中身は表示しません。">現在の内容と配置先（実ファイルの先頭のみ表示）。設定ファイルの中身は表示しません。</p>
+<div class="btnrow"><button id="btnGlobalContent" data-i18n="内容を表示">内容を表示</button></div>
 <pre id="globalContentPre">まだ表示していません。「内容を表示」で確認できます。</pre>
 </div>
 </section>
 <section id="gsettings">
-<div class="card"><h2>Global設定</h2>
-<p class="muted">配る対象の選択・自動同期の間隔と有効/無効を変えます。更新前バックアップと復元は「バックアップ」画面で行います。</p>
+<div class="card"><h2 data-i18n="Global設定">Global設定</h2>
+<p class="muted" data-i18n="配る対象の選択・自動同期の間隔と有効/無効を変えます。更新前バックアップと復元は「バックアップ」画面で行います。">配る対象の選択・自動同期の間隔と有効/無効を変えます。更新前バックアップと復元は「バックアップ」画面で行います。</p>
 <label class="chk"><input type="checkbox" id="ckTCodex" checked> Codex（.codex/AGENTS.md）</label>
 <label class="chk"><input type="checkbox" id="ckTOpenCode" checked> OpenCode（.config/opencode/AGENTS.md）</label>
-<div class="btnrow"><button id="btnGlobalTargets" class="primary">対象を保存</button></div>
+<div class="btnrow"><button id="btnGlobalTargets" class="primary" data-i18n="対象を保存">対象を保存</button></div>
 <div id="msgGlobalTargets" role="status"></div>
 <hr style="border:0;border-top:1px solid #1d1d1d;margin:16px 0">
-<p class="muted">自動同期（Shirube Global Auto Sync）。ログオン時＋一定間隔で裏で実行します。</p>
+<p class="muted" data-i18n="自動同期（Shirube Global Auto Sync）。ログオン時＋一定間隔で裏で実行します。">自動同期（Shirube Global Auto Sync）。ログオン時＋一定間隔で裏で実行します。</p>
 <p class="muted" id="globalEnabledState">読込中</p>
-<div class="btnrow"><button id="btnGlobalEnabled">有効/無効を切替</button></div>
-<div class="btnrow"><label class="muted">間隔（分） <input type="number" id="numGlobalInterval" min="5" max="1440" step="1" value="15"></label><button id="btnGlobalIntervalGet">現在値</button><button id="btnGlobalIntervalSet">間隔を変更</button></div>
+<div class="btnrow"><button id="btnGlobalEnabled" data-i18n="有効/無効を切替">有効/無効を切替</button></div>
+<div class="btnrow"><label class="muted"><span data-i18n="間隔（分）">間隔（分）</span> <input type="number" id="numGlobalInterval" min="5" max="1440" step="1" value="15"></label><button id="btnGlobalIntervalGet" data-i18n="現在値">現在値</button><button id="btnGlobalIntervalSet" data-i18n="間隔を変更">間隔を変更</button></div>
 <div id="msgGlobalInterval" role="status"></div>
 </div>
 </section>
@@ -1119,21 +1119,21 @@ input[type=number]{width:120px;background:#0a0a0a;border:1px solid #2c2c2c;color
 </div>
 <div id="backups" hidden>
 <section>
-<div class="card"><h2>バックアップと復元</h2>
-<p class="muted">復元は AGENTS.md と localSource を一緒に復元し、次回上書き防止のため休止（無効）にします。共通 GitHub 側の巻戻しはしません。</p>
-<div class="btnrow"><button id="btnBackupsReload">一覧を更新</button></div>
-<div class="tablewrap"><table id="tblBackups" hidden><thead><tr><th>ID</th><th>対象</th><th>作成</th><th>内容</th><th>操作</th></tr></thead><tbody id="backupRows"></tbody></table></div>
-<p class="muted" id="emptyBackups">バックアップがありません。</p>
+<div class="card"><h2 data-i18n="バックアップと復元">バックアップと復元</h2>
+<p class="muted" data-i18n="復元は AGENTS.md と localSource を一緒に復元し、次回上書き防止のため休止（無効）にします。共通 GitHub 側の巻戻しはしません。">復元は AGENTS.md と localSource を一緒に復元し、次回上書き防止のため休止（無効）にします。共通 GitHub 側の巻戻しはしません。</p>
+<div class="btnrow"><button id="btnBackupsReload" data-i18n="一覧を更新">一覧を更新</button></div>
+<div class="tablewrap"><table id="tblBackups" hidden><thead><tr><th>ID</th><th data-i18n="対象">対象</th><th data-i18n="作成">作成</th><th data-i18n="内容">内容</th><th data-i18n="操作">操作</th></tr></thead><tbody id="backupRows"></tbody></table></div>
+<p class="muted" id="emptyBackups" data-i18n="バックアップがありません。">バックアップがありません。</p>
 <div id="backupDiffArea"></div>
 <div id="msgBackup" role="status"></div>
 </div>
 </section>
 <section>
-<div class="card"><h2>Globalバックアップと復元</h2>
-<p class="muted">復元前に Global 自動同期を休止し、復元後も休止のまま残ります（再開は有効化）。差分で内容を確認してから復元します。</p>
-<div class="btnrow"><button id="btnGlobalBackups">一覧を更新</button></div>
-<div class="tablewrap"><table id="tblGlobalBackups" hidden><thead><tr><th>ID</th><th>作成</th><th>対象</th><th>操作</th></tr></thead><tbody id="globalBackupRows"></tbody></table></div>
-<p class="muted" id="emptyGlobalBackups">バックアップがありません。</p>
+<div class="card"><h2 data-i18n="Globalバックアップと復元">Globalバックアップと復元</h2>
+<p class="muted" data-i18n="復元前に Global 自動同期を休止し、復元後も休止のまま残ります（再開は有効化）。差分で内容を確認してから復元します。">復元前に Global 自動同期を休止し、復元後も休止のまま残ります（再開は有効化）。差分で内容を確認してから復元します。</p>
+<div class="btnrow"><button id="btnGlobalBackups" data-i18n="一覧を更新">一覧を更新</button></div>
+<div class="tablewrap"><table id="tblGlobalBackups" hidden><thead><tr><th>ID</th><th data-i18n="作成">作成</th><th data-i18n="対象">対象</th><th data-i18n="操作">操作</th></tr></thead><tbody id="globalBackupRows"></tbody></table></div>
+<p class="muted" id="emptyGlobalBackups" data-i18n="バックアップがありません。">バックアップがありません。</p>
 <div id="globalBackupDiffArea"></div>
 <div id="msgGlobalBackup" role="status"></div>
 </div>
@@ -1141,9 +1141,9 @@ input[type=number]{width:120px;background:#0a0a0a;border:1px solid #2c2c2c;color
 </div>
 <div id="local" hidden>
 <section>
-<div class="card"><h2>ローカルルール編集と検査</h2>
-<p class="muted">project-local.md を形式検証付きで編集します。保存時は取得時ハッシュと一致した場合のみ書換えます。検査結果は候補であり断定ではありません。</p>
-<div class="btnrow"><select id="selLocal" style="max-width:280px"></select><button id="btnLocalLoad">取得</button><button id="btnCheck">重複・矛盾候補を検査</button></div>
+<div class="card"><h2 data-i18n="ローカルルール編集と検査">ローカルルール編集と検査</h2>
+<p class="muted" data-i18n="project-local.md を形式検証付きで編集します。保存時は取得時ハッシュと一致した場合のみ書換えます。検査結果は候補であり断定ではありません。">project-local.md を形式検証付きで編集します。保存時は取得時ハッシュと一致した場合のみ書換えます。検査結果は候補であり断定ではありません。</p>
+<div class="btnrow"><select id="selLocal" style="max-width:280px"></select><button id="btnLocalLoad" data-i18n="取得">取得</button><button id="btnCheck" data-i18n="重複・矛盾候補を検査">重複・矛盾候補を検査</button></div>
 <div id="localArea"></div>
 <div id="checkArea"></div>
 <div id="msgLocal" role="status"></div>
@@ -1152,42 +1152,42 @@ input[type=number]{width:120px;background:#0a0a0a;border:1px solid #2c2c2c;color
 </div>
 <div id="logs" hidden>
 <section>
-<div class="card"><h2>Project同期ログ</h2>
-<div class="btnrow"><button id="btnReload">更新</button></div>
+<div class="card"><h2 data-i18n="Project同期ログ">Project同期ログ</h2>
+<div class="btnrow"><button id="btnReload" data-i18n="更新">更新</button></div>
 <pre id="logPre">読込中</pre>
 </div>
 </section>
 <section>
-<div class="card"><h2>Global同期ログ</h2>
-<p class="muted">直近のみ表示。末尾の OK は成功、FAIL は失敗、SKIP は見送りです。</p>
-<div class="btnrow"><button id="btnGlobalLogs">ログを更新</button></div>
+<div class="card"><h2 data-i18n="Global同期ログ">Global同期ログ</h2>
+<p class="muted" data-i18n="直近のみ表示。末尾の OK は成功、FAIL は失敗、SKIP は見送りです。">直近のみ表示。末尾の OK は成功、FAIL は失敗、SKIP は見送りです。</p>
+<div class="btnrow"><button id="btnGlobalLogs" data-i18n="ログを更新">ログを更新</button></div>
 <pre id="globalLogPre">読込中</pre>
 </div>
 </section>
 </div>
 <div id="settings" hidden>
 <section>
-<div class="card"><h2>設定（間隔・入出力）</h2>
-<p class="muted">同期間隔は Project タスクのみ変更します（Global は不変）。エクスポート・インポートに秘密情報は含みません。</p>
-<div class="btnrow"><label class="muted">Project 同期の間隔（分） <input type="number" id="numInterval" min="5" max="1440" step="1" value="15"></label><button id="btnIntervalGet">現在値</button><button id="btnIntervalSet">間隔を変更</button></div>
+<div class="card"><h2 data-i18n="設定（間隔・入出力）">設定（間隔・入出力）</h2>
+<p class="muted" data-i18n="同期間隔は Project タスクのみ変更します（Global は不変）。エクスポート・インポートに秘密情報は含みません。">同期間隔は Project タスクのみ変更します（Global は不変）。エクスポート・インポートに秘密情報は含みません。</p>
+<div class="btnrow"><label class="muted"><span data-i18n="Project 同期の間隔（分）">Project 同期の間隔（分）</span> <input type="number" id="numInterval" min="5" max="1440" step="1" value="15"></label><button id="btnIntervalGet" data-i18n="現在値">現在値</button><button id="btnIntervalSet" data-i18n="間隔を変更">間隔を変更</button></div>
 <div id="msgInterval" role="status"></div>
 <hr style="border:0;border-top:1px solid #1d1d1d;margin:16px 0">
-<div class="btnrow"><button id="btnExport">設定をエクスポート（JSON保存）</button></div>
-<p class="muted">取り込みはプレビューで合流内容を確認してから登録します（新規のみ追加・既存維持）。</p>
-<textarea id="txtImport" placeholder="导出したJSONを貼り付け"></textarea>
-<div class="btnrow"><button id="btnImportPrev2">取込プレビュー</button></div>
+<div class="btnrow"><button id="btnExport" data-i18n="設定をエクスポート（JSON保存）">設定をエクスポート（JSON保存）</button></div>
+<p class="muted" data-i18n="取り込みはプレビューで合流内容を確認してから登録します（新規のみ追加・既存維持）。">取り込みはプレビューで合流内容を確認してから登録します（新規のみ追加・既存維持）。</p>
+<textarea id="txtImport" placeholder="エクスポートしたJSONを貼り付け" data-i18n-placeholder="エクスポートしたJSONを貼り付け"></textarea>
+<div class="btnrow"><button id="btnImportPrev2" data-i18n="取込プレビュー">取込プレビュー</button></div>
 <div id="importRegArea"></div>
 <div id="msgSettings" role="status"></div>
 </div>
 </section>
 <section id="help">
-<div class="card"><details class="help" id="helpDetail"><summary>ヘルプ</summary>
-<p class="muted">管理バッチをダブルクリックするとこの画面が開きます。サーバーは 127.0.0.1 のみで待受けし、15分無操作で終了します。同期タスク自体はタスクスケジューラの設定どおり継続します。登録・解除は projects.json のみを変更します。</p>
+<div class="card"><details class="help" id="helpDetail"><summary data-i18n="ヘルプ">ヘルプ</summary>
+<p class="muted" data-i18n="管理バッチをダブルクリックするとこの画面が開きます。サーバーは 127.0.0.1 のみで待受けし、15分無操作で終了します。同期タスク自体はタスクスケジューラの設定どおり継続します。登録・解除は projects.json のみを変更します。">管理バッチをダブルクリックするとこの画面が開きます。サーバーは 127.0.0.1 のみで待受けし、15分無操作で終了します。同期タスク自体はタスクスケジューラの設定どおり継続します。登録・解除は projects.json のみを変更します。</p>
 </details>
 </div>
 </section>
 </div>
-<footer>Shirube 管理ダッシュボード (ローカルのみ、外部送信なし)</footer>
+<footer data-i18n="Shirube 管理ダッシュボード (ローカルのみ、外部送信なし)">Shirube 管理ダッシュボード (ローカルのみ、外部送信なし)</footer>
 </div>
 </main>
 </div>
@@ -1221,23 +1221,848 @@ async function api(path, method, body, timeoutMs){
     if(!r.ok) throw new Error((j && j.error) || ("HTTP "+r.status));
     return j;
   }catch(e){
-    if(e && e.name === "AbortError") throw new Error("要求がタイムアウトしました。少し待って更新ボタンで確認してください。");
+    if(e && e.name === "AbortError") throw new Error(L("要求がタイムアウトしました。少し待って更新ボタンで確認してください。"));
     throw e;
   }finally{ clearTimeout(timer); }
 }
+const LANG_KEY = "shirube.lang";
+const LANGS = ["ja", "en", "zh-CN"];
+const localizedText = {ja:new Map(),en:new Map(),"zh-CN":new Map()};
+const I18N = {
+  en: {
+    " 既存 AGENTS.md はバックアップ後に同期で再生成されます（固有内容は自動転記されません）。": " An existing AGENTS.md is backed up and regenerated on sync (its unique content is not copied automatically).",
+    "・": ", ",
+    "、": ", ",
+    "(ファイルなし)": "(no file)",
+    "（一部省略）": " (partially truncated)",
+    "（差分あり）": " (changes found)",
+    "（差分なし）": " (no changes)",
+    "(省略)": "(truncated)",
+    "（同期間隔を{n}分に変更）": " (interval changed to {n} min)",
+    "（未設定）": "(not set)",
+    "{done}/2 Project同期: {state}": "{done}/2 Project sync: {state}",
+    "{n} 件": "{n} items",
+    "{n}件を登録し、非表示で同期します。よろしいですか。": "Register {n} project(s) and sync in the background. Continue?",
+    "{n}件を登録し、非表示で同期することを理解した": "I understand that {n} project(s) will be registered and synced in the background",
+    "{state}（対象 {targets}）": "{state} (targets: {targets})",
+    "「{id}」を復元します。AGENTS.md と localSource を一緒に復元し、次回上書き防止のため休止（無効）にします。よろしいですか。": "Restore \"{id}\"? AGENTS.md and localSource are restored together, and the target is paused (disabled) to prevent the next overwrite. Continue?",
+    "「{id}」を復元します。復元前にGlobal自動同期を休止し、復元後も休止のまま残ります（再開は有効化）。よろしいですか。": "Restore \"{id}\"? Global automatic sync is paused before restoring and stays paused afterwards (enable it to resume). Continue?",
+    "「{name}」を一覧から解除します。ファイルは削除しません。よろしいですか。": "Remove \"{name}\" from the list? Files are not deleted. Continue?",
+    "「{name}」を取り込んで登録し、非表示で同期します。よろしいですか。": "Import and register \"{name}\", then sync in the background. Continue?",
+    "「{name}」を登録し、非表示で同期します。よろしいですか。": "Register \"{name}\" and sync in the background. Continue?",
+    "【重複候補】{project}：{line}": "[Possible duplicate] {project}: {line}",
+    "【矛盾候補】{project}：共通「{common}」/固有「{local}」": "[Possible conflict] {project}: shared \"{common}\" / local \"{local}\"",
+    "0/2 Global同期: {state}": "0/2 Global sync: {state}",
+    "0/2 Global同期: 開始できませんでした": "0/2 Global sync: could not start",
+    "0/2 Global同期を実行中": "0/2 Running Global sync",
+    "0/2 待機中": "0/2 Waiting",
+    "0/2 同期に失敗しました": "0/2 Sync failed",
+    "0/2 同期を確認しています": "0/2 Checking sync",
+    "1/2 Global同期: {state} / Project同期を実行中": "1/2 Global sync: {state} / Running Project sync",
+    "1/2 Project同期: {state}": "1/2 Project sync: {state}",
+    "1/2 Project同期: 開始できませんでした": "1/2 Project sync: could not start",
+    "AGENTS.md なし: 登録後の同期で新規生成されます。既存 AGENTS.md がある場合は登録停止します。": "No AGENTS.md: a new one is generated on the sync after registration. If an existing AGENTS.md is present, registration stops.",
+    "AGENTS.md は直接編集しません。": "AGENTS.md is never edited directly.",
+    "AGENTSあり": "AGENTS present",
+    "AGENTSなし": "No AGENTS",
+    "Globalバックアップと復元": "Global backup and restore",
+    "Globalプレビュー適用中です。": "A Global preview is being applied.",
+    "Global自動同期を休止します（裏の実行なし）。よろしいですか。": "Pause Global automatic sync (no background runs)?",
+    "Global自動同期を有効にします。よろしいですか。": "Enable Global automatic sync?",
+    "Global設定": "Global settings",
+    "Global同期": "Global sync",
+    "Global同期: {summary}": "Global sync: {summary}",
+    "Global同期: 読込中": "Global sync: loading",
+    "Global同期（Codex/OpenCode 共通）": "Global sync (shared by Codex/OpenCode)",
+    "Global同期（保存済み対象へ配布）を実行し、完了を確認した後、登録済みプロジェクトの同期を実行します。よろしいですか。": "Run Global sync (distribute to saved targets), confirm completion, then sync the registered projects. Continue?",
+    "Global同期が{state}のため、Project同期は実行しませんでした。": "Global sync was {state}, so Project sync was not started.",
+    "Global同期が失敗しました": "Global sync failed",
+    "Global同期が失敗しました。ログを確認してください。": "Global sync failed. Check the log.",
+    "Global同期が成功しました": "Global sync succeeded",
+    "Global同期が成功しました。ログを確認してください。": "Global sync succeeded. Check the log.",
+    "Global同期できませんでした": "Global sync could not run",
+    "Global同期の確認": "Confirm Global sync",
+    "Global同期の間隔を{n}分に変更します（Projectは不変）。よろしいですか。": "Change the Global sync interval to {n} minutes (Project is unchanged). Continue?",
+    "Global同期は見送られました(別の同期が実行中)。しばらくしてやり直してください。": "Global sync was skipped (another sync is running). Try again later.",
+    "Global同期は見送りです": "Global sync skipped",
+    "Global同期は未確認です": "Global sync unconfirmed",
+    "Global同期は未確認です(起動待ち/継続中)。しばらくして状態を更新してください。": "Global sync is unconfirmed (waiting to start or still running). Refresh the status later.",
+    "Global同期ログ": "Global sync log",
+    "Global同期状態は未確認です。ログを確認してください。": "The Global sync state is unconfirmed. Check the log.",
+    "Global復元の確認": "Confirm Global restore",
+    "JSONを解釈できません。": "The JSON could not be parsed.",
+    "localあり": "local present",
+    "localなし": "no local",
+    "NG: {path}：{error}": "NG: {path}: {error}",
+    "OK: 「{name}」← {path}": "OK: \"{name}\" <- {path}",
+    "PC全体の共通ルールを配ります。Projectとは別の状態（最終成功・取得元・失敗理由）を持ちます。配布ファイルの直接編集はしません。": "Distributes shared rules for the whole PC. Its state (last success, source, failure reason) is separate from Project. Distributed files are never edited directly.",
+    "Project 同期の間隔（分）": "Project sync interval (minutes)",
+    "Project 同期の間隔を{n}分に変更します（Global は不変）。よろしいですか。": "Change the Project sync interval to {n} minutes (Global is unchanged). Continue?",
+    "project-local.md なし: 共通ルールのみで生成されます。": "No project-local.md: the file is generated from shared rules only.",
+    "project-local.md を形式検証付きで編集します。保存時は取得時ハッシュと一致した場合のみ書換えます。検査結果は候補であり断定ではありません。": "Edit project-local.md with format validation. Saving writes only when the current hash matches the fetched hash. Check results are candidates, not definitive findings.",
+    "projects.json が正本です": "projects.json is authoritative",
+    "Project同期できませんでした": "Project sync could not run",
+    "Project同期は未確認です": "Project sync unconfirmed",
+    "Project同期ログ": "Project sync log",
+    "Shirube 管理": "Shirube Console",
+    "Shirube 管理ダッシュボード": "Shirube Dashboard",
+    "Shirube 管理ダッシュボード (ローカルのみ、外部送信なし)": "Shirube management dashboard (local only, nothing sent externally)",
+    "いずれも候補であり、断定ではありません。内容を確認して判断してください。": "These are candidates, not definitive findings. Review the content and decide.",
+    "エクスプローラーで開きました: ": "Opened in Explorer: ",
+    "エクスプローラーで開く": "Open in Explorer",
+    "エクスプローラーで開きました: {name}": "Opened in Explorer: {name}",
+    "エクスポートしたJSONを貼り付け": "Paste the exported JSON",
+    "エクスポートしました（秘密情報なし）。": "Exported (no secrets included).",
+    "キャンセルされました。登録は行いません。": "Cancelled. Nothing was registered.",
+    "このPC専用。外部送信なし。": "This PC only. Nothing is sent externally.",
+    "この内容でよければ「プレビューを適用」で反映します（反映前に再照合し、変化があれば拒否）。": "If this content is acceptable, use \"Apply preview\" to apply it (it is re-checked first and rejected if anything changed).",
+    "すでにプレビュー適用中です。": "A preview is already being applied.",
+    "すでに同期を実行中です。": "A sync is already running.",
+    "パス": "Path",
+    "パス: ": "Path: ",
+    "パスを1行ずつ入力してください。": "Enter one path per line.",
+    "バックアップ": "Backups",
+    "バックアップがありません。": "No backups.",
+    "バックアップと復元": "Backup and restore",
+    "フォルダのパスを入力するか「参照」で選択し、プレビューで内容を確認してから登録します。選択だけでは登録されません。既存 AGENTS.md がある場合は原則登録停止します（手動整理が必要）。登録後の同期で AGENTS.md は生成・再生成されます。": "Enter a folder path or choose one with Browse, review it in the preview, then register. Selecting alone does not register. If an AGENTS.md already exists, registration normally stops (manual cleanup is required). The sync after registration generates or regenerates AGENTS.md.",
+    "プランID: {id}（選択を変えず「プレビューを適用」でこのプランを適用）": "Plan ID: {id} (keep the selection and use \"Apply preview\" to apply this plan)",
+    "プランID: {id}（選択を変えず「選択を同期」でこのプランを適用）": "Plan ID: {id} (keep the selection and use \"Sync selected\" to apply this plan)",
+    "プラン作成中": "Creating plan",
+    "プレビュー": "Preview",
+    "プレビュー OK: 「{name}」として登録できます。": "Preview OK: can be registered as \"{name}\".",
+    "プレビューが無効です。もう一度プレビューしてください。": "The preview is no longer valid. Run the preview again.",
+    "プレビューをやり直してください。": "Run the preview again.",
+    "プレビューを適用": "Apply preview",
+    "プロジェクト": "Projects",
+    "プロジェクト一覧": "Project list",
+    "プロジェクト同期ダッシュボード": "Project sync dashboard",
+    "ヘルプ": "Help",
+    "まだGlobal同期の状態がありません。今すぐ同期で初回実行できます。": "No Global sync status yet. Use Sync now to run the first sync.",
+    "まだ登録がありません。右の新規登録から追加してください。": "No projects registered yet. Add one from New project on the right.",
+    "まだ同期状態がありません。今すぐ同期で初回実行できます。": "No sync status yet. Use Sync now to run the first sync.",
+    "まだ表示していません。「内容を表示」で確認できます。": "Not shown yet. Use Show content to inspect it.",
+    "まとめてプレビュー": "Preview all",
+    "まとめて登録して同期": "Register all and sync",
+    "やめる": "Cancel",
+    "ローカルルール編集と検査": "Local rule editing and checks",
+    "ローカル編集": "Local rules",
+    "ログがありません。": "No log entries.",
+    "ログなし": "No log",
+    "ログを更新": "Refresh log",
+    "移動": "Move",
+    "移動先の再指定": "Change destination",
+    "移動先を更新しました。": "Destination updated.",
+    "維持：{name}（{reason}）": "Kept: {name} ({reason})",
+    "一括登録の確認": "Confirm batch registration",
+    "一覧を更新": "Refresh list",
+    "画面切替": "Screen navigation",
+    "解除": "Unregister",
+    "解除しました。一覧のみ変更し、ファイルは削除していません。": "Unregistered. Only the list changed; files were not deleted.",
+    "解除する": "Unregister",
+    "解除の確認": "Confirm unregister",
+    "解除は一覧からのみ削除し、リポジトリ内のファイルは削除しません。「開く」で登録フォルダを開けます。": "Unregistering only removes the entry from this list; files in the repository are not deleted. Open opens the registered folder.",
+    "開く": "Open",
+    "開けませんでした": "Could not open",
+    "概要": "Overview",
+    "確認チェックを入れてください。": "Check the confirmation box.",
+    "確認済みプランで反映します（反映前に再照合し、変化があれば拒否）。よろしいですか。": "Apply the confirmed plan (it is re-checked first and rejected if anything changed). Continue?",
+    "確認中": "Checking",
+    "管理バッチをダブルクリックするとこの画面が開きます。サーバーは 127.0.0.1 のみで待受けし、15分無操作で終了します。同期タスク自体はタスクスケジューラの設定どおり継続します。登録・解除は projects.json のみを変更します。": "Double-click the management batch file to open this screen. The server listens only on 127.0.0.1 and exits after 15 minutes of inactivity. Sync tasks themselves continue according to Task Scheduler. Registering and unregistering only change projects.json.",
+    "間隔（分）": "Interval (minutes)",
+    "間隔の変更": "Change interval",
+    "間隔を変更": "Change interval",
+    "間隔を変更しました：{n}分": "Interval changed to {n} minutes",
+    "既存 AGENTS.md (sha256:{hash}) を退避し、固有分を project-local.md へ転記します。": "The existing AGENTS.md (sha256:{hash}) is preserved and its unique content is copied to project-local.md.",
+    "既存 AGENTS.md の取込（無損失：原本を退避し固有分を project-local.md へ転記）。": "Import an existing AGENTS.md (lossless: keep the original and copy project-specific content to project-local.md).",
+    "既存 AGENTS.md の置き換えを許可（バックアップ後、同期で再生成）": "Allow replacing an existing AGENTS.md (back up, then regenerate on sync)",
+    "既存 AGENTS.md をバックアップ後に同期で再生成します。AGENTS.md の固有内容は自動転記されません。必要な内容は project-local.md に手動転記してください。": "The existing AGENTS.md is backed up and regenerated on sync. Its unique content is not copied automatically. Copy any needed content to project-local.md manually.",
+    "既存 project-local.md あり(sha256:{hash}): 変更しません。": "Existing project-local.md found (sha256:{hash}): it will not be changed.",
+    "起動待ち": "Waiting to start",
+    "起動待ちです。子プロセスの起動を確認しています。": "Waiting to start. Checking that the child process started.",
+    "休止しました。": "Paused.",
+    "競合・不正があるため取り込めません。整理してから再実行してください。": "Cannot import because of conflicts or invalid entries. Resolve them and try again.",
+    "競合：{name}（{reason}）": "Conflict: {name} ({reason})",
+    "共通SHA: {sha} 取得GitSHA: {commit} 作成: {at}": "Shared SHA: {sha} fetched Git SHA: {commit} created: {at}",
+    "決定": "OK",
+    "結果": "Result",
+    "検査中": "Checking",
+    "検索で絞り込み（名前・パス）": "Filter by name or path",
+    "検証して保存": "Validate and save",
+    "見送り": "Skipped",
+    "見送り: {name}（無効のため対象外）": "Skipped: {name} (disabled, out of scope)",
+    "見送りです。別の同期が実行中のため今回は見送りました。しばらくして今すぐ同期でやり直してください。": "Skipped because another sync is running. Try Sync now again later.",
+    "現在の間隔：{n}分（Global）": "Current interval: {n} minutes (Global)",
+    "現在の間隔：{n}分（Project のみ）": "Current interval: {n} minutes (Project only)",
+    "現在の内容と配置先（実ファイルの先頭のみ表示）。設定ファイルの中身は表示しません。": "Current content and destination (only the beginning of the actual file is shown). Configuration file contents are not shown.",
+    "現在値": "Current value",
+    "候補はありませんでした。": "No candidates were found.",
+    "更新": "Refresh",
+    "今すぐ同期": "Sync now",
+    "今すぐ同期の確認": "Confirm Sync now",
+    "今回のログ未確認": "This run's log is unconfirmed",
+    "Global: {global} / Project: {project}": "Global: {global} / Project: {project}",
+    "差分": "Diff",
+    "差分あり": "Changes found",
+    "差分なし": "No changes",
+    "差分取得中": "Loading diff",
+    "最終結果": "Latest result",
+    "最終試行": "Last attempt",
+    "最終試行・最終成功・取得SHA・失敗理由の一覧です。選択した同期・差分はチェック欄で選びます。": "Lists the last attempt, last success, fetched SHA and failure reason. Select projects for sync or diff with the checkboxes.",
+    "最終成功": "Last success",
+    "作成": "Created",
+    "参照...": "Browse...",
+    "時間切れのため選択を終了しました。登録は行いません。": "Selection timed out and was closed. Nothing was registered.",
+    "自動同期（Shirube Global Auto Sync）。ログオン時＋一定間隔で裏で実行します。": "Automatic sync (Shirube Global Auto Sync). Runs in the background at logon and at a fixed interval.",
+    "自動同期の状態を取得できませんでした。": "Could not retrieve the automatic sync state.",
+    "自動同期は休止中です（裏の実行なし）。再開は切替ボタンで有効化してください。": "Automatic sync is paused (no background runs). Enable it with the toggle to resume.",
+    "自動同期は有効です（次回も裏で実行）。": "Automatic sync is enabled (it will run in the background again).",
+    "失敗": "Failed",
+    "失敗: {name}：{error}": "Failed: {name}: {error}",
+    "失敗: {tail}": "Failed: {tail}",
+    "失敗: {target}：{error}": "Failed: {target}: {error}",
+    "失敗理由": "Failure reason",
+    "実行中": "Running",
+    "取り込みはプレビューで合流内容を確認してから登録します（新規のみ追加・既存維持）。": "Import first shows a preview of the merged result, then registers it (adds new entries only, keeps existing ones).",
+    "取り込みました。追加：{n}件": "Imported. Added: {n} item(s)",
+    "取り込みました。追加：{n}件。同期間隔を{interval}分に変更しました。": "Imported {n} entries. The Project sync interval is now {interval} minutes.",
+    "取り込む": "Import",
+    "取り込んで登録・同期": "Import, register and sync",
+    "取り込んで登録しました。": "Imported and registered.",
+    "取込の確認": "Confirm import",
+    "取込プレビュー": "Import preview",
+    "取込プレビュー OK: 「{name}」として登録できます。": "Import preview OK: can be registered as \"{name}\".",
+    "取込内容を確認し、退避と転記に同意する": "I reviewed the imported content and agree to preserving the original and copying content",
+    "取得": "Load",
+    "取得SHA": "Fetched SHA",
+    "取得ハッシュ: {hash}（保存時に一致確認）": "Fetched hash: {hash} (checked when saving)",
+    "取得元": "Source",
+    "取得元: {commit} 作成: {at}": "Source: {commit} created: {at}",
+    "取得失敗: ": "Failed to load: ",
+    "取得中": "Loading",
+    "重複・矛盾候補を検査": "Check for duplicate/conflict candidates",
+    "状態と再試行": "Status and retry",
+    "状態を更新": "Refresh status",
+    "新しいフォルダの絶対パスを入力してください。": "Enter the absolute path of the new folder.",
+    "新しい表示名を入力してください。（1〜64文字・制御文字なし）": "Enter a new display name (1-64 characters, no control characters).",
+    "新規登録": "New project",
+    "新規登録へ": "Go to New project",
+    "成功": "Success",
+    "成功: {tail}": "Succeeded: {tail}",
+    "切り替える": "Toggle",
+    "設定・ヘルプ": "Settings & help",
+    "設定（間隔・入出力）": "Settings (interval and import/export)",
+    "設定をエクスポート（JSON保存）": "Export settings (save JSON)",
+    "先に差分確認をしてください。確認直後の復元のみ受け付けます。": "Check the diff first. Only restores immediately after that check are accepted.",
+    "選択": "Select",
+    "選択ダイアログを開きました。フォルダを選んでください。": "The selection dialog is open. Choose a folder.",
+    "選択なし": "Nothing selected",
+    "選択の反映前差分": "Preview selected changes",
+    "選択をやめる": "Cancel selection",
+    "選択を開けませんでした: ": "Could not open the selection dialog: ",
+    "選択を開けませんでした: {error}": "Could not open the selection dialog: {error}",
+    "選択を終了しました。登録は行いません。": "Selection closed. Nothing was registered.",
+    "選択を同期": "Sync selected",
+    "選択を反映しました。プレビューで確認してください。": "Selection applied. Review it in the preview.",
+    "操作": "Actions",
+    "対象": "Target",
+    "対象: ": "Target: ",
+    "対象: {id}": "Target: {id}",
+    "対象の変更": "Change targets",
+    "対象を保存": "Save targets",
+    "対象を保存しました。": "Targets saved.",
+    "対象外": "Out of scope",
+    "待機中": "Waiting",
+    "直近のみ表示。末尾の OK は成功、FAIL は失敗、SKIP は見送りです。": "Shows recent entries only. A trailing OK means success, FAIL means failure, and SKIP means skipped.",
+    "追加・変更がありません。": "Nothing to add or change.",
+    "追加：{name}": "Add: {name}",
+    "追加内容を確認した": "I reviewed the added content",
+    "適用する": "Apply",
+    "登録して非表示で同期": "Register and sync in the background",
+    "登録しました：{names}": "Registered: {names}",
+    "登録しました。同期が成功しました。ログを確認してください。": "Registered. Sync succeeded. Check the log.",
+    "登録しました。同期を開始しました(開始 {at})。完了まで確認します(最大約60秒)。": "Registered. Sync started (started {at}). Waiting for completion (up to about 60 seconds).",
+    "登録しました。同期状態は未確認です。ログを確認してください。": "Registered. The sync state is unconfirmed. Check the log.",
+    "登録しましたが同期が失敗しました。ログを確認してください。": "Registered, but the sync failed. Check the log.",
+    "登録しましたが同期は見送られました(別の同期が実行中)。しばらくして今すぐ同期でやり直してください。": "Registered, but the sync was skipped (another sync is running). Try Sync now again later.",
+    "登録しましたが同期は未確認です(起動待ち/継続中)。しばらくして更新ボタンで成功・失敗を確認してください。": "Registered, but the sync is unconfirmed (waiting to start or still running). Refresh later to check success or failure.",
+    "登録する": "Register",
+    "登録の確認": "Confirm registration",
+    "登録は完了しましたが同期の起動に失敗しました。「今すぐ同期」でやり直してください。": "Registration completed, but the sync could not start. Retry with Sync now.",
+    "登録プロジェクト数": "Registered projects",
+    "登録一覧の管理と今すぐ同期を行います。配布ファイルの直接編集はしません。開始した処理はUIを閉じても継続しますが、両方の完了確認には画面を開いたままにしてください。": "Manage the project registry and run an immediate sync. Distributed files are never edited directly. Started work continues if you close the UI, but keep this screen open to confirm both completions.",
+    "登録後の同期で AGENTS.md が生成・再生成されることを理解した": "I understand that AGENTS.md is generated or regenerated by the sync after registration",
+    "統合同期の実行中はプレビュー適用できません。": "A preview cannot be applied while the combined sync is running.",
+    "統合同期の実行中は選択同期できません。": "Selected projects cannot be synced while the combined sync is running.",
+    "同期IDを取得できませんでした。": "Could not retrieve the sync ID.",
+    "同期が失敗しました": "Sync failed",
+    "同期が失敗しました。ログを確認してください。": "Sync failed. Check the log.",
+    "同期が成功しました": "Sync succeeded",
+    "同期が成功しました。ログを確認してください。": "Sync succeeded. Check the log.",
+    "同期する": "Sync",
+    "同期するプロジェクトを選択してください（一覧または状態表の選択欄）。": "Select the projects to sync (in the list or in the status table).",
+    "同期できませんでした": "Sync could not run",
+    "同期の起動に失敗しました": "Sync failed to start",
+    "同期は見送られました(別の同期が実行中)。しばらくしてやり直してください。": "Sync was skipped (another sync is running). Try again later.",
+    "同期は見送りです": "Sync skipped",
+    "同期は未確認です": "Sync unconfirmed",
+    "同期は未確認です(起動待ち/継続中)。しばらくして更新ボタンで成功・失敗を確認してください。": "Sync is unconfirmed (waiting to start or still running). Refresh later to check success or failure.",
+    "同期ログ": "Sync logs",
+    "同期を開始できませんでした。": "The sync could not be started.",
+    "同期を中断しました": "Sync interrupted",
+    "同期間隔: {current}分 → {next}分に変更します（Projectのみ、Global不変）。": "Sync interval: {current} minutes -> {next} minutes (Project only, Global unchanged).",
+    "同期間隔: 未設定 → {next}分に変更します（Projectのみ、Global不変）。": "Sync interval: not set -> {next} minutes (Project only, Global unchanged).",
+    "同期間隔: {reason}": "Sync interval: {reason}",
+    "同期間隔は Project タスクのみ変更します（Global は不変）。エクスポート・インポートに秘密情報は含みません。": "Only the Project task interval is changed here (Global is unchanged). Export and import never include secrets.",
+    "同期状態": "Sync status",
+    "同期状態は未確認です。ログを確認してください。": "The sync state is unconfirmed. Check the log.",
+    "同期進捗": "Sync progress",
+    "同期中": "Syncing",
+    "読込中": "Loading",
+    "内容": "Contents",
+    "内容を表示": "Show content",
+    "配る対象の選択・自動同期の間隔と有効/無効を変えます。更新前バックアップと復元は「バックアップ」画面で行います。": "Choose distribution targets and change the automatic sync interval and enable/disable state. Pre-update backups and restores are handled on the Backups screen.",
+    "配る対象を「{targets}」に変更します。よろしいですか。": "Change distribution targets to \"{targets}\"?",
+    "配置元: {base}": "Source location: {base}",
+    "配置先": "Destination",
+    "反映前プレビュー": "Preview before applying",
+    "表示言語": "Display language",
+    "表示名の変更": "Change display name",
+    "不正": "Invalid",
+    "不正：{name}（{reason}）": "Invalid: {name} ({reason})",
+    "伏字表示中の内容はそのまま保存できません（原本保護）。再取得しても伏字のままの場合、そのまま保存しないでください。": "Redacted content cannot be saved as-is (original protection). If it is still redacted after reloading, do not save it as-is.",
+    "復元": "Restore",
+    "復元しました。休止中のため再開は有効化してください。": "Restored. The target is paused; enable it to resume.",
+    "復元しました。休止中のため再開は有効化してください。{warning}": "Restored. The target is paused; enable it to resume.{warning}",
+    "復元する": "Restore",
+    "復元の確認": "Confirm restore",
+    "復元は AGENTS.md と localSource を一緒に復元し、次回上書き防止のため休止（無効）にします。共通 GitHub 側の巻戻しはしません。": "Restore brings back AGENTS.md and localSource together, then pauses (disables) the target to prevent the next overwrite. It does not roll back the shared GitHub repository.",
+    "復元前に Global 自動同期を休止し、復元後も休止のまま残ります（再開は有効化）。差分で内容を確認してから復元します。": "Global automatic sync is paused before restoring and remains paused afterwards (enable it to resume). Review the diff before restoring.",
+    "複数まとめて登録（1行1パス、最大20件。新規のみ。AGENTS.md ありは個別取込）。": "Register multiple projects (one path per line, up to 20; new projects only; projects with AGENTS.md must be imported individually).",
+    "分": " min",
+    "閉じる": "Close",
+    "変更あり: {name}": "Changed: {name}",
+    "変更あり: {target}": "Changed: {target}",
+    "変更する": "Change",
+    "変更なし: {name}": "No change: {name}",
+    "変更なし: {target}": "No change: {target}",
+    "保存しました。": "Saved.",
+    "未確認": "Unconfirmed",
+    "未確認です。しばらくして「選択の反映前差分」で再取得してください。": "Unconfirmed. Use Preview selected changes again later.",
+    "未確認です。しばらくして「反映前プレビュー」で再取得してください。": "Unconfirmed. Use Preview before applying again later.",
+    "未確認です。今回の実行結果がまだありません。": "Unconfirmed. This run has no result yet.",
+    "未実行": "Not run",
+    "未設定": "Not set",
+    "無効": "Disabled",
+    "無効にしました（次回同期は対象外）。": "Disabled (excluded from the next sync).",
+    "名称を変更しました。": "Display name changed.",
+    "名称変更": "Rename",
+    "名前": "Name",
+    "有効": "Enabled",
+    "有効/無効の切替": "Toggle enabled/disabled",
+    "有効/無効を切替": "Toggle enabled/disabled",
+    "有効にしました。": "Enabled.",
+    "要求がタイムアウトしました。少し待って更新ボタンで確認してください。": "The request timed out. Wait a moment and refresh to check.",
+    "例 C:\\Project\\A": "e.g. C:\\Project\\A",
+    "例 C:\\Project\\MyRepo": "e.g. C:\\Project\\MyRepo"
+  },
+  "zh-CN": {
+    " 既存 AGENTS.md はバックアップ後に同期で再生成されます（固有内容は自動転記されません）。": " 现有 AGENTS.md 会在备份后由同步重新生成（其中专有内容不会自动转写）。",
+    "・": "、",
+    "、": "、",
+    "(ファイルなし)": "（无文件）",
+    "（一部省略）": "（部分省略）",
+    "（差分あり）": "（有差异）",
+    "（差分なし）": "（无差异）",
+    "(省略)": "（省略）",
+    "（同期間隔を{n}分に変更）": "（同步间隔已改为 {n} 分钟）",
+    "（未設定）": "（未设置）",
+    "{done}/2 Project同期: {state}": "{done}/2 Project 同步：{state}",
+    "{n} 件": "{n} 项",
+    "{n}件を登録し、非表示で同期します。よろしいですか。": "将注册 {n} 个项目并在后台同步。是否继续？",
+    "{n}件を登録し、非表示で同期することを理解した": "我了解将注册 {n} 个项目并在后台同步",
+    "{state}（対象 {targets}）": "{state}（对象：{targets}）",
+    "「{id}」を復元します。AGENTS.md と localSource を一緒に復元し、次回上書き防止のため休止（無効）にします。よろしいですか。": "将恢复“{id}”。AGENTS.md 与 localSource 会一起恢复，并暂停（禁用）目标以防止下次覆盖。是否继续？",
+    "「{id}」を復元します。復元前にGlobal自動同期を休止し、復元後も休止のまま残ります（再開は有効化）。よろしいですか。": "将恢复“{id}”。恢复前会暂停 Global 自动同步，恢复后仍保持暂停（重新启用即可恢复）。是否继续？",
+    "「{name}」を一覧から解除します。ファイルは削除しません。よろしいですか。": "将从列表中解除“{name}”。不会删除文件。是否继续？",
+    "「{name}」を取り込んで登録し、非表示で同期します。よろしいですか。": "将导入并注册“{name}”，然后在后台同步。是否继续？",
+    "「{name}」を登録し、非表示で同期します。よろしいですか。": "将注册“{name}”并在后台同步。是否继续？",
+    "【重複候補】{project}：{line}": "【重复候选项】{project}：{line}",
+    "【矛盾候補】{project}：共通「{common}」/固有「{local}」": "【矛盾候选项】{project}：共用“{common}”/专属“{local}”",
+    "0/2 Global同期: {state}": "0/2 Global 同步：{state}",
+    "0/2 Global同期: 開始できませんでした": "0/2 Global 同步：无法开始",
+    "0/2 Global同期を実行中": "0/2 正在执行 Global 同步",
+    "0/2 待機中": "0/2 等待中",
+    "0/2 同期に失敗しました": "0/2 同步失败",
+    "0/2 同期を確認しています": "0/2 正在确认同步",
+    "1/2 Global同期: {state} / Project同期を実行中": "1/2 Global 同步：{state} / 正在执行 Project 同步",
+    "1/2 Project同期: {state}": "1/2 Project 同步：{state}",
+    "1/2 Project同期: 開始できませんでした": "1/2 Project 同步：无法开始",
+    "AGENTS.md なし: 登録後の同期で新規生成されます。既存 AGENTS.md がある場合は登録停止します。": "没有 AGENTS.md：注册后的同步会新建。如果存在现有 AGENTS.md，则停止注册。",
+    "AGENTS.md は直接編集しません。": "不会直接编辑 AGENTS.md。",
+    "AGENTSあり": "有 AGENTS",
+    "AGENTSなし": "无 AGENTS",
+    "Globalバックアップと復元": "Global 备份与恢复",
+    "Globalプレビュー適用中です。": "正在应用 Global 预览。",
+    "Global自動同期を休止します（裏の実行なし）。よろしいですか。": "暂停 Global 自动同步（不再后台执行）。是否继续？",
+    "Global自動同期を有効にします。よろしいですか。": "启用 Global 自动同步。是否继续？",
+    "Global設定": "Global 设置",
+    "Global同期": "Global 同步",
+    "Global同期: {summary}": "Global 同步：{summary}",
+    "Global同期: 読込中": "Global 同步：加载中",
+    "Global同期（Codex/OpenCode 共通）": "Global 同步（Codex/OpenCode 共用）",
+    "Global同期（保存済み対象へ配布）を実行し、完了を確認した後、登録済みプロジェクトの同期を実行します。よろしいですか。": "将执行 Global 同步（分发到已保存的对象），确认完成后，再同步已注册的项目。是否继续？",
+    "Global同期が{state}のため、Project同期は実行しませんでした。": "由于 Global 同步为{state}，未执行 Project 同步。",
+    "Global同期が失敗しました": "Global 同步失败",
+    "Global同期が失敗しました。ログを確認してください。": "Global 同步失败。请查看日志。",
+    "Global同期が成功しました": "Global 同步成功",
+    "Global同期が成功しました。ログを確認してください。": "Global 同步成功。请查看日志。",
+    "Global同期できませんでした": "无法执行 Global 同步",
+    "Global同期の確認": "确认 Global 同步",
+    "Global同期の間隔を{n}分に変更します（Projectは不変）。よろしいですか。": "将 Global 同步间隔改为 {n} 分钟（Project 不变）。是否继续？",
+    "Global同期は見送られました(別の同期が実行中)。しばらくしてやり直してください。": "Global 同步已跳过（另一个同步正在执行）。请稍后重试。",
+    "Global同期は見送りです": "Global 同步已跳过",
+    "Global同期は未確認です": "Global 同步未确认",
+    "Global同期は未確認です(起動待ち/継続中)。しばらくして状態を更新してください。": "Global 同步未确认（等待启动/仍在执行）。请稍后刷新状态。",
+    "Global同期ログ": "Global 同步日志",
+    "Global同期状態は未確認です。ログを確認してください。": "Global 同步状态未确认。请查看日志。",
+    "Global復元の確認": "确认 Global 恢复",
+    "JSONを解釈できません。": "无法解析 JSON。",
+    "localあり": "有 local",
+    "localなし": "无 local",
+    "NG: {path}：{error}": "NG：{path}：{error}",
+    "OK: 「{name}」← {path}": "OK：“{name}”← {path}",
+    "PC全体の共通ルールを配ります。Projectとは別の状態（最終成功・取得元・失敗理由）を持ちます。配布ファイルの直接編集はしません。": "分发整台 PC 共用的规则。其状态（最近成功、获取来源、失败原因）与 Project 分开管理。不会直接编辑分发的文件。",
+    "Project 同期の間隔（分）": "Project 同步间隔（分钟）",
+    "Project 同期の間隔を{n}分に変更します（Global は不変）。よろしいですか。": "将 Project 同步间隔改为 {n} 分钟（Global 不变）。是否继续？",
+    "project-local.md なし: 共通ルールのみで生成されます。": "没有 project-local.md：仅使用共用规则生成。",
+    "project-local.md を形式検証付きで編集します。保存時は取得時ハッシュと一致した場合のみ書換えます。検査結果は候補であり断定ではありません。": "在带格式校验的情况下编辑 project-local.md。保存时仅在当前哈希与获取时一致时才写入。检查结果只是候选项，并非定论。",
+    "projects.json が正本です": "以 projects.json 为准",
+    "Project同期できませんでした": "无法执行 Project 同步",
+    "Project同期は未確認です": "Project 同步未确认",
+    "Project同期ログ": "Project 同步日志",
+    "Shirube 管理": "Shirube 管理",
+    "Shirube 管理ダッシュボード": "Shirube 管理仪表板",
+    "Shirube 管理ダッシュボード (ローカルのみ、外部送信なし)": "Shirube 管理仪表板（仅本地，不会对外发送）",
+    "いずれも候補であり、断定ではありません。内容を確認して判断してください。": "这些只是候选项，并非定论。请确认内容后自行判断。",
+    "エクスプローラーで開きました: ": "已在资源管理器中打开：",
+    "エクスプローラーで開く": "在资源管理器中打开",
+    "エクスプローラーで開きました: {name}": "已在资源管理器中打开：{name}",
+    "エクスポートしたJSONを貼り付け": "粘贴导出的 JSON",
+    "エクスポートしました（秘密情報なし）。": "已导出（不包含机密信息）。",
+    "キャンセルされました。登録は行いません。": "已取消。未执行注册。",
+    "このPC専用。外部送信なし。": "仅限本机。不会对外发送。",
+    "この内容でよければ「プレビューを適用」で反映します（反映前に再照合し、変化があれば拒否）。": "如果内容无误，点击“应用预览”即可生效（生效前会重新核对，如有变化则拒绝）。",
+    "すでにプレビュー適用中です。": "已在应用预览。",
+    "すでに同期を実行中です。": "已在执行同步。",
+    "パス": "路径",
+    "パス: ": "路径：",
+    "パスを1行ずつ入力してください。": "请每行输入一个路径。",
+    "バックアップ": "备份",
+    "バックアップがありません。": "没有备份。",
+    "バックアップと復元": "备份与恢复",
+    "フォルダのパスを入力するか「参照」で選択し、プレビューで内容を確認してから登録します。選択だけでは登録されません。既存 AGENTS.md がある場合は原則登録停止します（手動整理が必要）。登録後の同期で AGENTS.md は生成・再生成されます。": "输入文件夹路径或用“浏览”选择，在预览中确认内容后再注册。仅选择不会注册。如果存在现有 AGENTS.md，原则上停止注册（需要手动整理）。注册后的同步会生成或重新生成 AGENTS.md。",
+    "プランID: {id}（選択を変えず「プレビューを適用」でこのプランを適用）": "计划 ID：{id}（保持选择不变，点击“应用预览”应用此计划）",
+    "プランID: {id}（選択を変えず「選択を同期」でこのプランを適用）": "计划 ID：{id}（保持选择不变，点击“同步所选”应用此计划）",
+    "プラン作成中": "正在创建计划",
+    "プレビュー": "预览",
+    "プレビュー OK: 「{name}」として登録できます。": "预览 OK：可以作为“{name}”注册。",
+    "プレビューが無効です。もう一度プレビューしてください。": "预览已失效。请重新预览。",
+    "プレビューをやり直してください。": "请重新预览。",
+    "プレビューを適用": "应用预览",
+    "プロジェクト": "项目",
+    "プロジェクト一覧": "项目列表",
+    "プロジェクト同期ダッシュボード": "项目同步仪表板",
+    "ヘルプ": "帮助",
+    "まだGlobal同期の状態がありません。今すぐ同期で初回実行できます。": "尚无 Global 同步状态。使用“立即同步”可执行首次同步。",
+    "まだ登録がありません。右の新規登録から追加してください。": "尚未注册任何项目。请从右侧的“新建注册”添加。",
+    "まだ同期状態がありません。今すぐ同期で初回実行できます。": "尚无同步状态。使用“立即同步”可执行首次同步。",
+    "まだ表示していません。「内容を表示」で確認できます。": "尚未显示。点击“显示内容”即可查看。",
+    "まとめてプレビュー": "批量预览",
+    "まとめて登録して同期": "批量注册并同步",
+    "やめる": "取消",
+    "ローカルルール編集と検査": "本地规则编辑与检查",
+    "ローカル編集": "本地编辑",
+    "ログがありません。": "没有日志。",
+    "ログなし": "无日志",
+    "ログを更新": "刷新日志",
+    "移動": "移动",
+    "移動先の再指定": "重新指定目标位置",
+    "移動先を更新しました。": "已更新目标位置。",
+    "維持：{name}（{reason}）": "保留：{name}（{reason}）",
+    "一括登録の確認": "确认批量注册",
+    "一覧を更新": "刷新列表",
+    "画面切替": "页面切换",
+    "解除": "解除",
+    "解除しました。一覧のみ変更し、ファイルは削除していません。": "已解除。仅更改列表，未删除文件。",
+    "解除する": "解除",
+    "解除の確認": "确认解除",
+    "解除は一覧からのみ削除し、リポジトリ内のファイルは削除しません。「開く」で登録フォルダを開けます。": "解除只会从列表中删除，不会删除仓库中的文件。点击“打开”可打开已注册的文件夹。",
+    "開く": "打开",
+    "開けませんでした": "无法打开",
+    "概要": "概览",
+    "確認チェックを入れてください。": "请勾选确认项。",
+    "確認済みプランで反映します（反映前に再照合し、変化があれば拒否）。よろしいですか。": "将应用已确认的计划（应用前会重新核对，如有变化则拒绝）。是否继续？",
+    "確認中": "确认中",
+    "管理バッチをダブルクリックするとこの画面が開きます。サーバーは 127.0.0.1 のみで待受けし、15分無操作で終了します。同期タスク自体はタスクスケジューラの設定どおり継続します。登録・解除は projects.json のみを変更します。": "双击管理批处理文件即可打开此页面。服务器仅在 127.0.0.1 上监听，15 分钟无操作后退出。同步任务本身会按任务计划程序的设置继续运行。注册与解除仅更改 projects.json。",
+    "間隔（分）": "间隔（分钟）",
+    "間隔の変更": "更改间隔",
+    "間隔を変更": "更改间隔",
+    "間隔を変更しました：{n}分": "间隔已改为 {n} 分钟",
+    "既存 AGENTS.md (sha256:{hash}) を退避し、固有分を project-local.md へ転記します。": "将保留现有 AGENTS.md（sha256:{hash}），并把专属内容转入 project-local.md。",
+    "既存 AGENTS.md の取込（無損失：原本を退避し固有分を project-local.md へ転記）。": "导入现有 AGENTS.md（无损：保留原文件，并将项目专属内容转入 project-local.md）。",
+    "既存 AGENTS.md の置き換えを許可（バックアップ後、同期で再生成）": "允许替换现有 AGENTS.md（备份后由同步重新生成）",
+    "既存 AGENTS.md をバックアップ後に同期で再生成します。AGENTS.md の固有内容は自動転記されません。必要な内容は project-local.md に手動転記してください。": "现有 AGENTS.md 会在备份后由同步重新生成。其中专有内容不会自动转写。请将需要的内容手动转入 project-local.md。",
+    "既存 project-local.md あり(sha256:{hash}): 変更しません。": "存在现有 project-local.md（sha256:{hash}）：不会更改。",
+    "起動待ち": "等待启动",
+    "起動待ちです。子プロセスの起動を確認しています。": "等待启动。正在确认子进程是否已启动。",
+    "休止しました。": "已暂停。",
+    "競合・不正があるため取り込めません。整理してから再実行してください。": "存在冲突或无效项，无法导入。请整理后重试。",
+    "競合：{name}（{reason}）": "冲突：{name}（{reason}）",
+    "共通SHA: {sha} 取得GitSHA: {commit} 作成: {at}": "共用 SHA：{sha} 获取的 Git SHA：{commit} 创建：{at}",
+    "決定": "确定",
+    "結果": "结果",
+    "検査中": "检查中",
+    "検索で絞り込み（名前・パス）": "按名称或路径筛选",
+    "検証して保存": "校验并保存",
+    "見送り": "跳过",
+    "見送り: {name}（無効のため対象外）": "跳过：{name}（已禁用，不在范围内）",
+    "見送りです。別の同期が実行中のため今回は見送りました。しばらくして今すぐ同期でやり直してください。": "已跳过。由于另一个同步正在执行，本次未运行。请稍后重新使用“立即同步”。",
+    "現在の間隔：{n}分（Global）": "当前间隔：{n} 分钟（Global）",
+    "現在の間隔：{n}分（Project のみ）": "当前间隔：{n} 分钟（仅 Project）",
+    "現在の内容と配置先（実ファイルの先頭のみ表示）。設定ファイルの中身は表示しません。": "当前内容与部署位置（仅显示实际文件的开头）。不显示配置文件的内容。",
+    "現在値": "当前值",
+    "候補はありませんでした。": "没有找到候选项。",
+    "更新": "更新",
+    "今すぐ同期": "立即同步",
+    "今すぐ同期の確認": "确认立即同步",
+    "今回のログ未確認": "本次日志未确认",
+    "Global: {global} / Project: {project}": "Global：{global} / Project：{project}",
+    "差分": "差异",
+    "差分あり": "有差异",
+    "差分なし": "无差异",
+    "差分取得中": "正在获取差异",
+    "最終結果": "最终结果",
+    "最終試行": "最近尝试",
+    "最終試行・最終成功・取得SHA・失敗理由の一覧です。選択した同期・差分はチェック欄で選びます。": "显示最近尝试、最近成功、获取的 SHA 和失败原因的列表。使用复选框选择要同步或比较差异的项目。",
+    "最終成功": "最近成功",
+    "作成": "创建时间",
+    "参照...": "浏览...",
+    "時間切れのため選択を終了しました。登録は行いません。": "选择已超时结束。未执行注册。",
+    "自動同期（Shirube Global Auto Sync）。ログオン時＋一定間隔で裏で実行します。": "自动同步（Shirube Global Auto Sync）。在登录时以及按固定间隔在后台运行。",
+    "自動同期の状態を取得できませんでした。": "无法获取自动同步状态。",
+    "自動同期は休止中です（裏の実行なし）。再開は切替ボタンで有効化してください。": "自动同步已暂停（不再后台执行）。重新启用请使用切换按钮。",
+    "自動同期は有効です（次回も裏で実行）。": "自动同步已启用（下次仍会在后台运行）。",
+    "失敗": "失败",
+    "失敗: {name}：{error}": "失败：{name}：{error}",
+    "失敗: {tail}": "失败：{tail}",
+    "失敗: {target}：{error}": "失败：{target}：{error}",
+    "失敗理由": "失败原因",
+    "実行中": "运行中",
+    "取り込みはプレビューで合流内容を確認してから登録します（新規のみ追加・既存維持）。": "导入时先通过预览确认合并内容，再执行注册（仅添加新项，保留现有项）。",
+    "取り込みました。追加：{n}件": "已导入。新增：{n} 项",
+    "取り込みました。追加：{n}件。同期間隔を{interval}分に変更しました。": "已导入 {n} 项。Project 同步间隔已更改为 {interval} 分钟。",
+    "取り込む": "导入",
+    "取り込んで登録・同期": "导入、注册并同步",
+    "取り込んで登録しました。": "已导入并注册。",
+    "取込の確認": "确认导入",
+    "取込プレビュー": "导入预览",
+    "取込プレビュー OK: 「{name}」として登録できます。": "导入预览 OK：可以作为“{name}”注册。",
+    "取込内容を確認し、退避と転記に同意する": "我已确认导入内容，同意保留原文件并转写内容",
+    "取得": "获取",
+    "取得SHA": "获取的 SHA",
+    "取得ハッシュ: {hash}（保存時に一致確認）": "获取的哈希：{hash}（保存时核对一致）",
+    "取得元": "来源",
+    "取得元: {commit} 作成: {at}": "来源：{commit} 创建：{at}",
+    "取得失敗: ": "获取失败：",
+    "取得中": "获取中",
+    "重複・矛盾候補を検査": "检查重复与矛盾候选项",
+    "状態と再試行": "状态与重试",
+    "状態を更新": "刷新状态",
+    "新しいフォルダの絶対パスを入力してください。": "请输入新文件夹的绝对路径。",
+    "新しい表示名を入力してください。（1〜64文字・制御文字なし）": "请输入新的显示名称（1〜64 个字符，不含控制字符）。",
+    "新規登録": "新建注册",
+    "新規登録へ": "前往新建注册",
+    "成功": "成功",
+    "成功: {tail}": "成功：{tail}",
+    "切り替える": "切换",
+    "設定・ヘルプ": "设置与帮助",
+    "設定（間隔・入出力）": "设置（间隔与导入导出）",
+    "設定をエクスポート（JSON保存）": "导出设置（保存 JSON）",
+    "先に差分確認をしてください。確認直後の復元のみ受け付けます。": "请先确认差异。仅接受确认后立即执行的恢复。",
+    "選択": "选择",
+    "選択ダイアログを開きました。フォルダを選んでください。": "已打开选择对话框。请选择文件夹。",
+    "選択なし": "未选择",
+    "選択の反映前差分": "所选项目的应用前差异",
+    "選択をやめる": "取消选择",
+    "選択を開けませんでした: ": "无法打开选择对话框：",
+    "選択を開けませんでした: {error}": "无法打开选择对话框：{error}",
+    "選択を終了しました。登録は行いません。": "已结束选择。未执行注册。",
+    "選択を同期": "同步所选",
+    "選択を反映しました。プレビューで確認してください。": "已应用选择。请在预览中确认。",
+    "操作": "操作",
+    "対象": "对象",
+    "対象: ": "对象：",
+    "対象: {id}": "对象：{id}",
+    "対象の変更": "更改对象",
+    "対象を保存": "保存对象",
+    "対象を保存しました。": "已保存对象。",
+    "対象外": "不在范围",
+    "待機中": "等待中",
+    "直近のみ表示。末尾の OK は成功、FAIL は失敗、SKIP は見送りです。": "仅显示最近记录。末尾 OK 表示成功，FAIL 表示失败，SKIP 表示跳过。",
+    "追加・変更がありません。": "没有需要添加或更改的内容。",
+    "追加：{name}": "新增：{name}",
+    "追加内容を確認した": "我已确认新增内容",
+    "適用する": "应用",
+    "登録して非表示で同期": "注册并在后台同步",
+    "登録しました：{names}": "已注册：{names}",
+    "登録しました。同期が成功しました。ログを確認してください。": "已注册。同步成功。请查看日志。",
+    "登録しました。同期を開始しました(開始 {at})。完了まで確認します(最大約60秒)。": "已注册。同步已开始（开始时间 {at}）。将确认完成情况（最长约 60 秒）。",
+    "登録しました。同期状態は未確認です。ログを確認してください。": "已注册。同步状态未确认。请查看日志。",
+    "登録しましたが同期が失敗しました。ログを確認してください。": "已注册，但同步失败。请查看日志。",
+    "登録しましたが同期は見送られました(別の同期が実行中)。しばらくして今すぐ同期でやり直してください。": "已注册，但同步被跳过（另一个同步正在执行）。请稍后重新使用“立即同步”。",
+    "登録しましたが同期は未確認です(起動待ち/継続中)。しばらくして更新ボタンで成功・失敗を確認してください。": "已注册，但同步未确认（等待启动/仍在执行）。请稍后刷新以确认成功或失败。",
+    "登録する": "注册",
+    "登録の確認": "确认注册",
+    "登録は完了しましたが同期の起動に失敗しました。「今すぐ同期」でやり直してください。": "注册已完成，但同步启动失败。请使用“立即同步”重试。",
+    "登録プロジェクト数": "已注册项目数",
+    "登録一覧の管理と今すぐ同期を行います。配布ファイルの直接編集はしません。開始した処理はUIを閉じても継続しますが、両方の完了確認には画面を開いたままにしてください。": "管理注册列表并立即执行同步。不会直接编辑分发的文件。已开始的处理即使关闭界面也会继续，但确认两边都完成时请保持此页面打开。",
+    "登録後の同期で AGENTS.md が生成・再生成されることを理解した": "我了解注册后的同步会生成或重新生成 AGENTS.md",
+    "統合同期の実行中はプレビュー適用できません。": "统合同步执行期间无法应用预览。",
+    "統合同期の実行中は選択同期できません。": "统合同步执行期间无法同步所选项目。",
+    "同期IDを取得できませんでした。": "无法获取同步 ID。",
+    "同期が失敗しました": "同步失败",
+    "同期が失敗しました。ログを確認してください。": "同步失败。请查看日志。",
+    "同期が成功しました": "同步成功",
+    "同期が成功しました。ログを確認してください。": "同步成功。请查看日志。",
+    "同期する": "同步",
+    "同期するプロジェクトを選択してください（一覧または状態表の選択欄）。": "请选择要同步的项目（在列表或状态表的复选框中）。",
+    "同期できませんでした": "无法执行同步",
+    "同期の起動に失敗しました": "同步启动失败",
+    "同期は見送られました(別の同期が実行中)。しばらくしてやり直してください。": "同步已跳过（另一个同步正在执行）。请稍后重试。",
+    "同期は見送りです": "同步已跳过",
+    "同期は未確認です": "同步未确认",
+    "同期は未確認です(起動待ち/継続中)。しばらくして更新ボタンで成功・失敗を確認してください。": "同步未确认（等待启动/仍在执行）。请稍后刷新以确认成功或失败。",
+    "同期ログ": "同步日志",
+    "同期を開始できませんでした。": "无法开始同步。",
+    "同期を中断しました": "同步已中断",
+    "同期間隔: {current}分 → {next}分に変更します（Projectのみ、Global不変）。": "同步间隔：{current} 分钟 → 将改为 {next} 分钟（仅 Project，Global 不变）。",
+    "同期間隔: 未設定 → {next}分に変更します（Projectのみ、Global不変）。": "同步间隔：未设置 → 将改为 {next} 分钟（仅 Project，Global 不变）。",
+    "同期間隔: {reason}": "同步间隔：{reason}",
+    "同期間隔は Project タスクのみ変更します（Global は不変）。エクスポート・インポートに秘密情報は含みません。": "此处仅更改 Project 任务的间隔（Global 不变）。导出和导入不包含机密信息。",
+    "同期状態": "同步状态",
+    "同期状態は未確認です。ログを確認してください。": "同步状态未确认。请查看日志。",
+    "同期進捗": "同步进度",
+    "同期中": "同步中",
+    "読込中": "加载中",
+    "内容": "内容",
+    "内容を表示": "显示内容",
+    "配る対象の選択・自動同期の間隔と有効/無効を変えます。更新前バックアップと復元は「バックアップ」画面で行います。": "选择分发对象，并更改自动同步的间隔与启用/禁用状态。更新前备份和恢复在“备份”页面进行。",
+    "配る対象を「{targets}」に変更します。よろしいですか。": "将分发对象改为“{targets}”。是否继续？",
+    "配置元: {base}": "来源位置：{base}",
+    "配置先": "部署位置",
+    "反映前プレビュー": "应用前预览",
+    "表示言語": "显示语言",
+    "表示名の変更": "更改显示名称",
+    "不正": "无效",
+    "不正：{name}（{reason}）": "无效：{name}（{reason}）",
+    "伏字表示中の内容はそのまま保存できません（原本保護）。再取得しても伏字のままの場合、そのまま保存しないでください。": "脱敏显示的内容不能直接保存（保护原文件）。如果重新获取后仍为脱敏状态，请不要直接保存。",
+    "復元": "恢复",
+    "復元しました。休止中のため再開は有効化してください。": "已恢复。目标处于暂停状态，请重新启用以继续。",
+    "復元しました。休止中のため再開は有効化してください。{warning}": "已恢复。目标处于暂停状态，请重新启用以继续。{warning}",
+    "復元する": "恢复",
+    "復元の確認": "确认恢复",
+    "復元は AGENTS.md と localSource を一緒に復元し、次回上書き防止のため休止（無効）にします。共通 GitHub 側の巻戻しはしません。": "恢复会同时还原 AGENTS.md 与 localSource，并暂停（禁用）目标以防止下次覆盖。不会回滚 GitHub 上的共享仓库。",
+    "復元前に Global 自動同期を休止し、復元後も休止のまま残ります（再開は有効化）。差分で内容を確認してから復元します。": "恢复前会暂停 Global 自动同步，恢复后仍保持暂停（重新启用即可恢复）。请先通过差异确认内容再恢复。",
+    "複数まとめて登録（1行1パス、最大20件。新規のみ。AGENTS.md ありは個別取込）。": "批量注册多个项目（每行一个路径，最多 20 个；仅限新项目；存在 AGENTS.md 的项目需单独导入）。",
+    "分": " 分钟",
+    "閉じる": "关闭",
+    "変更あり: {name}": "有更改：{name}",
+    "変更あり: {target}": "有更改：{target}",
+    "変更する": "更改",
+    "変更なし: {name}": "无更改：{name}",
+    "変更なし: {target}": "无更改：{target}",
+    "保存しました。": "已保存。",
+    "未確認": "未确认",
+    "未確認です。しばらくして「選択の反映前差分」で再取得してください。": "未确认。请稍后使用“所选项目的应用前差异”重新获取。",
+    "未確認です。しばらくして「反映前プレビュー」で再取得してください。": "未确认。请稍后使用“应用前预览”重新获取。",
+    "未確認です。今回の実行結果がまだありません。": "未确认。本次执行尚无结果。",
+    "未実行": "未执行",
+    "未設定": "未设置",
+    "無効": "禁用",
+    "無効にしました（次回同期は対象外）。": "已禁用（下次同步不在范围内）。",
+    "名称を変更しました。": "已更改名称。",
+    "名称変更": "更改名称",
+    "名前": "名称",
+    "有効": "启用",
+    "有効/無効の切替": "切换启用/禁用",
+    "有効/無効を切替": "切换启用/禁用",
+    "有効にしました。": "已启用。",
+    "要求がタイムアウトしました。少し待って更新ボタンで確認してください。": "请求超时。请稍等后使用刷新按钮确认。",
+    "例 C:\\Project\\A": "例：C:\\Project\\A",
+    "例 C:\\Project\\MyRepo": "例：C:\\Project\\MyRepo"
+  }
+};
+let currentLang = "ja";
+function safeLang(v){ return LANGS.indexOf(v) >= 0 ? v : "ja"; }
+function storedLang(){
+  try{
+    const v = window.localStorage.getItem(LANG_KEY);
+    return safeLang(v);
+  }catch(e){ return "ja"; }
+}
+function saveLang(v){
+  try{ window.localStorage.setItem(LANG_KEY, safeLang(v)); }catch(e){}
+}
+function decodeEscapedText(s){ return String(s).replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&amp;/g,"&"); }
+function L(key, vars){
+  const dict = I18N[currentLang];
+  let s = (dict && Object.prototype.hasOwnProperty.call(dict, key)) ? dict[key] : key;
+  if(vars && typeof s === "string") s = s.replace(/\{([^{}]+)\}/g, function(match, k){ return Object.prototype.hasOwnProperty.call(vars, k) ? String(vars[k]) : match; });
+  try{
+    const recipe = {key:key, vars:vars ? Object.assign({}, vars) : null};
+    localizedText[currentLang].set(s, recipe);
+    const visible = decodeEscapedText(s);
+    if(visible !== s){
+      const visibleVars = recipe.vars ? Object.assign({}, recipe.vars) : null;
+      if(visibleVars) Object.keys(visibleVars).forEach(function(k){ if(typeof visibleVars[k] === "string") visibleVars[k] = decodeEscapedText(visibleVars[k]); });
+      localizedText[currentLang].set(visible, {key:key, vars:visibleVars});
+    }
+  }catch(e){}
+  return s;
+}
+function localizeGeneratedUI(fromLang){
+  const ids = ["ovl","msgList","browseArea","prevArea","batchArea","importArea","msgStatus","planArea","msgGlobal","globalPlanArea","backupDiffArea","msgBackup","globalBackupDiffArea","msgGlobalBackup","localArea","checkArea","msgLocal","msgInterval","msgSettings","importRegArea","msgGlobalTargets","msgGlobalInterval"];
+  function visit(n){
+    if(!n) return;
+    if(n.nodeType === 3){
+      const raw = n.nodeValue || "";
+      const map = localizedText[fromLang];
+      const trimmed = raw.trim();
+      const exact = map && map.get(raw);
+      const entry = exact || (map && map.get(trimmed));
+      if(entry){
+        const leading = /^\s*/.exec(raw)[0], trailing = /\s*$/.exec(raw)[0];
+        const vars = entry.vars ? Object.assign({}, entry.vars) : null;
+        if(vars && Object.prototype.hasOwnProperty.call(vars, "state")){
+          const states = ["実行中","起動待ち","成功","失敗","見送り","未確認","待機中"];
+          for(let i=0;i<states.length;i++) if(String(vars.state) === ((I18N[fromLang] && I18N[fromLang][states[i]]) || states[i])){ vars.state = L(states[i]); break; }
+        }
+        const translated = L(entry.key, vars);
+        n.nodeValue = exact ? translated : leading + translated + trailing;
+      }
+      return;
+    }
+    if(n.nodeType === 1 && /^(PRE|TEXTAREA|INPUT|SELECT|CODE)$/.test(n.tagName || "")) return;
+    const children = n.childNodes || [];
+    for(let i=0;i<children.length;i++) visit(children[i]);
+  }
+  for(let i=0;i<ids.length;i++) try{ visit(document.getElementById(ids[i])); }catch(e){}
+  function visitActions(n){
+    if(!n) return;
+    if(n.nodeType === 1 && n.tagName === "BUTTON"){ visit(n); return; }
+    const children = n.childNodes || [];
+    for(let i=0;i<children.length;i++) visitActions(children[i]);
+  }
+  ["backupRows","globalBackupRows"].forEach(function(id){ try{ visitActions(document.getElementById(id)); }catch(e){} });
+  const backupRows = document.getElementById("backupRows");
+  if(backupRows) Array.from(backupRows.children || []).forEach(function(row){
+    const cell = row.children[3];
+    if(cell && cell.dataset && cell.dataset.hasAgentsFile !== undefined){
+      cell.textContent = L(cell.dataset.hasAgentsFile === "true" ? "AGENTSあり" : "AGENTSなし") + " / " + L(cell.dataset.hasLocalFile === "true" ? "localあり" : "localなし");
+    }
+  });
+}
+function applyStaticLanguage(){
+  const groups = [
+    ["[data-i18n]", "textContent", "data-i18n"],
+    ["[data-i18n-placeholder]", "placeholder", "data-i18n-placeholder"],
+    ["[data-i18n-title]", "title", "data-i18n-title"],
+    ["[data-i18n-aria]", "aria-label", "data-i18n-aria"],
+    ["[data-i18n-aria-valuetext]", "aria-valuetext", "data-i18n-aria-valuetext"]
+  ];
+  for(let i=0;i<groups.length;i++){
+    const g = groups[i];
+    const nodes = document.querySelectorAll(g[0]) || [];
+    for(let j=0;j<nodes.length;j++){
+      const n = nodes[j];
+      try{
+        const key = n.getAttribute(g[2]);
+        if(key === null) continue;
+        if(g[1] === "textContent") n.textContent = L(key);
+        else n.setAttribute(g[1], L(key));
+      }catch(e){}
+    }
+  }
+  const sm = document.querySelector && document.querySelector(".summarybar section");
+  if(sm) try{ sm.setAttribute("aria-label", L("概要")); }catch(e){}
+}
+function applyLanguage(lang, reload){
+  const previousLang = currentLang;
+  currentLang = safeLang(lang);
+  try{ document.documentElement.lang = currentLang; }catch(e){}
+  try{ document.title = L("Shirube 管理ダッシュボード"); }catch(e){}
+  applyStaticLanguage();
+  localizeGeneratedUI(previousLang);
+  try{ if(typeof renderSyncState === "function") renderSyncState(); }catch(e){}
+  try{ if(typeof renderGlobalContent === "function") renderGlobalContent(); }catch(e){}
+  try{ if(typeof renderGlobalStatus === "function") renderGlobalStatus(); }catch(e){}
+  try{ if(lastBackupDiff) renderBackupDiff(document.getElementById("backupDiffArea"), lastBackupDiff); }catch(e){}
+  try{ if(lastGlobalBackupDiff) renderGlobalBackupDiff(lastGlobalBackupDiff.data); }catch(e){}
+  try{ if(typeof renderProjectLog === "function") renderProjectLog(); }catch(e){}
+  try{ if(typeof renderGlobalLog === "function") renderGlobalLog(); }catch(e){}
+  try{ const c=document.getElementById("stCount"); if(c) c.textContent=lastProjectCount===null?L("読込中"):L("{n} 件",{n:lastProjectCount}); }catch(e){}
+  if(previousLang !== currentLang && localizedText[previousLang]) localizedText[previousLang].clear();
+  try{ const sel = document.getElementById("selLang"); if(sel) sel.value = currentLang; }catch(e){}
+  if(!reload) return;
+  try{ if(typeof refresh === "function") refresh(); }catch(e){}
+  try{ if(typeof refreshGlobal === "function") refreshGlobal(); }catch(e){}
+  try{
+    const b = document.getElementById("backups");
+    if(b && !b.hidden){
+      if(typeof loadBackups === "function") loadBackups();
+      if(typeof loadGlobalBackups === "function") loadGlobalBackups();
+    }
+  }catch(e){}
+}
+function initLanguage(){
+  applyLanguage(storedLang(), false);
+  const sel = document.getElementById("selLang");
+  if(sel){
+    sel.value = currentLang;
+    sel.onchange = function(){
+      saveLang(sel.value);
+      applyLanguage(sel.value, true);
+    };
+  }
+}
 function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 function stateJa(s){
-  if(s==="running") return "実行中";
-  if(s==="waiting") return "起動待ち";
-  if(s==="success") return "成功";
-  if(s==="failed") return "失敗";
-  if(s==="skipped") return "見送り";
-  if(s==="unconfirmed") return "未確認";
-  return "待機中";
+  if(s==="running") return L("実行中");
+  if(s==="waiting") return L("起動待ち");
+  if(s==="success") return L("成功");
+  if(s==="failed") return L("失敗");
+  if(s==="skipped") return L("見送り");
+  if(s==="unconfirmed") return L("未確認");
+  return L("待機中");
+}
+function renderGlobalLog(){
+  const pre = document.getElementById("globalLogPre");
+  if(!pre) return;
+  pre.textContent = !globalLogState.loaded ? L("読込中") : globalLogState.error ? L("取得失敗: ") + globalLogState.error : globalLogState.tail || L("ログがありません。");
+}
+let lastProjectCount = null;
+let syncDisplayState = null;
+let projectLogState = {loaded:false, tail:"", error:null};
+function renderProjectLog(){
+  const pre = document.getElementById("logPre");
+  if(!pre) return;
+  pre.textContent = !projectLogState.loaded ? L("読込中") : projectLogState.error ? L("取得失敗: ") + projectLogState.error : projectLogState.tail || L("ログがありません。");
 }
 function updateSyncUI(s){
-  document.getElementById("stCount").textContent = (s.count == null ? 0 : s.count) + " 件";
-  document.getElementById("logPre").textContent = s.tail || "ログがありません。";
+  lastProjectCount = (s.count == null ? 0 : s.count);
+  projectLogState = {loaded:true, tail:s.tail || "", error:null};
+  document.getElementById("stCount").textContent = L("{n} 件", {n:lastProjectCount});
+  renderProjectLog();
   updateCommonSyncState("project", s);
 }
 function updateCommonSyncState(kind, state){
@@ -1251,7 +2076,7 @@ function updateCommonSyncState(kind, state){
     const expected = kind === "project"
       ? (unifiedProjectRunId || unifiedBaselineProjectRunId)
       : (unifiedGlobalRunId || unifiedBaselineGlobalRunId);
-    if(!id || id === String(expected || "")) return;
+    if(!id || id === String(expected || "")){ renderSyncState(); return; }
     unifiedFinalState = null;
     commonSyncSource = kind;
   } else if(id && previous && id !== String(previous.syncId || "")){
@@ -1267,26 +2092,58 @@ function updateCommonSyncState(kind, state){
     else commonSyncSource = time(global) > time(project) ? "global" : "project";
   }
   const current = commonSyncStates[commonSyncSource];
-  if(!current) return;
+  if(current){
+    syncDisplayState = {source:commonSyncSource,status:current.syncState || (current.running ? "running" : "idle"),logName:current.logName || "",logMtime:current.logMtime || "",finalLine:current.finalLine || "",tail:current.tail || ""};
+    renderSyncState();
+  }
+}
+function renderSyncState(){
+  const run = document.getElementById("stRun");
+  const current = commonSyncStates[commonSyncSource];
+  const detail = syncDisplayState;
+  const count = document.getElementById("stCount");
+  if(count) count.textContent = lastProjectCount === null ? L("読込中") : L("{n} 件", {n:lastProjectCount});
+  if(detail){
+    const label = detail.source === "global" ? "Global" : "Project";
+    const log = (detail.logName || (detail.unified ? L("今回のログ未確認") : L("ログなし"))) + (detail.logMtime ? " (" + detail.logMtime + ")" : "");
+    document.getElementById("stLog").textContent = log;
+    document.getElementById("stLog").title = log;
+    const result = detail.unified
+      ? L("Global: {global} / Project: {project}", {global:stateJa(detail.globalState || "unconfirmed"), project:detail.projectState ? stateJa(detail.projectState) : L("未実行")})
+      : label + ": " + stateJa(detail.status) + (detail.finalLine || detail.tail ? " " + (detail.finalLine || detail.tail).slice(-220) : "");
+    document.getElementById("stTail").textContent = result;
+    document.getElementById("stTail").title = result;
+  }
+  if(unifiedFinalState){
+    run.textContent = stateJa(unifiedFinalState);
+    run.dataset.state = unifiedFinalState;
+    renderUnifiedProgress();
+    return;
+  }
+  if(unifiedSyncActive){
+    run.textContent = stateJa("running");
+    run.dataset.state = "running";
+    renderUnifiedProgress();
+    return;
+  }
+  if(!current){
+    run.textContent = L("読込中");
+    document.getElementById("stTail").textContent = L("読込中");
+    renderUnifiedProgress();
+    return;
+  }
   const status = current.syncState || (current.running ? "running" : "idle");
   const label = commonSyncSource === "global" ? "Global" : "Project";
-  const run = document.getElementById("stRun");
   run.textContent = stateJa(status);
   run.dataset.state = status;
-  const log = (current.logName || "ログなし") + (current.logMtime ? " (" + current.logMtime + ")" : "");
-  document.getElementById("stLog").textContent = log;
-  document.getElementById("stLog").title = log;
-  const result = label + ": " + stateJa(status) + (current.finalLine || current.tail ? " " + (current.finalLine || current.tail).slice(-220) : "");
-  document.getElementById("stTail").textContent = result;
-  document.getElementById("stTail").title = result;
   const terminal = status === "success" || status === "failed" || status === "skipped";
   setUnifiedProgress(terminal ? 1 : 0, 1, label + ": " + stateJa(status), status === "running" || status === "waiting");
 }
 function resultJa(r){
-  if(r === "success") return "成功";
-  if(r === "failed") return "失敗";
-  if(r === "skipped") return "見送り";
-  return "未実行";
+  if(r === "success") return L("成功");
+  if(r === "failed") return L("失敗");
+  if(r === "skipped") return L("見送り");
+  return L("未実行");
 }
 function applySearchFilter(){
   const q = (document.getElementById("inpSearch").value || "").toLowerCase();
@@ -1301,6 +2158,12 @@ function applySearchFilter(){
     }
   }
 }
+function selectedNamesIn(selector){
+  const names = new Set();
+  const boxes = document.querySelectorAll(selector);
+  for(let i=0;i<boxes.length;i++) if(boxes[i].checked) names.add(boxes[i].value);
+  return names;
+}
 function selectedNames(){
   const out = [];
   const seen = new Set();
@@ -1310,7 +2173,8 @@ function selectedNames(){
   for(let j=0;j<boxes2.length;j++){ if(boxes2[j].checked && !seen.has(boxes2[j].value)){ seen.add(boxes2[j].value); out.push(boxes2[j].value); } }
   return out;
 }
-function renderStatusTable(list){
+function renderStatusTable(list, selected){
+  if(!selected){ try{ selected = selectedNamesIn("#statusRows input.selbox"); }catch(e){ selected = new Set(); } }
   const tb = document.getElementById("statusRows");
   tb.innerHTML = "";
   document.getElementById("tblStatus").hidden = list.length === 0;
@@ -1320,9 +2184,10 @@ function renderStatusTable(list){
     try{ tr.dataset.search = (e.name + " " + (e.displayName || "") + " " + (e.error || "")).toLowerCase(); }catch(e2){}
     const td0 = document.createElement("td");
     const cb = document.createElement("input"); cb.type = "checkbox"; cb.className = "selbox"; cb.value = e.name;
+    cb.checked = selected.has(e.name);
     td0.appendChild(cb);
     const td1 = document.createElement("td"); td1.textContent = e.displayName || e.name; td1.title = e.name;
-    const tdE = document.createElement("td"); tdE.textContent = (e.enabled !== false) ? "有効" : "無効";
+    const tdE = document.createElement("td"); tdE.textContent = (e.enabled !== false) ? L("有効") : L("無効");
     const tdA = document.createElement("td"); tdA.textContent = e.lastAttemptAt || "-";
     const tdS = document.createElement("td"); tdS.textContent = e.lastSuccessAt || "-";
     const tdH = document.createElement("td"); const hc = document.createElement("code"); hc.className = "path";
@@ -1340,13 +2205,13 @@ async function afterSyncNotify(r){
     await refresh(dl);
     const st = await pollUntilDone(r.syncId, 30, 2000, dl);
     if(Date.now() < dl) await refresh(dl);
-    if(st === "success") await showNotify("同期が成功しました", "同期が成功しました。ログを確認してください。");
-    else if(st === "failed") await showNotify("同期が失敗しました", "同期が失敗しました。ログを確認してください。");
-    else if(st === "skipped") await showNotify("同期は見送りです", "同期は見送られました(別の同期が実行中)。しばらくしてやり直してください。");
-    else await showNotify("同期は未確認です", "同期は未確認です(起動待ち/継続中)。しばらくして更新ボタンで成功・失敗を確認してください。");
+    if(st === "success") await showNotify(L("同期が成功しました"), L("同期が成功しました。ログを確認してください。"));
+    else if(st === "failed") await showNotify(L("同期が失敗しました"), L("同期が失敗しました。ログを確認してください。"));
+    else if(st === "skipped") await showNotify(L("同期は見送りです"), L("同期は見送られました(別の同期が実行中)。しばらくしてやり直してください。"));
+    else await showNotify(L("同期は未確認です"), L("同期は未確認です(起動待ち/継続中)。しばらくして更新ボタンで成功・失敗を確認してください。"));
   } else {
     await refresh();
-    await showNotify("同期は未確認です", "同期状態は未確認です。ログを確認してください。");
+    await showNotify(L("同期は未確認です"), L("同期状態は未確認です。ログを確認してください。"));
   }
 }
 async function refresh(deadline){
@@ -1368,6 +2233,8 @@ async function refresh(deadline){
       stList.forEach(function(r){ enMap[r.name] = r.enabled; });
     }catch(e){}
     const tb = document.getElementById("rows");
+    let selected = new Set(), selectedStatus = new Set();
+    try{ selected = selectedNamesIn("#rows input.selbox"); selectedStatus = selectedNamesIn("#statusRows input.selbox"); }catch(e){}
     tb.innerHTML = "";
     document.getElementById("tbl").hidden = p.projects.length === 0;
     document.getElementById("emptyProj").hidden = p.projects.length !== 0;
@@ -1376,50 +2243,51 @@ async function refresh(deadline){
       try{ tr.dataset.search = (e.name + " " + (e.displayName || "") + " " + e.path).toLowerCase(); }catch(e2){}
       const td0 = document.createElement("td");
       const cb = document.createElement("input"); cb.type = "checkbox"; cb.className = "selbox"; cb.value = e.name;
+      cb.checked = selected.has(e.name);
       td0.appendChild(cb);
       const td1 = document.createElement("td"); td1.textContent = e.displayName || e.name; td1.title = e.name;
       const td2 = document.createElement("td"); const c = document.createElement("code"); c.className = "path"; c.textContent = e.path; td2.appendChild(c);
       const tdE = document.createElement("td");
       const enB = document.createElement("button"); const en = (enMap[e.name] !== false);
-      enB.textContent = en ? "有効" : "無効";
+      enB.textContent = en ? L("有効") : L("無効");
       enB.onclick = async function(){
-        try{ await api("/api/enabled","POST",{name:e.name,enabled:!en}); setMsg("msgList",(en ? "無効にしました（次回同期は対象外）。" : "有効にしました。"),true); refresh(); }
+        try{ await api("/api/enabled","POST",{name:e.name,enabled:!en}); setMsg("msgList",(en ? L("無効にしました（次回同期は対象外）。") : L("有効にしました。")),true); refresh(); }
         catch(err){ setMsg("msgList", err.message, false); }
       };
       tdE.appendChild(enB);
       const td3 = document.createElement("td");
       const acts = document.createElement("div"); acts.className = "acts";
-      const bo = document.createElement("button"); bo.textContent = "開く"; bo.title = "エクスプローラーで開く"; bo.setAttribute("aria-label", "エクスプローラーで開く"); bo.className = "opbtn";
+      const bo = document.createElement("button"); bo.textContent = L("開く"); bo.title = L("エクスプローラーで開く"); bo.setAttribute("aria-label", L("エクスプローラーで開く")); bo.className = "opbtn";
       bo.onclick = async function(){
-        try{ await api("/api/open","POST",{name:e.name}); setMsg("msgList","エクスプローラーで開きました: "+e.name,true); }
-        catch(err){ await showNotify("開けませんでした", err.message); }
+        try{ await api("/api/open","POST",{name:e.name}); setMsg("msgList",L("エクスプローラーで開きました: {name}",{name:e.name}),true); }
+        catch(err){ await showNotify(L("開けませんでした"), err.message); }
       };
-      const br2 = document.createElement("button"); br2.textContent = "名称変更";
+      const br2 = document.createElement("button"); br2.textContent = L("名称変更");
       br2.onclick = async function(){
-        const nn = await showModalInput("表示名の変更", "新しい表示名を入力してください。（1〜64文字・制御文字なし）", e.displayName || e.name);
+        const nn = await showModalInput(L("表示名の変更"), L("新しい表示名を入力してください。（1〜64文字・制御文字なし）"), e.displayName || e.name);
         if(nn === null) return;
-        try{ await api("/api/rename","POST",{oldName:e.name,newName:nn}); setMsg("msgList","名称を変更しました。",true); refresh(); }
+        try{ await api("/api/rename","POST",{oldName:e.name,newName:nn}); setMsg("msgList",L("名称を変更しました。"),true); refresh(); }
         catch(err){ setMsg("msgList", err.message, false); }
       };
-      const bm = document.createElement("button"); bm.textContent = "移動";
+      const bm = document.createElement("button"); bm.textContent = L("移動");
       bm.onclick = async function(){
-        const np = await showModalInput("移動先の再指定", "新しいフォルダの絶対パスを入力してください。", e.path);
+        const np = await showModalInput(L("移動先の再指定"), L("新しいフォルダの絶対パスを入力してください。"), e.path);
         if(np === null) return;
-        try{ await api("/api/move","POST",{name:e.name,newPath:np}); setMsg("msgList","移動先を更新しました。",true); refresh(); }
+        try{ await api("/api/move","POST",{name:e.name,newPath:np}); setMsg("msgList",L("移動先を更新しました。"),true); refresh(); }
         catch(err){ setMsg("msgList", err.message, false); }
       };
-      const b = document.createElement("button"); b.textContent = "解除"; b.className = "danger";
+      const b = document.createElement("button"); b.textContent = L("解除"); b.className = "danger";
       b.onclick = async function(){
-        const ok = await showConfirm("解除の確認", "「"+e.name+"」を一覧から解除します。ファイルは削除しません。よろしいですか。", "解除する", "やめる");
+        const ok = await showConfirm(L("解除の確認"), L("「{name}」を一覧から解除します。ファイルは削除しません。よろしいですか。", {name:e.name}), L("解除する"), L("やめる"));
         if(!ok) return;
-        try{ await api("/api/unregister","POST",{name:e.name}); setMsg("msgList","解除しました。一覧のみ変更し、ファイルは削除していません。",true); refresh(); }catch(err){ setMsg("msgList", err.message, false); } };
+        try{ await api("/api/unregister","POST",{name:e.name}); setMsg("msgList",L("解除しました。一覧のみ変更し、ファイルは削除していません。"),true); refresh(); }catch(err){ setMsg("msgList", err.message, false); } };
       td3.appendChild(acts); acts.appendChild(bo); acts.appendChild(br2); acts.appendChild(bm); acts.appendChild(b);
       tr.appendChild(td0); tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(tdE); tr.appendChild(td3); tb.appendChild(tr);
     });
-    try{ renderStatusTable(stList); }catch(e){}
+    try{ renderStatusTable(stList, selectedStatus); }catch(e){}
     try{ applySearchFilter(); }catch(e2){}
     try{ fillLocalSelect(p.projects); }catch(e){}
-  }catch(e){ document.getElementById("logPre").textContent = "取得失敗: "+e.message; }
+  }catch(e){ projectLogState = {loaded:true, tail:"", error:e.message}; renderProjectLog(); }
 }
 async function pollUntilDone(syncId, tries, delayMs, deadline){
   const dl = deadline || (Date.now() + 60000);
@@ -1477,7 +2345,7 @@ function showModal(title, msg, buttons, inputInitial){
   return outer;
 }
 function showModalInput(title, msg, initial){
-  return showModal(title, msg, [{label:"決定", primary:true, useInput:true, value:null},{label:"やめる", primary:false, value:null}], (initial === undefined ? "" : initial));
+  return showModal(title, msg, [{label:L("決定"), primary:true, useInput:true, value:null},{label:L("やめる"), primary:false, value:null}], (initial === undefined ? "" : initial));
 }
 function showModalInner(title, msg, buttons, callerFocus, inputInitial){
   return new Promise(function(resolve){
@@ -1554,62 +2422,62 @@ function showModalInner(title, msg, buttons, callerFocus, inputInitial){
     if(btns[0]) try{ btns[0].focus(); }catch(e){}
   });
 }
-function showNotify(title, msg){ return showModal(title, msg, [{label:"閉じる", primary:true, value:true}]); }
+function showNotify(title, msg){ return showModal(title, msg, [{label:L("閉じる"), primary:true, value:true}]); }
 function showConfirm(title, msg, okLabel, cancelLabel){ return showModal(title, msg, [{label:okLabel, primary:true, value:true},{label:cancelLabel, primary:false, value:false}]); }
 let lastPreview = null;
 let lastPreviewGen = 0;
 let previewGen = 0;
 async function doPreview(pathVal){
   const myGen = ++previewGen;
-  const pa = document.getElementById("prevArea"); pa.innerHTML = "<p class='muted'>確認中</p>";
+  const pa = document.getElementById("prevArea"); pa.innerHTML = "<p class='muted'>"+L("確認中")+"</p>";
   try{
     const forceReplace = !!(document.getElementById("ckForceReplace") && document.getElementById("ckForceReplace").checked);
     const v = await api("/api/preview","POST",{path:pathVal, forceReplace:forceReplace});
     if(myGen !== previewGen){ return; }
     lastPreview = v;
     lastPreviewGen = myGen;
-    let h = "<p class='ok'>プレビュー OK: 「"+esc(v.name)+"」として登録できます。</p>";
-    h += "<p class='muted'>パス: <code class='path'>"+esc(v.path)+"</code></p>";
+    let h = "<p class='ok'>"+L("プレビュー OK: 「{name}」として登録できます。", {name:esc(v.name)})+"</p>";
+    h += "<p class='muted'>"+L("パス: ")+"<code class='path'>"+esc(v.path)+"</code></p>";
     if(v.hasAgents){
-      h += "<p class='warn'>既存 AGENTS.md をバックアップ後に同期で再生成します。AGENTS.md の固有内容は自動転記されません。必要な内容は project-local.md に手動転記してください。</p>";
+      h += "<p class='warn'>"+L("既存 AGENTS.md をバックアップ後に同期で再生成します。AGENTS.md の固有内容は自動転記されません。必要な内容は project-local.md に手動転記してください。")+"</p>";
     } else {
-      h += "<p class='muted'>AGENTS.md なし: 登録後の同期で新規生成されます。既存 AGENTS.md がある場合は登録停止します。</p>";
+      h += "<p class='muted'>"+L("AGENTS.md なし: 登録後の同期で新規生成されます。既存 AGENTS.md がある場合は登録停止します。")+"</p>";
     }
-    if(v.hasLocal) h += "<p class='muted'>既存 project-local.md あり(sha256:"+esc((v.localHash||"").slice(0,12))+"): 変更しません。</p>";
-    else h += "<p class='muted'>project-local.md なし: 共通ルールのみで生成されます。</p>";
-    h += "<label class='chk'><input type='checkbox' id='ck1'> 登録後の同期で AGENTS.md が生成・再生成されることを理解した</label>";
-    h += "<div class='btnrow'><button id='btnReg' class='primary'>登録して非表示で同期</button></div><div id='msgReg' role='status'></div>";
+    if(v.hasLocal) h += "<p class='muted'>"+L("既存 project-local.md あり(sha256:{hash}): 変更しません。", {hash:esc((v.localHash||"").slice(0,12))})+"</p>";
+    else h += "<p class='muted'>"+L("project-local.md なし: 共通ルールのみで生成されます。")+"</p>";
+    h += "<label class='chk'><input type='checkbox' id='ck1'> "+L("登録後の同期で AGENTS.md が生成・再生成されることを理解した")+"</label>";
+    h += "<div class='btnrow'><button id='btnReg' class='primary'>"+L("登録して非表示で同期")+"</button></div><div id='msgReg' role='status'></div>";
     pa.innerHTML = h;
     document.getElementById("btnReg").onclick = async function(){
       const btn = document.getElementById("btnReg"); btn.disabled = true;
       try{
-        if(!lastPreview || lastPreview !== v || previewGen !== lastPreviewGen) throw new Error("プレビューが無効です。もう一度プレビューしてください。");
-        if(!document.getElementById("ck1") || !document.getElementById("ck1").checked) throw new Error("確認チェックを入れてください。");
-        const warnMsg = v.hasAgents ? " 既存 AGENTS.md はバックアップ後に同期で再生成されます（固有内容は自動転記されません）。" : "";
-        const okGo = await showConfirm("登録の確認", "「"+v.name+"」を登録し、非表示で同期します。よろしいですか。" + warnMsg, "登録する", "やめる");
+        if(!lastPreview || lastPreview !== v || previewGen !== lastPreviewGen) throw new Error(L("プレビューが無効です。もう一度プレビューしてください。"));
+        if(!document.getElementById("ck1") || !document.getElementById("ck1").checked) throw new Error(L("確認チェックを入れてください。"));
+        const warnMsg = v.hasAgents ? L(" 既存 AGENTS.md はバックアップ後に同期で再生成されます（固有内容は自動転記されません）。") : "";
+        const okGo = await showConfirm(L("登録の確認"), L("「{name}」を登録し、非表示で同期します。よろしいですか。", {name:v.name}) + warnMsg, L("登録する"), L("やめる"));
         if(!okGo){ return; }
-        if(!lastPreview || lastPreview !== v || previewGen !== lastPreviewGen) throw new Error("プレビューが無効です。もう一度プレビューしてください。");
-        if(!document.getElementById("ck1") || !document.getElementById("ck1").checked) throw new Error("確認チェックを入れてください。");
+        if(!lastPreview || lastPreview !== v || previewGen !== lastPreviewGen) throw new Error(L("プレビューが無効です。もう一度プレビューしてください。"));
+        if(!document.getElementById("ck1") || !document.getElementById("ck1").checked) throw new Error(L("確認チェックを入れてください。"));
         const fr = !!(document.getElementById("ckForceReplace") && document.getElementById("ckForceReplace").checked);
         const r = await api("/api/register","POST",{path:v.path,previewId:v.previewId,confirm:true,forceReplace:fr});
         if(r.sync === "started"){
-          setMsgHtml("msgReg",true,"登録しました。同期を開始しました(開始 "+(r.syncAt||"")+")。完了まで確認します(最大約60秒)。");
+          setMsgHtml("msgReg",true,L("登録しました。同期を開始しました(開始 {at})。完了まで確認します(最大約60秒)。", {at:(r.syncAt||"")}));
           document.getElementById("inpPath").value = ""; lastPreview = null; const _ck = document.getElementById("ckForceReplace"); if(_ck) _ck.checked = false;
           const dl = Date.now() + 60000;
           await refresh(dl);
           const st = await pollUntilDone(r.syncId, 30, 2000, dl);
-          if(st === "success"){ setMsgHtml("msgReg",true,"登録しました。同期が成功しました。ログを確認してください。"); await showNotify("同期が成功しました", "登録しました。同期が成功しました。ログを確認してください。"); }
-          else if(st === "failed"){ setMsgHtml("msgReg",false,"登録しましたが同期が失敗しました。ログを確認してください。"); await showNotify("同期が失敗しました", "登録しましたが同期が失敗しました。ログを確認してください。"); }
-          else if(st === "skipped"){ setMsgHtml("msgReg",false,"登録しましたが同期は見送られました(別の同期が実行中)。しばらくして今すぐ同期でやり直してください。"); await showNotify("同期は見送りです", "登録しましたが同期は見送られました(別の同期が実行中)。しばらくして今すぐ同期でやり直してください。"); }
-          else{ setMsgHtml("msgReg",false,"登録しましたが同期は未確認です(起動待ち/継続中)。しばらくして更新ボタンで成功・失敗を確認してください。"); await showNotify("同期は未確認です", "登録しましたが同期は未確認です(起動待ち/継続中)。しばらくして更新ボタンで成功・失敗を確認してください。"); }
+          if(st === "success"){ setMsgHtml("msgReg",true,L("登録しました。同期が成功しました。ログを確認してください。")); await showNotify(L("同期が成功しました"), L("登録しました。同期が成功しました。ログを確認してください。")); }
+          else if(st === "failed"){ setMsgHtml("msgReg",false,L("登録しましたが同期が失敗しました。ログを確認してください。")); await showNotify(L("同期が失敗しました"), L("登録しましたが同期が失敗しました。ログを確認してください。")); }
+          else if(st === "skipped"){ setMsgHtml("msgReg",false,L("登録しましたが同期は見送られました(別の同期が実行中)。しばらくして今すぐ同期でやり直してください。")); await showNotify(L("同期は見送りです"), L("登録しましたが同期は見送られました(別の同期が実行中)。しばらくして今すぐ同期でやり直してください。")); }
+          else{ setMsgHtml("msgReg",false,L("登録しましたが同期は未確認です(起動待ち/継続中)。しばらくして更新ボタンで成功・失敗を確認してください。")); await showNotify(L("同期は未確認です"), L("登録しましたが同期は未確認です(起動待ち/継続中)。しばらくして更新ボタンで成功・失敗を確認してください。")); }
           if(Date.now() < dl) await refresh(dl);
         } else if(r.sync === "launch-failed"){
-          setMsgHtml("msgReg",false,"登録は完了しましたが同期の起動に失敗しました。「今すぐ同期」でやり直してください。");
-          await showNotify("同期の起動に失敗しました", "登録は完了しましたが同期の起動に失敗しました。「今すぐ同期」でやり直してください。");
+          setMsgHtml("msgReg",false,L("登録は完了しましたが同期の起動に失敗しました。「今すぐ同期」でやり直してください。"));
+          await showNotify(L("同期の起動に失敗しました"), L("登録は完了しましたが同期の起動に失敗しました。「今すぐ同期」でやり直してください。"));
           document.getElementById("inpPath").value = ""; lastPreview = null; const _ck = document.getElementById("ckForceReplace"); if(_ck) _ck.checked = false; await refresh();
         } else {
-          setMsgHtml("msgReg",false,"登録しました。同期状態は未確認です。ログを確認してください。");
-          await showNotify("同期は未確認です", "登録しました。同期状態は未確認です。ログを確認してください。");
+          setMsgHtml("msgReg",false,L("登録しました。同期状態は未確認です。ログを確認してください。"));
+          await showNotify(L("同期は未確認です"), L("登録しました。同期状態は未確認です。ログを確認してください。"));
           await refresh();
         }
       }catch(e){ setMsg("msgReg", e.message, false); }finally{ try{ btn.disabled = false; }catch(e2){} try{ safeFocus(btn); }catch(e3){} }
@@ -1618,7 +2486,7 @@ async function doPreview(pathVal){
 }
 document.getElementById("btnPrev").onclick = async function(){ await doPreview(document.getElementById("inpPath").value); };
 const ckForce = document.getElementById("ckForceReplace");
-if(ckForce){ ckForce.onchange = function(){ lastPreview = null; lastPreviewGen = 0; previewGen++; const pa = document.getElementById("prevArea"); if(pa) pa.innerHTML = "<p class='muted'>プレビューをやり直してください。</p>"; const br = document.getElementById("btnReg"); if(br) br.disabled = true; }; }
+if(ckForce){ ckForce.onchange = function(){ lastPreview = null; lastPreviewGen = 0; previewGen++; const pa = document.getElementById("prevArea"); if(pa) pa.innerHTML = "<p class='muted'>"+L("プレビューをやり直してください。")+"</p>"; const br = document.getElementById("btnReg"); if(br) br.disabled = true; }; }
 const inpPathEl = document.getElementById("inpPath");
 if(inpPathEl){ inpPathEl.addEventListener("input", function(){ lastPreview = null; lastPreviewGen = 0; previewGen++; const br = document.getElementById("btnReg"); if(br) br.disabled = true; }); }
 let browseCancel = false;
@@ -1651,40 +2519,42 @@ document.getElementById("btnBrowse").onclick = async function(){
   try{
     const st = await api("/api/browse/start","POST",{hint:document.getElementById("inpPath").value});
     const bid = st.browseId;
-    ba.textContent = "選択ダイアログを開きました。フォルダを選んでください。";
-    const cb = document.createElement("button"); cb.textContent = "選択をやめる"; cb.style.marginLeft = "8px";
+    ba.textContent = L("選択ダイアログを開きました。フォルダを選んでください。");
+    const cb = document.createElement("button"); cb.textContent = L("選択をやめる"); cb.style.marginLeft = "8px";
     cb.onclick = async function(){ browseCancel = true; try{ await api("/api/browse/cancel","POST",{browseId:bid}); }catch(e){} };
     ba.appendChild(cb);
     const dl = Date.now() + 120000;
     const r = await pollBrowse(bid, dl, myGen);
-    if(browseCancel || myGen !== browseGen){ ba.textContent = "キャンセルされました。登録は行いません。"; return; }
+    if(browseCancel || myGen !== browseGen){ ba.textContent = L("キャンセルされました。登録は行いません。"); return; }
     ba.textContent = "";
     if(r === "timeout"){
       try{ await api("/api/browse/cancel","POST",{browseId:bid}); }catch(e){}
-      ba.textContent = "時間切れのため選択を終了しました。登録は行いません。";
+      ba.textContent = L("時間切れのため選択を終了しました。登録は行いません。");
     } else if(r === "cancelled" || (r && r.status === "cancelled")){
-      ba.textContent = "キャンセルされました。登録は行いません。";
+      ba.textContent = L("キャンセルされました。登録は行いません。");
     } else if(r && r.status === "selected"){
-      if(browseCancel || myGen !== browseGen){ ba.textContent = "キャンセルされました。登録は行いません。"; return; }
+      if(browseCancel || myGen !== browseGen){ ba.textContent = L("キャンセルされました。登録は行いません。"); return; }
       document.getElementById("inpPath").value = r.path || "";
-      ba.textContent = "選択を反映しました。プレビューで確認してください。";
+      ba.textContent = L("選択を反映しました。プレビューで確認してください。");
       await doPreview(document.getElementById("inpPath").value);
     } else {
-      ba.textContent = "選択を終了しました。登録は行いません。";
+      ba.textContent = L("選択を終了しました。登録は行いません。");
     }
-  }catch(e){ try{ ba.textContent = "選択を開けませんでした: "+e.message; }catch(e2){} }
+  }catch(e){ try{ ba.textContent = L("選択を開けませんでした: {error}",{error:e.message}); }catch(e2){} }
   finally{ try{ bb.disabled = false; }catch(e3){} try{ safeFocus(bb); }catch(e4){} }
 };
 document.getElementById("btnSync").onclick = async function(){
   const b = document.getElementById("btnSync");
-  if(unifiedSyncActive){ await showNotify("同期中", "すでに同期を実行中です。"); return; }
-  if(globalApplyInflight){ await showNotify("同期中", "Globalプレビュー適用中です。"); return; }
+  if(unifiedSyncActive){ await showNotify(L("同期中"), L("すでに同期を実行中です。")); return; }
+  if(globalApplyInflight){ await showNotify(L("同期中"), L("Globalプレビュー適用中です。")); return; }
   unifiedSyncActive = true;
   let accepted = false;
+  let finalGlobalState = null;
+  let finalProjectState = null;
   const originallyDisabled = b.disabled;
   b.disabled = true;
   try{
-    const okGo = await showConfirm("今すぐ同期の確認", "Global同期（保存済み対象へ配布）を実行し、完了を確認した後、登録済みプロジェクトの同期を実行します。よろしいですか。", "同期する", "やめる");
+    const okGo = await showConfirm(L("今すぐ同期の確認"), L("Global同期（保存済み対象へ配布）を実行し、完了を確認した後、登録済みプロジェクトの同期を実行します。よろしいですか。"), L("同期する"), L("やめる"));
     if(!okGo){ return; }
     accepted = true;
   unifiedBaselineProjectRunId = unifiedObservedProjectRunId;
@@ -1693,38 +2563,40 @@ document.getElementById("btnSync").onclick = async function(){
     unifiedFinalState = null;
     unifiedProjectRunId = null;
     unifiedGlobalRunId = null;
-    setUnifiedProgress(0, 2, "0/2 同期を確認しています", false);
-    try{ const sr=document.getElementById("stRun"); sr.textContent="実行中"; sr.dataset.state="running"; }catch(e){}
-    setUnifiedProgress(0, 2, "0/2 Global同期を実行中", false);
+    setUnifiedProgress(0, 2, L("0/2 同期を確認しています"), false);
+    try{ const sr=document.getElementById("stRun"); sr.textContent=L("実行中"); sr.dataset.state="running"; }catch(e){}
+    setUnifiedProgress(0, 2, L("0/2 Global同期を実行中"), false);
     let gr = null;
-    try{ gr = await api("/api/global-sync","POST",{}); }catch(e){ setUnifiedProgress(0, 2, "0/2 Global同期: 開始できませんでした", false); await showNotify("Global同期できませんでした", e.message); unifiedFinalState = "unconfirmed"; try{ const sr=document.getElementById("stRun"); sr.textContent=stateJa("unconfirmed"); sr.dataset.state="unconfirmed"; }catch(e2){} return; }
-    if(!gr || gr.sync !== "started"){ setUnifiedProgress(0, 2, "0/2 Global同期: 開始できませんでした", false); await showNotify("Global同期できませんでした", "同期を開始できませんでした。"); unifiedFinalState = "failed"; try{ const sr=document.getElementById("stRun"); sr.textContent=stateJa("failed"); sr.dataset.state="failed"; }catch(e2){} return; }
-    if(!gr.syncId){ setUnifiedProgress(0, 2, "0/2 Global同期: " + stateJa("unconfirmed"), false); await showNotify("Global同期は未確認です", "同期IDを取得できませんでした。"); unifiedFinalState = "unconfirmed"; try{ const sr=document.getElementById("stRun"); sr.textContent=stateJa("unconfirmed"); sr.dataset.state="unconfirmed"; }catch(e2){} return; }
+    try{ gr = await api("/api/global-sync","POST",{}); }catch(e){ setUnifiedProgress(0, 2, L("0/2 Global同期: 開始できませんでした"), false); await showNotify(L("Global同期できませんでした"), e.message); unifiedFinalState = "unconfirmed"; finalGlobalState = "unconfirmed"; try{ const sr=document.getElementById("stRun"); sr.textContent=stateJa("unconfirmed"); sr.dataset.state="unconfirmed"; }catch(e2){} return; }
+    if(!gr || gr.sync !== "started"){ setUnifiedProgress(0, 2, L("0/2 Global同期: 開始できませんでした"), false); await showNotify(L("Global同期できませんでした"), L("同期を開始できませんでした。")); unifiedFinalState = "failed"; finalGlobalState = "failed"; try{ const sr=document.getElementById("stRun"); sr.textContent=stateJa("failed"); sr.dataset.state="failed"; }catch(e2){} return; }
+    if(!gr.syncId){ setUnifiedProgress(0, 2, L("0/2 Global同期: {state}", {state:stateJa("unconfirmed")}), false); await showNotify(L("Global同期は未確認です"), L("同期IDを取得できませんでした。")); unifiedFinalState = "unconfirmed"; finalGlobalState = "unconfirmed"; try{ const sr=document.getElementById("stRun"); sr.textContent=stateJa("unconfirmed"); sr.dataset.state="unconfirmed"; }catch(e2){} return; }
      unifiedGlobalRunId = gr.syncId;
     const gdl = Date.now() + 60000;
     await refreshGlobal(gdl);
     const gst = await pollGlobalUntilDone(gr.syncId, 30, 2000, gdl);
     if(Date.now() < gdl) await refreshGlobal(gdl);
     const globalState = gst || "unconfirmed";
+    finalGlobalState = globalState;
     if(globalState === "unconfirmed" || globalState === "skipped"){
       try{ const sr=document.getElementById("stRun"); sr.textContent=stateJa(globalState); sr.dataset.state=globalState; }catch(e){}
-      setUnifiedProgress(0, 2, "0/2 Global同期: " + stateJa(globalState), false);
-      await showNotify("同期を中断しました", "Global同期が" + stateJa(globalState) + "のため、Project同期は実行しませんでした。");
+      setUnifiedProgress(0, 2, L("0/2 Global同期: {state}", {state:stateJa(globalState)}), false);
+      await showNotify(L("同期を中断しました"), L("Global同期が{state}のため、Project同期は実行しませんでした。", {state:stateJa(globalState)}));
       if(unifiedProjectRunId){ completedUnifiedRunIds[unifiedProjectRunId] = true; }
       unifiedFinalState = globalState;
       return;
     }
-    setUnifiedProgress(1, 2, "1/2 Global同期: " + stateJa(globalState) + " / Project同期を実行中", false);
+    setUnifiedProgress(1, 2, L("1/2 Global同期: {state} / Project同期を実行中", {state:stateJa(globalState)}), false);
     let pr = null;
-    try{ pr = await api("/api/sync","POST",{}); }catch(e){ setUnifiedProgress(1, 2, "1/2 Project同期: 開始できませんでした", false); await showNotify("Project同期できませんでした", e.message); if(unifiedProjectRunId){ completedUnifiedRunIds[unifiedProjectRunId] = true; } unifiedFinalState = "unconfirmed"; try{ const sr=document.getElementById("stRun"); sr.textContent=stateJa("unconfirmed"); sr.dataset.state="unconfirmed"; }catch(e2){} return; }
-    if(!pr || pr.sync !== "started"){ setUnifiedProgress(1, 2, "1/2 Project同期: 開始できませんでした", false); await showNotify("Project同期できませんでした", "同期を開始できませんでした。"); unifiedFinalState = "failed"; try{ const sr=document.getElementById("stRun"); sr.textContent=stateJa("failed"); sr.dataset.state="failed"; }catch(e2){} return; }
-    if(!pr.syncId){ setUnifiedProgress(1, 2, "1/2 Project同期: " + stateJa("unconfirmed"), false); await showNotify("Project同期は未確認です", "同期IDを取得できませんでした。"); unifiedFinalState = "unconfirmed"; try{ const sr=document.getElementById("stRun"); sr.textContent=stateJa("unconfirmed"); sr.dataset.state="unconfirmed"; }catch(e2){} return; }
+    try{ pr = await api("/api/sync","POST",{}); }catch(e){ setUnifiedProgress(1, 2, L("1/2 Project同期: 開始できませんでした"), false); await showNotify(L("Project同期できませんでした"), e.message); if(unifiedProjectRunId){ completedUnifiedRunIds[unifiedProjectRunId] = true; } unifiedFinalState = "unconfirmed"; finalProjectState = "unconfirmed"; try{ const sr=document.getElementById("stRun"); sr.textContent=stateJa("unconfirmed"); sr.dataset.state="unconfirmed"; }catch(e2){} return; }
+    if(!pr || pr.sync !== "started"){ setUnifiedProgress(1, 2, L("1/2 Project同期: 開始できませんでした"), false); await showNotify(L("Project同期できませんでした"), L("同期を開始できませんでした。")); unifiedFinalState = "failed"; finalProjectState = "failed"; try{ const sr=document.getElementById("stRun"); sr.textContent=stateJa("failed"); sr.dataset.state="failed"; }catch(e2){} return; }
+    if(!pr.syncId){ setUnifiedProgress(1, 2, L("1/2 Project同期: {state}", {state:stateJa("unconfirmed")}), false); await showNotify(L("Project同期は未確認です"), L("同期IDを取得できませんでした。")); unifiedFinalState = "unconfirmed"; finalProjectState = "unconfirmed"; try{ const sr=document.getElementById("stRun"); sr.textContent=stateJa("unconfirmed"); sr.dataset.state="unconfirmed"; }catch(e2){} return; }
     unifiedProjectRunId = pr.syncId;
     const pdl = Date.now() + 60000;
     await refresh(pdl);
     const pst = await pollUntilDone(pr.syncId, 30, 2000, pdl);
     if(Date.now() < pdl) await refresh(pdl);
     const projectState = pst || "unconfirmed";
+    finalProjectState = projectState;
     let agg = "failed";
     if(globalState === "success" && projectState === "success") agg = "success";
     else if(projectState === "unconfirmed") agg = "unconfirmed";
@@ -1732,34 +2604,37 @@ document.getElementById("btnSync").onclick = async function(){
     try{ const sr=document.getElementById("stRun"); sr.textContent=stateJa(agg); sr.dataset.state=agg; }catch(e){}
     const projTerminal = (projectState === "success" || projectState === "failed" || projectState === "skipped");
     const projCompleted = projTerminal ? 2 : 1;
-    setUnifiedProgress(projCompleted, 2, projCompleted + "/2 Project同期: " + stateJa(projectState), false);
+    setUnifiedProgress(projCompleted, 2, L("{done}/2 Project同期: {state}", {done:projCompleted, state:stateJa(projectState)}), false);
     if(unifiedProjectRunId){ completedUnifiedRunIds[unifiedProjectRunId] = true; }
     unifiedFinalState = agg;
-    const parts = "Global: " + stateJa(globalState) + " / Project: " + stateJa(projectState);
+    const parts = L("Global: {global} / Project: {project}", {global:stateJa(globalState), project:stateJa(projectState)});
     const latestProject = commonSyncStates.project;
     if(latestProject){
-      const log = (latestProject.logName || "ログなし") + (latestProject.logMtime ? " (" + latestProject.logMtime + ")" : "");
+      const log = (latestProject.logName || L("ログなし")) + (latestProject.logMtime ? " (" + latestProject.logMtime + ")" : "");
       document.getElementById("stLog").textContent = log;
       document.getElementById("stLog").title = log;
     }
     document.getElementById("stTail").textContent = parts;
     document.getElementById("stTail").title = parts;
-    if(agg === "success") await showNotify("同期が成功しました", parts);
-    else if(agg === "skipped") await showNotify("同期は見送りです", parts);
-    else if(agg === "unconfirmed") await showNotify("同期は未確認です", parts);
-    else await showNotify("同期が失敗しました", parts);
-  }catch(e){ try{ await showNotify("同期できませんでした", e.message); }catch(e2){} if(unifiedProjectRunId){ completedUnifiedRunIds[unifiedProjectRunId] = true; } unifiedFinalState = "failed"; try{ const sr=document.getElementById("stRun"); sr.textContent=stateJa("failed"); sr.dataset.state="failed"; }catch(e){} setUnifiedProgress(0, 2, "0/2 同期に失敗しました", false); }
+    if(agg === "success") await showNotify(L("同期が成功しました"), parts);
+    else if(agg === "skipped") await showNotify(L("同期は見送りです"), parts);
+    else if(agg === "unconfirmed") await showNotify(L("同期は未確認です"), parts);
+    else await showNotify(L("同期が失敗しました"), parts);
+  }catch(e){ try{ await showNotify(L("同期できませんでした"), e.message); }catch(e2){} if(unifiedProjectRunId){ completedUnifiedRunIds[unifiedProjectRunId] = true; finalProjectState = finalProjectState || "unconfirmed"; } finalGlobalState = finalGlobalState || "failed"; unifiedFinalState = "failed"; try{ const sr=document.getElementById("stRun"); sr.textContent=stateJa("failed"); sr.dataset.state="failed"; }catch(e){} setUnifiedProgress(0, 2, L("0/2 同期に失敗しました"), false); }
   finally{
-    if(accepted && unifiedFinalState && !unifiedProjectRunId){
+    if(accepted && unifiedFinalState){
       const global = commonSyncStates.global;
-      const matches = global && unifiedGlobalRunId && global.syncId === unifiedGlobalRunId;
-      const status = matches ? stateJa(global.syncState || "unconfirmed") : stateJa("unconfirmed");
-      const parts = "Global: " + status + " / Project: 未実行";
-      const log = matches ? (global.logName || "今回のログ未確認") : "今回のログ未確認";
-      document.getElementById("stTail").textContent = parts;
-      document.getElementById("stTail").title = parts;
-      document.getElementById("stLog").textContent = log;
-      document.getElementById("stLog").title = log;
+      const project = commonSyncStates.project;
+      const globalMatches = global && unifiedGlobalRunId && global.syncId === unifiedGlobalRunId;
+      const projectMatches = project && unifiedProjectRunId && project.syncId === unifiedProjectRunId;
+      const logState = projectMatches ? project : (globalMatches ? global : null);
+      syncDisplayState = {unified:true, status:unifiedFinalState,
+        globalState:finalGlobalState || (globalMatches ? global.syncState : unifiedFinalState),
+        projectState:finalProjectState,
+        source:projectMatches ? "project" : "global",
+        logName:logState ? (logState.logName || "") : "",
+        logMtime:logState ? (logState.logMtime || "") : ""};
+      renderSyncState();
     }
     unifiedSyncActive = false;
     unifiedStateLock = false;
@@ -1768,12 +2643,13 @@ document.getElementById("btnSync").onclick = async function(){
   }
 };
 function renderBackupDiff(da, d){
+  lastBackupDiff = d;
   da.innerHTML = "";
   const h = document.createElement("p"); h.className = "muted";
-  h.textContent = "対象: " + d.name + (d.same ? "（差分なし）" : "（差分あり）") + (d.truncated ? "（一部省略）" : "");
+  h.textContent = L("対象: ")+ d.name + (d.same ? L("（差分なし）") : L("（差分あり）")) + (d.truncated ? L("（一部省略）") : "");
   da.appendChild(h);
   const pa = document.createElement("p"); pa.className = "muted";
-  pa.textContent = "AGENTS.md: " + (((d.backupHasAgents || d.currentHasAgents)) ? (((d.lines || []).length) ? "差分あり" : "差分なし") : "対象外");
+  pa.textContent = "AGENTS.md: " + (((d.backupHasAgents || d.currentHasAgents)) ? (((d.lines || []).length) ? L("差分あり") : L("差分なし")) : L("対象外"));
   da.appendChild(pa);
   if((d.lines || []).length){
     const pre = document.createElement("pre");
@@ -1781,7 +2657,7 @@ function renderBackupDiff(da, d){
     da.appendChild(pre);
   }
   const pl = document.createElement("p"); pl.className = "muted";
-  pl.textContent = "localSource: " + (((d.backupHasLocal || d.currentHasLocal)) ? (((d.localLines || []).length) ? "差分あり" : "差分なし") : "対象外");
+  pl.textContent = "localSource: " + (((d.backupHasLocal || d.currentHasLocal)) ? (((d.localLines || []).length) ? L("差分あり") : L("差分なし")) : L("対象外"));
   da.appendChild(pl);
   if((d.localLines || []).length){
     const pre2 = document.createElement("pre");
@@ -1814,20 +2690,20 @@ function renderPlan(plan){
   const pa = document.getElementById("planArea");
   pa.innerHTML = "";
   const h = document.createElement("p"); h.className = "muted";
-  h.textContent = "共通SHA: " + ((plan.commonSha||"").slice(0,12)) + " 取得GitSHA: " + ((plan.commonCommit||"").slice(0,12)) + " 作成: " + (plan.createdAt||"");
+  h.textContent = L("共通SHA: {sha} 取得GitSHA: {commit} 作成: {at}", {sha:(plan.commonSha||"").slice(0,12), commit:(plan.commonCommit||"").slice(0,12), at:(plan.createdAt||"")});
   pa.appendChild(h);
   (plan.projects||[]).forEach(function(pj){
     const t = document.createElement("p");
-    if(pj.result === "failed"){ t.className = "err"; t.textContent = "失敗: " + pj.name + "：" + (pj.error||""); pa.appendChild(t); return; }
-    if(pj.result === "skipped"){ t.className = "warn"; t.textContent = "見送り: " + pj.name + "（無効のため対象外）"; pa.appendChild(t); return; }
+    if(pj.result === "failed"){ t.className = "err"; t.textContent = L("失敗: {name}：{error}", {name:pj.name, error:(pj.error||"")}); pa.appendChild(t); return; }
+    if(pj.result === "skipped"){ t.className = "warn"; t.textContent = L("見送り: {name}（無効のため対象外）", {name:pj.name}); pa.appendChild(t); return; }
     const d = diffLinesLocal(pj.currentText||"", pj.generatedText||"");
     t.className = d.same ? "ok" : "warn";
-    t.textContent = (d.same ? "変更なし: " : "変更あり: ") + pj.name;
+    t.textContent = (d.same ? L("変更なし: {name}", {name:pj.name}) : L("変更あり: {name}", {name:pj.name}));
     pa.appendChild(t);
     if(!d.same){
       const pre = document.createElement("pre");
       pre.appendChild(renderDiffFrag(d.lines));
-      if(d.truncated){ const n = document.createElement("span"); n.className="diff-note"; n.textContent="(省略)"; pre.appendChild(n); }
+      if(d.truncated){ const n = document.createElement("span"); n.className="diff-note"; n.setAttribute("data-i18n", "(省略)"); n.textContent=L("(省略)"); pre.appendChild(n); }
       pa.appendChild(pre);
     }
   });
@@ -1845,8 +2721,8 @@ function planIdForSelection(names){
 }
 document.getElementById("btnSyncSel").onclick = async function(){
   const names = selectedNames();
-  if(!names.length){ await showNotify("選択なし", "同期するプロジェクトを選択してください（一覧または状態表の選択欄）。"); return; }
-  if(unifiedSyncActive){ await showNotify("同期中", "統合同期の実行中は選択同期できません。"); return; }
+  if(!names.length){ await showNotify(L("選択なし"), L("同期するプロジェクトを選択してください（一覧または状態表の選択欄）。")); return; }
+  if(unifiedSyncActive){ await showNotify(L("同期中"), L("統合同期の実行中は選択同期できません。")); return; }
   const b = document.getElementById("btnSyncSel");
   const originallyDisabled = b.disabled;
   b.disabled = true;
@@ -1857,12 +2733,12 @@ document.getElementById("btnSyncSel").onclick = async function(){
     const r = await api("/api/sync","POST",{projectNames:names, planId:pid});
     lastPlan = null;
     await afterSyncNotify(r);
-  }catch(e){ try{ await showNotify("同期できませんでした", e.message); }catch(e2){} }
+  }catch(e){ try{ await showNotify(L("同期できませんでした"), e.message); }catch(e2){} }
   finally{ try{ b.disabled = originallyDisabled; }catch(e3){} try{ safeFocus(b); }catch(e4){} }
 };
 document.getElementById("btnPlanSel").onclick = async function(){
   const names = selectedNames();
-  const pa = document.getElementById("planArea"); pa.innerHTML = "<p class='muted'>プラン作成中</p>";
+  const pa = document.getElementById("planArea"); pa.innerHTML = "<p class='muted'>"+L("プラン作成中")+"</p>";
   try{
     const r = await api("/api/plan-start","POST",{projectNames:names});
     const dl = Date.now() + 90000;
@@ -1876,12 +2752,12 @@ document.getElementById("btnPlanSel").onclick = async function(){
       try{ g = await api("/api/plan?id="+encodeURIComponent(r.planId),"GET",null,to); }catch(e){ continue; }
       if(g && g.status === "ready"){ plan = g; break; }
     }
-    if(!plan){ pa.innerHTML = "<p class='warn'>未確認です。しばらくして「選択の反映前差分」で再取得してください。</p>"; return; }
+    if(!plan){ pa.innerHTML = "<p class='warn'>"+L("未確認です。しばらくして「選択の反映前差分」で再取得してください。")+"</p>"; return; }
     renderPlan(plan);
     try{ lastPlan = {id: r.planId, names: names.slice()}; }catch(e){ lastPlan = null; }
     try{
       const ph = document.createElement("p"); ph.className = "muted";
-      ph.textContent = "プランID: " + String(r.planId).slice(0, 12) + "（選択を変えず「選択を同期」でこのプランを適用）";
+      ph.textContent = L("プランID: {id}（選択を変えず「選択を同期」でこのプランを適用）", {id:String(r.planId).slice(0, 12)});
       pa.appendChild(ph);
     }catch(e2){}
   }catch(e){ pa.innerHTML = "<p class='err'>"+esc(e.message)+"</p>"; }
@@ -1900,24 +2776,27 @@ async function loadBackups(){
       const td0 = document.createElement("td"); const c0 = document.createElement("code"); c0.className="path"; c0.textContent = e.id; td0.appendChild(c0);
       const td1 = document.createElement("td"); td1.textContent = e.displayName || e.name || "-"; td1.title = e.name || "";
       const td2 = document.createElement("td"); td2.textContent = e.createdAt || "-";
-      const td3 = document.createElement("td"); td3.textContent = ((e.hasAgentsFile ? "AGENTSあり" : "AGENTSなし") + " / " + (e.hasLocalFile ? "localあり" : "localなし"));
+      const td3 = document.createElement("td"); td3.textContent = ((e.hasAgentsFile ? L("AGENTSあり") : L("AGENTSなし")) + " / " + (e.hasLocalFile ? L("localあり") : L("localなし")));
+      td3.dataset.hasAgentsFile = e.hasAgentsFile ? "true" : "false";
+      td3.dataset.hasLocalFile = e.hasLocalFile ? "true" : "false";
       const td4 = document.createElement("td");
       const acts = document.createElement("div"); acts.className = "acts";
-      const bd = document.createElement("button"); bd.textContent = "差分";
+      const bd = document.createElement("button"); bd.textContent = L("差分");
       bd.onclick = async function(){
-        const da = document.getElementById("backupDiffArea"); da.innerHTML = "<p class='muted'>差分取得中</p>";
+        lastBackupDiff = null;
+        const da = document.getElementById("backupDiffArea"); da.innerHTML = "<p class='muted'>"+L("差分取得中")+"</p>";
         try{
           const d = await api("/api/backup-diff","POST",{backupId:e.id});
           renderBackupDiff(da, d);
         }catch(err){ da.innerHTML = "<p class='err'>"+esc(err.message)+"</p>"; }
       };
-      const br = document.createElement("button"); br.textContent = "復元"; br.className = "danger";
+      const br = document.createElement("button"); br.textContent = L("復元"); br.className = "danger";
       br.onclick = async function(){
-        const okGo = await showConfirm("復元の確認", "「"+e.id+"」を復元します。AGENTS.md と localSource を一緒に復元し、次回上書き防止のため休止（無効）にします。よろしいですか。", "復元する", "やめる");
+        const okGo = await showConfirm(L("復元の確認"), L("「{id}」を復元します。AGENTS.md と localSource を一緒に復元し、次回上書き防止のため休止（無効）にします。よろしいですか。", {id:e.id}), L("復元する"), L("やめる"));
         if(!okGo) return;
         try{
           const r = await api("/api/restore","POST",{backupId:e.id, confirm:true});
-          setMsg("msgBackup", "復元しました。休止中のため再開は有効化してください。" + (r.warning ? r.warning : ""), true);
+          setMsg("msgBackup", L("復元しました。休止中のため再開は有効化してください。{warning}", {warning:(r.warning || "")}), true);
           await refresh();
         }catch(err){ setMsg("msgBackup", err.message, false); }
       };
@@ -1944,28 +2823,28 @@ function fillLocalSelect(list){
 }
 let localHash = "";
 function localRedactNotice(r){
-  try{ if(r && r.redacted) return "伏字表示中の内容はそのまま保存できません（原本保護）。再取得しても伏字のままの場合、そのまま保存しないでください。"; }catch(e){}
+  try{ if(r && r.redacted) return L("伏字表示中の内容はそのまま保存できません（原本保護）。再取得しても伏字のままの場合、そのまま保存しないでください。"); }catch(e){}
   return "";
 }
 document.getElementById("btnLocalLoad").onclick = async function(){
   const nm = document.getElementById("selLocal").value;
-  const la = document.getElementById("localArea"); la.innerHTML = "<p class='muted'>取得中</p>";
+  const la = document.getElementById("localArea"); la.innerHTML = "<p class='muted'>"+L("取得中")+"</p>";
   try{
     const r = await api("/api/localrule-get","POST",{name:nm});
     localHash = r.hash;
     la.innerHTML = "";
-    const info = document.createElement("p"); info.className="muted"; info.textContent = "取得ハッシュ: "+(r.hash||"").slice(0,12)+"（保存時に一致確認）";
+    const info = document.createElement("p"); info.className="muted"; info.textContent = L("取得ハッシュ: {hash}（保存時に一致確認）", {hash:(r.hash||"").slice(0,12)});
     la.appendChild(info);
     const nz = localRedactNotice(r);
     if(nz){ const nw = document.createElement("p"); nw.className = "warn"; nw.textContent = nz; la.appendChild(nw); }
     const ta = document.createElement("textarea"); ta.id = "txtLocal"; ta.style.minHeight = "160px"; ta.value = r.text;
     const row = document.createElement("div"); row.className = "btnrow";
-    const sv = document.createElement("button"); sv.className = "primary"; sv.textContent = "検証して保存";
+    const sv = document.createElement("button"); sv.className = "primary"; sv.textContent = L("検証して保存");
     sv.onclick = async function(){
       try{
         const s = await api("/api/localrule-save","POST",{name:nm, text:ta.value, expectedHash:localHash});
         localHash = s.hash;
-        setMsg("msgLocal", "保存しました。", true);
+        setMsg("msgLocal", L("保存しました。"), true);
       }catch(err){ setMsg("msgLocal", err.message, false); }
     };
     row.appendChild(sv); la.appendChild(info); la.appendChild(ta); la.appendChild(row);
@@ -1973,20 +2852,20 @@ document.getElementById("btnLocalLoad").onclick = async function(){
 };
 document.getElementById("btnCheck").onclick = async function(){
   const nm = document.getElementById("selLocal").value;
-  const ca = document.getElementById("checkArea"); ca.innerHTML = "<p class='muted'>検査中</p>";
+  const ca = document.getElementById("checkArea"); ca.innerHTML = "<p class='muted'>"+L("検査中")+"</p>";
   try{
     const r = await api("/api/check","POST",{name:nm});
     ca.innerHTML = "";
-    const n = document.createElement("p"); n.className="muted"; n.textContent = "いずれも候補であり、断定ではありません。内容を確認して判断してください。";
+    const n = document.createElement("p"); n.className="muted"; n.textContent = L("いずれも候補であり、断定ではありません。内容を確認して判断してください。");
     ca.appendChild(n);
     (r.duplicates||[]).forEach(function(d){
-      const p = document.createElement("p"); p.textContent = "【重複候補】" + d.project + "：" + d.line; ca.appendChild(p);
+      const p = document.createElement("p"); p.textContent = L("【重複候補】{project}：{line}", {project:d.project, line:d.line}); ca.appendChild(p);
     });
     (r.contradictions||[]).forEach(function(c2){
-      const p = document.createElement("p"); p.textContent = "【矛盾候補】" + c2.project + "：共通「" + c2.common + "」/固有「" + c2.local + "」"; ca.appendChild(p);
+      const p = document.createElement("p"); p.textContent = L("【矛盾候補】{project}：共通「{common}」/固有「{local}」", {project:c2.project, common:c2.common, local:c2.local}); ca.appendChild(p);
     });
     if(!(r.duplicates||[]).length && !(r.contradictions||[]).length){
-      const p = document.createElement("p"); p.className="ok"; p.textContent = "候補はありませんでした。"; ca.appendChild(p);
+      const p = document.createElement("p"); p.className="ok"; p.textContent = L("候補はありませんでした。"); ca.appendChild(p);
     }
   }catch(e){ ca.innerHTML = "<p class='err'>"+esc(e.message)+"</p>"; }
 };
@@ -1994,16 +2873,16 @@ document.getElementById("btnIntervalGet").onclick = async function(){
   try{
     const r = await api("/api/interval-get","GET");
     document.getElementById("numInterval").value = r.minutes;
-    setMsg("msgInterval", "現在の間隔："+r.minutes+"分（Project のみ）", true);
+    setMsg("msgInterval", L("現在の間隔：{n}分（Project のみ）", {n:r.minutes}), true);
   }catch(e){ setMsg("msgInterval", e.message, false); }
 };
 document.getElementById("btnIntervalSet").onclick = async function(){
   const m = parseInt(document.getElementById("numInterval").value, 10);
-  const okGo = await showConfirm("間隔の変更", "Project 同期の間隔を"+m+"分に変更します（Global は不変）。よろしいですか。", "変更する", "やめる");
+  const okGo = await showConfirm(L("間隔の変更"), L("Project 同期の間隔を{n}分に変更します（Global は不変）。よろしいですか。", {n:m}), L("変更する"), L("やめる"));
   if(!okGo) return;
   try{
     await api("/api/interval-set","POST",{minutes:m, confirm:true});
-    setMsg("msgInterval", "間隔を変更しました："+m+"分", true);
+    setMsg("msgInterval", L("間隔を変更しました：{n}分", {n:m}), true);
   }catch(e){ setMsg("msgInterval", e.message, false); }
 };
 document.getElementById("btnExport").onclick = async function(){
@@ -2016,7 +2895,7 @@ document.getElementById("btnExport").onclick = async function(){
     document.body.appendChild(a); a.click();
     try{ URL.revokeObjectURL(a.href); }catch(e){}
     a.remove();
-    setMsg("msgSettings", "エクスポートしました（秘密情報なし）。", true);
+    setMsg("msgSettings", L("エクスポートしました（秘密情報なし）。"), true);
   }catch(e){ setMsg("msgSettings", e.message, false); }
 };
 function canShowImportButton(v){
@@ -2029,50 +2908,53 @@ function canShowImportButton(v){
   return false;
 }
 document.getElementById("btnImportPrev2").onclick = async function(){
-  const ia = document.getElementById("importRegArea"); ia.innerHTML = "<p class='muted'>確認中</p>";
+  const ia = document.getElementById("importRegArea"); ia.innerHTML = "<p class='muted'>"+L("確認中")+"</p>";
   try{
     const raw = document.getElementById("txtImport").value;
     let data = null;
-    try{ data = JSON.parse(raw); }catch(e){ throw new Error("JSONを解釈できません。"); }
+    try{ data = JSON.parse(raw); }catch(e){ throw new Error(L("JSONを解釈できません。")); }
     const v = await api("/api/registry-import-preview","POST",{data:data});
     let h = "";
-    (v.add||[]).forEach(function(a){ h += "<p class='ok'>追加："+esc(a.name)+"</p>"; });
-    (v.skip||[]).forEach(function(s){ h += "<p class='muted'>維持："+esc(s.name)+"（"+esc(s.reason||"")+"）</p>"; });
-    (v.conflict||[]).forEach(function(c3){ h += "<p class='err'>競合："+esc(c3.name)+"（"+esc(c3.reason||"")+"）</p>"; });
-    (v.invalid||[]).forEach(function(iv){ h += "<p class='err'>不正："+esc(iv.name)+"（"+esc(iv.reason||"")+"）</p>"; });
+    (v.add||[]).forEach(function(a){ h += "<p class='ok'>"+L("追加：{name}", {name:esc(a.name)})+"</p>"; });
+    (v.skip||[]).forEach(function(s){ h += "<p class='muted'>"+L("維持：{name}（{reason}）", {name:esc(s.name), reason:esc(s.reason||"")})+"</p>"; });
+    (v.conflict||[]).forEach(function(c3){ h += "<p class='err'>"+L("競合：{name}（{reason}）", {name:esc(c3.name), reason:esc(c3.reason||"")})+"</p>"; });
+    (v.invalid||[]).forEach(function(iv){ h += "<p class='err'>"+L("不正：{name}（{reason}）", {name:esc(iv.name), reason:esc(iv.reason||"")})+"</p>"; });
     if(v.interval){
       if(v.interval.incoming !== null && v.interval.incoming !== undefined){
-        const curIv = (v.interval.current === null || v.interval.current === undefined) ? "未設定" : v.interval.current + "分";
-        h += "<p class='muted'>同期間隔: "+esc(String(curIv))+" → "+v.interval.incoming+"分に変更します（Projectのみ、Global不変）。</p>";
+        h += "<p class='muted'>" + ((v.interval.current === null || v.interval.current === undefined)
+          ? L("同期間隔: 未設定 → {next}分に変更します（Projectのみ、Global不変）。", {next:v.interval.incoming})
+          : L("同期間隔: {current}分 → {next}分に変更します（Projectのみ、Global不変）。", {current:esc(String(v.interval.current)), next:v.interval.incoming})) + "</p>";
       } else if(!v.interval.valid){
-        h += "<p class='err'>同期間隔: "+esc(v.interval.reason || "不正")+"</p>";
+        h += "<p class='err'>"+L("同期間隔: {reason}", {reason:esc(v.interval.reason || L("不正"))})+"</p>";
       }
     }
     if(v.interval){
       if(v.interval.incoming !== null && v.interval.incoming !== undefined){
-        const curIv = (v.interval.current === null || v.interval.current === undefined) ? "（未設定）" : v.interval.current + "分";
-        h += "<p class='muted'>同期間隔: " + esc(String(curIv)) + " → " + v.interval.incoming + "分に変更します（Projectのみ、Global不変）。</p>";
+        h += "<p class='muted'>" + ((v.interval.current === null || v.interval.current === undefined)
+          ? L("同期間隔: 未設定 → {next}分に変更します（Projectのみ、Global不変）。", {next:v.interval.incoming})
+          : L("同期間隔: {current}分 → {next}分に変更します（Projectのみ、Global不変）。", {current:esc(String(v.interval.current)), next:v.interval.incoming})) + "</p>";
       } else if(!v.interval.valid){
-        h += "<p class='err'>同期間隔: " + esc(v.interval.reason || "不正") + "</p>";
+        h += "<p class='err'>"+L("同期間隔: {reason}", {reason:esc(v.interval.reason || L("不正"))})+"</p>";
       }
     }
     if(canShowImportButton(v)){
-      h += "<label class='chk'><input type='checkbox' id='ckImp2'> 追加内容を確認した</label>";
-      h += "<div class='btnrow'><button id='btnImpGo' class='primary'>取り込む</button></div><div id='msgImpGo' role='status'></div>";
+      h += "<label class='chk'><input type='checkbox' id='ckImp2'> "+L("追加内容を確認した")+"</label>";
+      h += "<div class='btnrow'><button id='btnImpGo' class='primary'>"+L("取り込む")+"</button></div><div id='msgImpGo' role='status'></div>";
     } else if(((v.conflict||[]).length) || ((v.invalid||[]).length)){
-      h += "<p class='muted'>競合・不正があるため取り込めません。整理してから再実行してください。</p>";
+      h += "<p class='muted'>"+L("競合・不正があるため取り込めません。整理してから再実行してください。")+"</p>";
     } else {
-      h += "<p class='muted'>追加・変更がありません。</p>";
+      h += "<p class='muted'>"+L("追加・変更がありません。")+"</p>";
     }
     ia.innerHTML = h;
     const go = document.getElementById("btnImpGo");
     if(go) go.onclick = async function(){
       go.disabled = true;
       try{
-        if(!document.getElementById("ckImp2") || !document.getElementById("ckImp2").checked) throw new Error("確認チェックを入れてください。");
+        if(!document.getElementById("ckImp2") || !document.getElementById("ckImp2").checked) throw new Error(L("確認チェックを入れてください。"));
         const r2 = await api("/api/import","POST",{data:data, confirm:true});
-        let doneMsg = "取り込みました。追加："+r2.added+"件";
-        if(r2.intervalApplied) doneMsg += "（同期間隔を"+r2.intervalMinutes+"分に変更）";
+        const doneMsg = r2.intervalApplied
+          ? L("取り込みました。追加：{n}件。同期間隔を{interval}分に変更しました。", {n:r2.added, interval:r2.intervalMinutes})
+          : L("取り込みました。追加：{n}件", {n:r2.added});
         setMsg("msgImpGo", doneMsg, true);
         await refresh();
       }catch(e){ setMsg("msgImpGo", e.message, false); }finally{ try{ go.disabled = false; }catch(e2){} try{ safeFocus(go); }catch(e3){} }
@@ -2080,31 +2962,31 @@ document.getElementById("btnImportPrev2").onclick = async function(){
   }catch(e){ ia.innerHTML = "<p class='err'>"+esc(e.message)+"</p>"; }
 };
 document.getElementById("btnBatchPrev").onclick = async function(){
-  const ba = document.getElementById("batchArea"); ba.innerHTML = "<p class='muted'>確認中</p>";
+  const ba = document.getElementById("batchArea"); ba.innerHTML = "<p class='muted'>"+L("確認中")+"</p>";
   try{
     const lines = document.getElementById("inpBatch").value.split("\n").map(function(s){ return s.trim(); }).filter(function(s){ return s !== ""; });
-    if(!lines.length) throw new Error("パスを1行ずつ入力してください。");
+    if(!lines.length) throw new Error(L("パスを1行ずつ入力してください。"));
     const v = await api("/api/preview-batch","POST",{paths:lines});
     let h = "";
     const oks = [];
     v.results.forEach(function(r){
-      if(r.ok){ h += "<p class='ok'>OK: 「"+esc(r.name)+"」← "+esc(r.path)+"</p>"; oks.push({previewId:r.previewId, path:r.path}); }
-      else{ h += "<p class='err'>NG: "+esc(r.path)+"："+esc(r.error)+"</p>"; }
+      if(r.ok){ h += "<p class='ok'>"+L("OK: 「{name}」← {path}", {name:esc(r.name), path:esc(r.path)})+"</p>"; oks.push({previewId:r.previewId, path:r.path}); }
+      else{ h += "<p class='err'>"+L("NG: {path}：{error}", {path:esc(r.path), error:esc(r.error)})+"</p>"; }
     });
     if(oks.length){
-      h += "<label class='chk'><input type='checkbox' id='ckBatch'> "+oks.length+"件を登録し、非表示で同期することを理解した</label>";
-      h += "<div class='btnrow'><button id='btnBatchReg' class='primary'>まとめて登録して同期</button></div><div id='msgBatch' role='status'></div>";
+      h += "<label class='chk'><input type='checkbox' id='ckBatch'> "+L("{n}件を登録し、非表示で同期することを理解した", {n:oks.length})+"</label>";
+      h += "<div class='btnrow'><button id='btnBatchReg' class='primary'>"+L("まとめて登録して同期")+"</button></div><div id='msgBatch' role='status'></div>";
     }
     ba.innerHTML = h;
     const rb = document.getElementById("btnBatchReg");
     if(rb) rb.onclick = async function(){
       rb.disabled = true;
       try{
-        if(!document.getElementById("ckBatch") || !document.getElementById("ckBatch").checked) throw new Error("確認チェックを入れてください。");
-        const okGo = await showConfirm("一括登録の確認", oks.length+"件を登録し、非表示で同期します。よろしいですか。", "登録する", "やめる");
+        if(!document.getElementById("ckBatch") || !document.getElementById("ckBatch").checked) throw new Error(L("確認チェックを入れてください。"));
+        const okGo = await showConfirm(L("一括登録の確認"), L("{n}件を登録し、非表示で同期します。よろしいですか。", {n:oks.length}), L("登録する"), L("やめる"));
         if(!okGo){ return; }
         const r = await api("/api/register-batch","POST",{items:oks, confirm:true});
-        setMsg("msgBatch", "登録しました："+r.registered.join("、"), true);
+        setMsg("msgBatch", L("登録しました：{names}", {names:r.registered.join(L("、"))}), true);
         document.getElementById("inpBatch").value = "";
         await afterSyncNotify(r);
       }catch(e){ setMsg("msgBatch", e.message, false); }finally{ try{ rb.disabled = false; }catch(e2){} try{ safeFocus(rb); }catch(e3){} }
@@ -2112,23 +2994,23 @@ document.getElementById("btnBatchPrev").onclick = async function(){
   }catch(e){ ba.innerHTML = "<p class='err'>"+esc(e.message)+"</p>"; }
 };
 document.getElementById("btnImportPrev").onclick = async function(){
-  const ia = document.getElementById("importArea"); ia.innerHTML = "<p class='muted'>確認中</p>";
+  const ia = document.getElementById("importArea"); ia.innerHTML = "<p class='muted'>"+L("確認中")+"</p>";
   try{
     const v = await api("/api/import-preview","POST",{path:document.getElementById("inpPath").value});
-    let h = "<p class='ok'>取込プレビュー OK: 「"+esc(v.name)+"」として登録できます。</p>";
-    h += "<p class='muted'>既存 AGENTS.md (sha256:"+esc((v.agentsHash||"").slice(0,12))+") を退避し、固有分を project-local.md へ転記します。</p>";
+    let h = "<p class='ok'>"+L("取込プレビュー OK: 「{name}」として登録できます。", {name:esc(v.name)})+"</p>";
+    h += "<p class='muted'>"+L("既存 AGENTS.md (sha256:{hash}) を退避し、固有分を project-local.md へ転記します。", {hash:esc((v.agentsHash||"").slice(0,12))})+"</p>";
     h += "<pre>"+esc((v.transcription||"").slice(0,2000))+"</pre>";
-    h += "<label class='chk'><input type='checkbox' id='ckImp'> 取込内容を確認し、退避と転記に同意する</label>";
-    h += "<div class='btnrow'><button id='btnImpReg' class='primary'>取り込んで登録・同期</button></div><div id='msgImp' role='status'></div>";
+    h += "<label class='chk'><input type='checkbox' id='ckImp'> "+L("取込内容を確認し、退避と転記に同意する")+"</label>";
+    h += "<div class='btnrow'><button id='btnImpReg' class='primary'>"+L("取り込んで登録・同期")+"</button></div><div id='msgImp' role='status'></div>";
     ia.innerHTML = h;
     document.getElementById("btnImpReg").onclick = async function(){
       const btn = document.getElementById("btnImpReg"); btn.disabled = true;
       try{
-        if(!document.getElementById("ckImp") || !document.getElementById("ckImp").checked) throw new Error("確認チェックを入れてください。");
-        const okGo = await showConfirm("取込の確認", "「"+v.name+"」を取り込んで登録し、非表示で同期します。よろしいですか。", "取り込む", "やめる");
+        if(!document.getElementById("ckImp") || !document.getElementById("ckImp").checked) throw new Error(L("確認チェックを入れてください。"));
+        const okGo = await showConfirm(L("取込の確認"), L("「{name}」を取り込んで登録し、非表示で同期します。よろしいですか。", {name:v.name}), L("取り込む"), L("やめる"));
         if(!okGo){ return; }
         const r = await api("/api/register","POST",{path:v.path,previewId:v.previewId,confirm:true,importConfirm:true});
-        setMsg("msgImp", "取り込んで登録しました。", true);
+        setMsg("msgImp", L("取り込んで登録しました。"), true);
         document.getElementById("inpPath").value = "";
         await afterSyncNotify(r);
       }catch(e){ setMsg("msgImp", e.message, false); }finally{ try{ btn.disabled = false; }catch(e2){} try{ safeFocus(btn); }catch(e3){} }
@@ -2139,10 +3021,10 @@ document.getElementById("inpSearch").addEventListener("input", function(){ try{ 
 document.getElementById("btnReload").onclick = function(){ refresh(); };
 document.getElementById("btnReload").onclick = function(){ refresh(); };
 function globalResultJa(r){
-  if(r === "success") return "成功";
-  if(r === "failed") return "失敗";
-  if(r === "skipped") return "見送り";
-  return "未確認";
+  if(r === "success") return L("成功");
+  if(r === "failed") return L("失敗");
+  if(r === "skipped") return L("見送り");
+  return L("未確認");
 }
 function renderGlobalTable(list){
   const tb = document.getElementById("globalRows");
@@ -2164,21 +3046,13 @@ function renderGlobalTable(list){
   });
 }
 function updateGlobalUI(g){
+  currentGlobalStatus = g;
   updateCommonSyncState("global", g);
   renderGlobalTable(g.providers || []);
   try{ applySearchFilter(); }catch(e){}
-  let sum = "待機中";
-  const st = g.syncState || "idle";
-  sum = stateJa(st) + "（対象 " + (g.targets || []).join("・") + "）";
-  if(st === "success") sum = "成功: " + ((g.finalLine || g.tail || "").slice(-160));
-  if(st === "failed") sum = "失敗: " + ((g.finalLine || g.tail || "").slice(-160));
-  if(st === "skipped") sum = "見送りです。別の同期が実行中のため今回は見送りました。しばらくして今すぐ同期でやり直してください。";
-  if(st === "waiting") sum = "起動待ちです。子プロセスの起動を確認しています。";
-  if(st === "unconfirmed") sum = "未確認です。今回の実行結果がまだありません。";
-  document.getElementById("globalSummary").textContent = sum;
-  document.getElementById("ovGlobal").textContent = "Global同期: " + sum;
-  document.getElementById("ovGlobal").title = "Global同期: " + sum;
-  document.getElementById("globalLogPre").textContent = g.tail || "ログがありません。";
+  globalLogState = {loaded:true, tail:g.tail || "", error:null};
+  renderGlobalStatus();
+  renderGlobalLog();
   // Poll-driven status must never clobber unsaved edits: dirty inputs are
   // refreshed only after save or explicit reload.
   if(!globalTargetsDirty){
@@ -2187,21 +3061,48 @@ function updateGlobalUI(g){
       document.getElementById("ckTOpenCode").checked = (g.targets || []).indexOf("opencode") >= 0;
     }catch(e2){}
   }
-  try{
-    const en = document.getElementById("globalEnabledState");
-    if(g.taskEnabled === true) en.textContent = "自動同期は有効です（次回も裏で実行）。";
-    else if(g.taskEnabled === false) en.textContent = "自動同期は休止中です（裏の実行なし）。再開は切替ボタンで有効化してください。";
-    else en.textContent = "自動同期の状態を取得できませんでした。";
-  }catch(e3){}
   try{ if(g.intervalMinutes !== null && g.intervalMinutes !== undefined && !globalIntervalDirty) document.getElementById("numGlobalInterval").value = g.intervalMinutes; }catch(e4){}
   try{ updateGlobalSyncApplyButton(); }catch(e5){}
+}
+function renderGlobalStatus(){
+  const g = currentGlobalStatus;
+  if(!g){
+    document.getElementById("globalSummary").textContent = L("読込中");
+    document.getElementById("ovGlobal").textContent = L("Global同期: 読込中");
+    document.getElementById("ovGlobal").title = L("Global同期: 読込中");
+    document.getElementById("globalEnabledState").textContent = L("読込中");
+    return;
+  }
+  let sum = L("待機中");
+  const st = g.syncState || "idle";
+  sum = L("{state}（対象 {targets}）", {state:stateJa(st), targets:(g.targets || []).join(L("・"))});
+  if(st === "success") sum = L("成功: {tail}", {tail:(g.finalLine || g.tail || "").slice(-160)});
+  if(st === "failed") sum = L("失敗: {tail}", {tail:(g.finalLine || g.tail || "").slice(-160)});
+  if(st === "skipped") sum = L("見送りです。別の同期が実行中のため今回は見送りました。しばらくして今すぐ同期でやり直してください。");
+  if(st === "waiting") sum = L("起動待ちです。子プロセスの起動を確認しています。");
+  if(st === "unconfirmed") sum = L("未確認です。今回の実行結果がまだありません。");
+  document.getElementById("globalSummary").textContent = sum;
+  document.getElementById("ovGlobal").textContent = L("Global同期: {summary}", {summary:sum});
+  document.getElementById("ovGlobal").title = L("Global同期: {summary}", {summary:sum});
+  try{
+    const en = document.getElementById("globalEnabledState");
+    if(g.taskEnabled === true) en.textContent = L("自動同期は有効です（次回も裏で実行）。");
+    else if(g.taskEnabled === false) en.textContent = L("自動同期は休止中です（裏の実行なし）。再開は切替ボタンで有効化してください。");
+    else en.textContent = L("自動同期の状態を取得できませんでした。");
+  }catch(e3){}
 }
 let commonSyncStates = { project: null, global: null };
 let commonSyncSource = "project";
 let lastGlobalPlan = null;
+let currentGlobalStatus = null;
+let globalLogState = {loaded:false, tail:"", error:null};
+let globalContentState = null;
+let lastBackupDiff = null;
+let lastGlobalBackupDiff = null;
 let unifiedSyncActive = false;
 let unifiedStateLock = false;
 let unifiedFinalState = null;
+let unifiedProgressState = {completed:0,total:2,text:"0/2 待機中",key:"0/2 待機中",vars:null,indeterminate:false,lang:"ja"};
 let unifiedProjectRunId = null;
 let unifiedGlobalRunId = null;
 let completedUnifiedRunIds = {};
@@ -2236,7 +3137,7 @@ async function refreshGlobal(deadline){
     if(typeof deadline === "number"){ t = Math.min(8000, deadline - Date.now()); if(t <= 0) return; }
     const g = await api("/api/global-status", "GET", null, t);
     updateGlobalUI(g);
-  }catch(e){ document.getElementById("globalLogPre").textContent = "取得失敗: "+e.message; }
+  }catch(e){ globalLogState = {loaded:true, tail:"", error:e.message}; renderGlobalLog(); }
 }
 async function pollGlobalUntilDone(syncId, tries, delayMs, deadline){
   const dl = deadline || (Date.now() + 60000);
@@ -2265,23 +3166,38 @@ async function afterGlobalSyncNotify(r){
     await refreshGlobal(dl);
     const st = await pollGlobalUntilDone(r.syncId, 30, 2000, dl);
     if(Date.now() < dl) await refreshGlobal(dl);
-    if(st === "success") await showNotify("Global同期が成功しました", "Global同期が成功しました。ログを確認してください。");
-    else if(st === "failed") await showNotify("Global同期が失敗しました", "Global同期が失敗しました。ログを確認してください。");
-    else if(st === "skipped") await showNotify("Global同期は見送りです", "Global同期は見送られました(別の同期が実行中)。しばらくしてやり直してください。");
-    else await showNotify("Global同期は未確認です", "Global同期は未確認です(起動待ち/継続中)。しばらくして状態を更新してください。");
+    if(st === "success") await showNotify(L("Global同期が成功しました"), L("Global同期が成功しました。ログを確認してください。"));
+    else if(st === "failed") await showNotify(L("Global同期が失敗しました"), L("Global同期が失敗しました。ログを確認してください。"));
+    else if(st === "skipped") await showNotify(L("Global同期は見送りです"), L("Global同期は見送られました(別の同期が実行中)。しばらくしてやり直してください。"));
+    else await showNotify(L("Global同期は未確認です"), L("Global同期は未確認です(起動待ち/継続中)。しばらくして状態を更新してください。"));
   } else {
     await refreshGlobal();
-    await showNotify("Global同期は未確認です", "Global同期状態は未確認です。ログを確認してください。");
+    await showNotify(L("Global同期は未確認です"), L("Global同期状態は未確認です。ログを確認してください。"));
   }
 }
 function setUnifiedProgress(completed, total, text, indeterminate){
+  const recipe = localizedText[currentLang].get(text || "");
+  unifiedProgressState = {completed:completed,total:total || 2,text:text || "",key:recipe ? recipe.key : null,vars:recipe ? recipe.vars : null,indeterminate:!!indeterminate,lang:currentLang};
+  renderUnifiedProgress();
+}
+function renderUnifiedProgress(){
   try{
+    const state = unifiedProgressState;
+    let text = state.text || "";
+    if(state.key){
+      const vars = state.vars ? Object.assign({}, state.vars) : null;
+      if(vars && Object.prototype.hasOwnProperty.call(vars, "state")){
+        const states = ["実行中","起動待ち","成功","失敗","見送り","未確認","待機中"];
+        for(let i=0;i<states.length;i++) if(String(vars.state) === ((I18N[state.lang] && I18N[state.lang][states[i]]) || states[i])){ vars.state = L(states[i]); break; }
+      }
+      text = L(state.key, vars);
+    }
     const p = document.getElementById("syncProgress");
     const t = document.getElementById("syncProgressText");
     if(p){
-      if(indeterminate){ p.removeAttribute("value"); }
-      else { p.value = completed; }
-      p.max = total || 2;
+      if(state.indeterminate){ p.removeAttribute("value"); }
+      else { p.value = state.completed; }
+      p.max = state.total || 2;
       p.setAttribute("aria-valuetext", text || "");
     }
     if(t) t.textContent = text || "";
@@ -2300,25 +3216,25 @@ function renderGlobalPlan(plan){
   const pa = document.getElementById("globalPlanArea");
   pa.innerHTML = "";
   const h = document.createElement("p"); h.className = "muted";
-  h.textContent = "取得元: " + ((plan.sourceCommit||"").slice(0,12) || "-") + " 作成: " + (plan.createdAt||"");
+  h.textContent = L("取得元: {commit} 作成: {at}", {commit:((plan.sourceCommit||"").slice(0,12) || "-"), at:(plan.createdAt||"")});
   pa.appendChild(h);
   (plan.entries||[]).forEach(function(en){
-    if(en.result === "failed"){ const t = document.createElement("p"); t.className = "err"; t.textContent = "失敗: " + en.target + "：" + (en.error||""); pa.appendChild(t); return; }
+    if(en.result === "failed"){ const t = document.createElement("p"); t.className = "err"; t.textContent = L("失敗: {target}：{error}", {target:en.target, error:(en.error||"")}); pa.appendChild(t); return; }
     const d = diffLinesLocal(en.currentText||"", en.generatedText||"");
     const t = document.createElement("p");
     t.className = d.same ? "ok" : "warn";
-    t.textContent = (d.same ? "変更なし: " : "変更あり: ") + en.target;
+    t.textContent = (d.same ? L("変更なし: {target}", {target:en.target}) : L("変更あり: {target}", {target:en.target}));
     pa.appendChild(t);
     if(!d.same){
       const pre = document.createElement("pre");
       pre.appendChild(renderDiffFrag(d.lines));
-      if(d.truncated){ const n = document.createElement("span"); n.className="diff-note"; n.textContent="(省略)"; pre.appendChild(n); }
+      if(d.truncated){ const n = document.createElement("span"); n.className="diff-note"; n.setAttribute("data-i18n", "(省略)"); n.textContent=L("(省略)"); pre.appendChild(n); }
       pa.appendChild(pre);
     }
   });
   try{
     const ph = document.createElement("p"); ph.className = "muted";
-    ph.textContent = "この内容でよければ「プレビューを適用」で反映します（反映前に再照合し、変化があれば拒否）。";
+    ph.textContent = L("この内容でよければ「プレビューを適用」で反映します（反映前に再照合し、変化があれば拒否）。");
     pa.appendChild(ph);
   }catch(e2){}
 }
@@ -2329,12 +3245,12 @@ document.getElementById("btnGlobalSync").onclick = async function(){
   const names = globalSelectedTargets();
   const pid = globalPlanIdForSelection(names);
   if(!pid){ b.disabled = true; return; }
-  if(unifiedSyncActive){ await showNotify("同期中", "統合同期の実行中はプレビュー適用できません。"); return; }
-  if(globalApplyInflight){ await showNotify("同期中", "すでにプレビュー適用中です。"); return; }
+  if(unifiedSyncActive){ await showNotify(L("同期中"), L("統合同期の実行中はプレビュー適用できません。")); return; }
+  if(globalApplyInflight){ await showNotify(L("同期中"), L("すでにプレビュー適用中です。")); return; }
   globalApplyInflight = true;
   b.disabled = true;
   try{
-    const okGo = await showConfirm("Global同期の確認", "確認済みプランで反映します（反映前に再照合し、変化があれば拒否）。よろしいですか。", "適用する", "やめる");
+    const okGo = await showConfirm(L("Global同期の確認"), L("確認済みプランで反映します（反映前に再照合し、変化があれば拒否）。よろしいですか。"), L("適用する"), L("やめる"));
     if(!okGo){ return; }
   unifiedBaselineProjectRunId = unifiedObservedProjectRunId;
   unifiedBaselineGlobalRunId = unifiedObservedGlobalRunId;
@@ -2346,12 +3262,12 @@ document.getElementById("btnGlobalSync").onclick = async function(){
     lastGlobalPlan = null;
     updateGlobalSyncApplyButton();
     await afterGlobalSyncNotify(r);
-  }catch(e){ try{ await showNotify("Global同期できませんでした", e.message); }catch(e2){} try{ lastGlobalPlan = null; }catch(e3){} try{ updateGlobalSyncApplyButton(); }catch(e4){} }
+  }catch(e){ try{ await showNotify(L("Global同期できませんでした"), e.message); }catch(e2){} try{ lastGlobalPlan = null; }catch(e3){} try{ updateGlobalSyncApplyButton(); }catch(e4){} }
   finally{ globalApplyInflight = false; try{ b.disabled = originallyDisabled ? true : globalSyncApplyEnabled() ? false : true; }catch(e3){} try{ safeFocus(b); }catch(e4){} }
 };
 document.getElementById("btnGlobalPreview").onclick = async function(){
   const b = document.getElementById("btnGlobalPreview"); b.disabled = true;
-  const pa = document.getElementById("globalPlanArea"); pa.innerHTML = "<p class='muted'>プラン作成中</p>";
+  const pa = document.getElementById("globalPlanArea"); pa.innerHTML = "<p class='muted'>"+L("プラン作成中")+"</p>";
   const sel = globalSelectedTargets();
   try{
     const r = await api("/api/global-preview-start","POST",{targetNames:sel});
@@ -2366,37 +3282,46 @@ document.getElementById("btnGlobalPreview").onclick = async function(){
       try{ g = await api("/api/global-plan?id="+encodeURIComponent(r.planId),"GET",null,to); }catch(e){ continue; }
       if(g && g.status === "ready"){ plan = g; break; }
     }
-    if(!plan){ pa.innerHTML = "<p class='warn'>未確認です。しばらくして「反映前プレビュー」で再取得してください。</p>"; return; }
+    if(!plan){ pa.innerHTML = "<p class='warn'>"+L("未確認です。しばらくして「反映前プレビュー」で再取得してください。")+"</p>"; return; }
     renderGlobalPlan(plan);
     try{ lastGlobalPlan = {id: r.planId, names: sel.slice()}; }catch(e){ lastGlobalPlan = null; }
     try{ updateGlobalSyncApplyButton(); }catch(e2){}
     try{
       const ph = document.createElement("p"); ph.className = "muted";
-      ph.textContent = "プランID: " + String(r.planId).slice(0, 12) + "（選択を変えず「プレビューを適用」でこのプランを適用）";
+      ph.textContent = L("プランID: {id}（選択を変えず「プレビューを適用」でこのプランを適用）", {id:String(r.planId).slice(0, 12)});
       pa.appendChild(ph);
     }catch(e2){}
   }catch(e){ pa.innerHTML = "<p class='err'>"+esc(e.message)+"</p>"; try{ lastGlobalPlan = null; }catch(e2){} try{ updateGlobalSyncApplyButton(); }catch(e3){} }
   finally{ try{ b.disabled = false; }catch(e3){} try{ safeFocus(b); }catch(e4){} }
 };
 document.getElementById("btnGlobalContent").onclick = async function(){
-  const pre = document.getElementById("globalContentPre"); pre.textContent = "取得中";
+  globalContentState = {loading:true}; renderGlobalContent();
   try{
-    const g = await api("/api/global-content","GET");
-    let h = "配置元: " + (g.homeBase || "-") + "\n";
-    (g.files||[]).forEach(function(f){
-      h += "--- " + f.target + " (" + f.path + ") ---\n";
-      if(!f.exists){ h += "(ファイルなし)\n"; return; }
-      h += (f.head || "") + "\n";
-    });
-    pre.textContent = h;
-  }catch(e){ pre.textContent = "取得失敗: "+e.message; }
+    globalContentState = await api("/api/global-content","GET");
+    renderGlobalContent();
+  }catch(e){ globalContentState = {error:e.message}; renderGlobalContent(); }
 };
+function renderGlobalContent(){
+  const pre = document.getElementById("globalContentPre");
+  if(!pre) return;
+  if(globalContentState === null){ pre.textContent = L("まだ表示していません。「内容を表示」で確認できます。"); return; }
+  if(globalContentState.loading){ pre.textContent = L("取得中"); return; }
+  if(globalContentState.error){ pre.textContent = L("取得失敗: ") + globalContentState.error; return; }
+  const g = globalContentState;
+  let h = L("配置元: {base}", {base:(g.homeBase || "-")}) + "\n";
+  (g.files||[]).forEach(function(f){
+    h += "--- " + f.target + " (" + f.path + ") ---\n";
+    if(!f.exists){ h += L("(ファイルなし)") + "\n"; return; }
+    h += (f.head || "") + "\n";
+  });
+  pre.textContent = h;
+}
 document.getElementById("btnGlobalLogs").onclick = async function(){
-  const pre = document.getElementById("globalLogPre"); pre.textContent = "取得中";
+  globalLogState = {loaded:false, tail:"", error:null}; renderGlobalLog();
   try{
     const g = await api("/api/global-logs","GET");
-    pre.textContent = g.tail || "ログがありません。";
-  }catch(e){ pre.textContent = "取得失敗: "+e.message; }
+    globalLogState = {loaded:true, tail:g.tail || "", error:null}; renderGlobalLog();
+  }catch(e){ globalLogState = {loaded:true, tail:"", error:e.message}; renderGlobalLog(); }
 };
 document.getElementById("btnGlobalTargets").onclick = async function(){
   const b = document.getElementById("btnGlobalTargets"); b.disabled = true;
@@ -2404,11 +3329,11 @@ document.getElementById("btnGlobalTargets").onclick = async function(){
     const tg = [];
     if(document.getElementById("ckTCodex").checked) tg.push("codexcli");
     if(document.getElementById("ckTOpenCode").checked) tg.push("opencode");
-    const okGo = await showConfirm("対象の変更", "配る対象を「"+tg.join("・")+"」に変更します。よろしいですか。", "変更する", "やめる");
+    const okGo = await showConfirm(L("対象の変更"), L("配る対象を「{targets}」に変更します。よろしいですか。", {targets:tg.join(L("・"))}), L("変更する"), L("やめる"));
     if(!okGo){ return; }
     await api("/api/global-targets-set","POST",{targets:tg, confirm:true});
     globalTargetsDirty = false;
-    setMsg("msgGlobalTargets", "対象を保存しました。", true);
+    setMsg("msgGlobalTargets", L("対象を保存しました。"), true);
     await refreshGlobal();
   }catch(e){ setMsg("msgGlobalTargets", e.message, false); }
   finally{ try{ b.disabled = false; }catch(e2){} try{ safeFocus(b); }catch(e3){} }
@@ -2417,17 +3342,17 @@ document.getElementById("btnGlobalIntervalGet").onclick = async function(){
   try{
     const r = await api("/api/global-interval-get","GET");
     document.getElementById("numGlobalInterval").value = r.minutes;
-    setMsg("msgGlobalInterval", "現在の間隔："+r.minutes+"分（Global）", true);
+    setMsg("msgGlobalInterval", L("現在の間隔：{n}分（Global）", {n:r.minutes}), true);
   }catch(e){ setMsg("msgGlobalInterval", e.message, false); }
 };
 document.getElementById("btnGlobalIntervalSet").onclick = async function(){
   const m = parseInt(document.getElementById("numGlobalInterval").value, 10);
-  const okGo = await showConfirm("間隔の変更", "Global同期の間隔を"+m+"分に変更します（Projectは不変）。よろしいですか。", "変更する", "やめる");
+  const okGo = await showConfirm(L("間隔の変更"), L("Global同期の間隔を{n}分に変更します（Projectは不変）。よろしいですか。", {n:m}), L("変更する"), L("やめる"));
   if(!okGo) return;
   try{
     await api("/api/global-interval-set","POST",{minutes:m, confirm:true});
     globalIntervalDirty = false;
-    setMsg("msgGlobalInterval", "間隔を変更しました："+m+"分", true);
+    setMsg("msgGlobalInterval", L("間隔を変更しました：{n}分", {n:m}), true);
   }catch(e){ setMsg("msgGlobalInterval", e.message, false); }
 };
 document.getElementById("btnGlobalEnabled").onclick = async function(){
@@ -2435,51 +3360,57 @@ document.getElementById("btnGlobalEnabled").onclick = async function(){
   try{
     const cur = await api("/api/global-enabled-get","GET");
     const next = !(cur.enabled);
-    const okGo = await showConfirm("有効/無効の切替", next ? "Global自動同期を有効にします。よろしいですか。" : "Global自動同期を休止します（裏の実行なし）。よろしいですか。", "切り替える", "やめる");
+    const okGo = await showConfirm(L("有効/無効の切替"), next ? L("Global自動同期を有効にします。よろしいですか。") : L("Global自動同期を休止します（裏の実行なし）。よろしいですか。"), L("切り替える"), L("やめる"));
     if(!okGo){ return; }
     await api("/api/global-enabled-set","POST",{enabled:next});
-    setMsg("msgGlobalInterval", next ? "有効にしました。" : "休止しました。", true);
+    setMsg("msgGlobalInterval", next ? L("有効にしました。") : L("休止しました。"), true);
     await refreshGlobal();
   }catch(e){ setMsg("msgGlobalInterval", e.message, false); }
   finally{ try{ b.disabled = false; }catch(e2){} try{ safeFocus(b); }catch(e3){} }
 };
 var globalRestoreConfirms = {};
 async function globalBackupDiff(id){
-  const da = document.getElementById("globalBackupDiffArea"); da.innerHTML = "<p class='muted'>差分取得中</p>";
+  lastGlobalBackupDiff = null;
+  const da = document.getElementById("globalBackupDiffArea"); da.innerHTML = "<p class='muted'>"+L("差分取得中")+"</p>";
   try{
     const d = await api("/api/global-backup-diff","POST",{backupId:id});
     try{ if(d && d.confirmId) globalRestoreConfirms[id] = d.confirmId; }catch(e2){}
-    da.innerHTML = "";
-    const h = document.createElement("p"); h.className = "muted";
-    h.textContent = "対象: " + (d.id || "") + (d.same ? "（差分なし）" : "（差分あり）") + (d.truncated ? "（一部省略）" : "");
-    da.appendChild(h);
-    if((d.lines || []).length){
-      const pre = document.createElement("pre");
-      const frag = document.createDocumentFragment();
-      (d.lines || []).forEach(function(l){
-        const sp = document.createElement("span");
-        sp.className = (l.t === "+") ? "diff-add" : "diff-del";
-        sp.textContent = "[" + (l.target || "") + "] " + l.t + " " + l.text + "\n";
-        frag.appendChild(sp);
-      });
-      pre.appendChild(frag);
-      da.appendChild(pre);
-    }
+    lastGlobalBackupDiff = {id:id,data:d};
+    renderGlobalBackupDiff(d);
     return d;
   }catch(err){ da.innerHTML = "<p class='err'>"+esc(err.message)+"</p>"; throw err; }
+}
+function renderGlobalBackupDiff(d){
+  const da = document.getElementById("globalBackupDiffArea");
+  da.innerHTML = "";
+  const h = document.createElement("p"); h.className = "muted";
+  h.textContent = L("対象: {id}", {id:(d.id || "")}) + (d.same ? L("（差分なし）") : L("（差分あり）")) + (d.truncated ? L("（一部省略）") : "");
+  da.appendChild(h);
+  if((d.lines || []).length){
+    const pre = document.createElement("pre");
+    const frag = document.createDocumentFragment();
+    (d.lines || []).forEach(function(l){
+      const sp = document.createElement("span");
+      sp.className = (l.t === "+") ? "diff-add" : "diff-del";
+      sp.textContent = "[" + (l.target || "") + "] " + l.t + " " + l.text + "\n";
+      frag.appendChild(sp);
+    });
+    pre.appendChild(frag);
+    da.appendChild(pre);
+  }
 }
 async function globalBackupRestore(id){
   const cid = globalRestoreConfirms[id];
   if(!cid || !/^[0-9a-f]{32}$/.test(cid)){
-    setMsg("msgGlobalBackup", "先に差分確認をしてください。確認直後の復元のみ受け付けます。", false);
+    setMsg("msgGlobalBackup", L("先に差分確認をしてください。確認直後の復元のみ受け付けます。"), false);
     return;
   }
-  const okGo = await showConfirm("Global復元の確認", "「"+id+"」を復元します。復元前にGlobal自動同期を休止し、復元後も休止のまま残ります（再開は有効化）。よろしいですか。", "復元する", "やめる");
+  const okGo = await showConfirm(L("Global復元の確認"), L("「{id}」を復元します。復元前にGlobal自動同期を休止し、復元後も休止のまま残ります（再開は有効化）。よろしいですか。", {id:id}), L("復元する"), L("やめる"));
   if(!okGo) return;
   try{
     const r = await api("/api/global-restore","POST",{backupId:id, confirm:true, confirmId:cid});
     try{ delete globalRestoreConfirms[id]; }catch(e2){}
-    setMsg("msgGlobalBackup", "復元しました。休止中のため再開は有効化してください。", true);
+    setMsg("msgGlobalBackup", L("復元しました。休止中のため再開は有効化してください。"), true);
     await refreshGlobal();
     return r;
   }catch(err){ setMsg("msgGlobalBackup", err.message, false); throw err; }
@@ -2498,12 +3429,12 @@ async function loadGlobalBackups(){
       try{ tr.dataset.search = (gbid + " " + (e.targets || []).join(" ")).toLowerCase(); }catch(e3){}
       const td0 = document.createElement("td"); const c0 = document.createElement("code"); c0.className="path"; c0.textContent = e.id; td0.appendChild(c0);
       const td1 = document.createElement("td"); td1.textContent = e.createdAt || "-";
-      const td2 = document.createElement("td"); td2.textContent = (e.targets || []).join("・");
+      const td2 = document.createElement("td"); td2.textContent = (e.targets || []).join(L("・"));
       const td3 = document.createElement("td");
       const acts = document.createElement("div"); acts.className = "acts";
-      const bd = document.createElement("button"); bd.textContent = "差分";
+      const bd = document.createElement("button"); bd.textContent = L("差分");
       bd.onclick = function(){ globalBackupDiff(e.id); };
-      const br = document.createElement("button"); br.textContent = "復元"; br.className = "danger";
+      const br = document.createElement("button"); br.textContent = L("復元"); br.className = "danger";
       br.onclick = function(){ globalBackupRestore(e.id); };
       acts.appendChild(bd); acts.appendChild(br); td3.appendChild(acts);
       tr.appendChild(td0); tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3);
@@ -2513,6 +3444,7 @@ async function loadGlobalBackups(){
   }catch(e){ setMsg("msgGlobalBackup", e.message, false); }
 }
 document.getElementById("btnGlobalBackups").onclick = function(){ loadGlobalBackups(); };
+initLanguage();
 showHash();refresh();refreshGlobal();
 </script>
 </body>

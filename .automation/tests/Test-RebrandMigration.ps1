@@ -225,6 +225,27 @@ try {
   Assert ($readme.Contains('検証用コピーの `projects.json` には実際の登録プロジェクトを入れない')) 'R8 README keeps registered projects out of the verification copy'
   Assert ($readme.Contains('配置済みの `.vbs` を直接起動')) 'R8 README checks behavior through the deployed VBS directly'
   Assert ($readme.Contains('本番のタスクは、手順 1 で記録した有効/無効状態を戻すまで実行しません')) 'R8 README runs production tasks only after restoring the recorded state'
+
+  # R9: complete language editions stay linked and keep the migration safety
+  # steps. The Japanese edition remains the source of truth.
+  $readmeEnPath = Join-Path $devRoot 'README.en.md'
+  $readmeZhPath = Join-Path $devRoot 'README.zh-CN.md'
+  Assert ((Test-Path -LiteralPath $readmeEnPath -PathType Leaf) -and (Test-Path -LiteralPath $readmeZhPath -PathType Leaf)) 'R9 English and Simplified Chinese READMEs exist'
+  $readmeEn = ''
+  $readmeZh = ''
+  if (Test-Path -LiteralPath $readmeEnPath) { $readmeEn = Get-Content -LiteralPath $readmeEnPath -Raw -Encoding UTF8 }
+  if (Test-Path -LiteralPath $readmeZhPath) { $readmeZh = Get-Content -LiteralPath $readmeZhPath -Raw -Encoding UTF8 }
+  foreach ($pair in @(@('README.md', $readme), @('README.en.md', $readmeEn), @('README.zh-CN.md', $readmeZh))) {
+    $name = [string]$pair[0]
+    $text = [string]$pair[1]
+    Assert (($text.Contains('](README.md)')) -and ($text.Contains('](README.en.md)')) -and ($text.Contains('](README.zh-CN.md)'))) ('R9 language links present: ' + $name)
+    Assert ($text.Contains('```mermaid')) ('R9 Mermaid diagram kept: ' + $name)
+    Assert ($text.Contains('https://github.com/Fizor-drm/Shirube.git')) ('R9 public clone URL kept: ' + $name)
+    Assert (($text.Contains('%LOCALAPPDATA%\Shirube') -and ($text.Contains('%LOCALAPPDATA%\Rulesync')) -and ($text.Contains('projects.json')))) ('R9 migration paths and registry kept: ' + $name)
+  }
+  Assert (-not $readme.Contains('英語版 README | 未作成です。')) 'R9 Japanese README no longer claims the English edition is missing'
+  Assert (($readmeEn.Contains('## Migrating from the old environment')) -and ($readmeEn.Contains('Task Scheduler')) -and ($readmeEn.Contains('protected isolated copy')) -and ($readmeEn.Contains('recorded enabled/disabled state'))) 'R9 English README keeps the migration safety steps'
+  Assert (($readmeZh.Contains('## 从旧环境迁移')) -and ($readmeZh.Contains('任务计划程序')) -and ($readmeZh.Contains('受保护的隔离副本')) -and ($readmeZh.Contains('记录的启用/禁用状态'))) 'R9 Chinese README keeps the migration safety steps'
 } finally {
   $env:LOCALAPPDATA = $origLocal
   Remove-Item -Path 'function:Get-ScheduledTask' -Force -ErrorAction SilentlyContinue

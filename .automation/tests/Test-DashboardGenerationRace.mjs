@@ -54,6 +54,7 @@ const context = {
   console, setTimeout, clearTimeout, Promise, document,
   api: async () => ({}),
   esc: (s) => String(s == null ? '' : s),
+  L: (s) => s,
   showConfirm: async () => true,
   showModal: () => {},
   setMsgHtml: () => {},

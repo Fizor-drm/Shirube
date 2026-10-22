@@ -1,5 +1,7 @@
 # Shirube
 
+[日本語](README.md) | [English](README.en.md) | [简体中文](README.zh-CN.md)
+
 GitHub のルールリポジトリと各プロジェクトのローカルルールから、Codex / OpenCode が読む `AGENTS.md` を生成し、Windows のスケジュールタスクで配布するツールです。生成には [rulesync](https://github.com/dyoshikawa/rulesync) を使い、差分プレビュー、バックアップ、復元、同期状態の確認を管理画面から行えます。
 
 ![Windows 10 / 11](https://img.shields.io/badge/OS-Windows%2010%20%2F%2011-0078D4?logo=windows&logoColor=white)
@@ -115,7 +117,7 @@ Copy-Item .automation\settings.example.json .automation\settings.json
 
 既定値は現行のタスク名と rulesync のバージョンです。詳細は「設定」を参照してください。
 
-### 4. 保護コピーへ配置する
+### 4. 保護コピーへ配置する（旧 3.4）
 
 `.automation` 内の実行用ファイル（`*.ps1`、`*.vbs`、`settings.json`）と、手順 2 で作った 2 つの設定フォルダ、`管理.bat` を `%LOCALAPPDATA%\Shirube` へ配置します。
 
@@ -229,7 +231,7 @@ frontmatter は決まった形式だけを受け付けます。3 つのキーを
 | バックアップ | プロジェクト / Global のバックアップ一覧、差分確認、復元。復元後は次回上書きを防ぐため対象の自動同期を休止 |
 | ログ / 設定 | 同期ログの確認、Project の同期間隔変更、設定のエクスポートとインポート |
 
-管理画面の登録・解除は `projects.json` のみを変更し、`AGENTS.md` の生成は同期が行います。認証トークンなどの秘密情報は画面・ログに表示しません。
+管理画面の登録・解除は `projects.json` のみを変更し、`AGENTS.md` の生成は同期が行います。認証トークンなどの秘密情報は画面・ログに表示しません。右上の言語選択で日本語・English・简体中文を切り替えられ、選択はブラウザに保存されます。
 
 ## 設定
 
@@ -256,7 +258,6 @@ JSON が壊れている、キーが無い、型が違う（数値や配列など
 | OS | Windows 専用です。Linux / macOS には対応していません。 |
 | PowerShell のパス | 起動用 `.vbs` は `C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe` を固定で参照します。Windows のインストール先が異なる環境ではそのままでは動作しません。 |
 | シンボリックリンク | 作成権限のない環境では、`Test-SyncProjectRules.ps1` の T13a / T13b は未検証です。 |
-| 英語版 README | 未作成です。 |
 | 上流エンジン由来の識別子 | `rulesync` パッケージ、`rulesync.jsonc`、`.rulesync`、`rulesync.lock`、`rulesyncVersion` は互換性のため旧名のままです。 |
 
 セキュリティ監査は公開前プレリリースに限定して実施済みで、標準監査は未実施です。
@@ -275,14 +276,14 @@ JSON が壊れている、キーが無い、型が違う（数値や配列など
 2. `settings.json` の `taskNameGlobal` / `taskNameProject` が旧既定値のままなら、`Shirube Global Auto Sync` / `Shirube Project Auto Sync` に更新します。独自のタスク名を使っている場合はその名前を変えず、タスク スケジューラ側と一致させます。
 3. `%LOCALAPPDATA%\Rulesync` を `%LOCALAPPDATA%\Shirube` へフォルダごと移動します。`projects.json`、ログ、バックアップ、状態ファイル、`global-preview` / `project-common-preview` の個人設定（`rulesync.jsonc`）はそのまま残ります。
 4. リポジトリ側の `.automation\*.ps1`・`*.vbs` は `%LOCALAPPDATA%\Shirube\.automation` へ、ランチャーの `管理.bat` と `Shirube-Manager.bat` は `%LOCALAPPDATA%\Shirube` へ配置します。`settings.json`・`projects.json`・ログ・バックアップ・プレビュー設定は移動済みのものを使うため、上書きしないでください。
-5. タスク スケジューラで 2 つのタスクの名前と操作を Shirube の値へ変更します（または新しい名前で作り直します）。操作は新しい `<Shirube>\.automation\Run-GlobalRules.vbs` / `Run-ProjectRules.vbs` を指します。移行中は 2 つのタスクを無効のままにし、登録・改名の後も有効化しないでください。本番の自動実行は移行手順 7 の検証が終わるまで開始しません。
+5. タスク スケジューラで 2 つのタスクの名前と操作を Shirube の値へ変更します（または新しい名前で作り直します）。操作は新しい `<Shirube>\.automation\Run-GlobalRules.vbs` / `Run-ProjectRules.vbs` を指します。移行中は 2 つのタスクを無効のままにし、登録・改名の後も有効化しないでください。本番の自動実行は手順 7 の検証が終わるまで開始しません。
 6. タスク スケジューラで 2 つのタスクの名前・操作（Action）が新しい `%LOCALAPPDATA%\Shirube\.automation\Run-GlobalRules.vbs` / `Run-ProjectRules.vbs` を指していることと、無効状態のままであることを確認します。続いて管理画面を起動し、Global は同期間隔と有効状態、Project は同期間隔が意図した値であることを確認します。管理画面にはタスク名と操作は表示されません。名前と操作はタスク スケジューラ側で確認してください。この確認中も 2 つのタスクは無効のままにします。新しい既定タスクが無い場合、アプリは旧既定名のタスクを互換参照しますが、移行後は旧タスクを残さないでください。
-7. 動作確認は、本番の `%LOCALAPPDATA%\Shirube` と実際の登録プロジェクトを対象にせず、セットアップの手順 4 と同じ保護設定を施した隔離済みの検証用コピーで行います。
+7. 動作確認は、本番の `%LOCALAPPDATA%\Shirube` と実際の登録プロジェクトを対象にできない、3.4 と同じ保護設定を施した隔離済みの検証用コピーで行います。
    - `%LOCALAPPDATA%\Shirube` を別フォルダへコピーし、検証用コピーの `projects.json` には実際の登録プロジェクトを入れないでください（空の `[]` にするか、検証専用のダミープロジェクトだけを登録します）。
    - Global を確認するときは `HOME_DIR` を検証用のダミーホームへ向け、実ホームの `AGENTS.md` を書き換えないようにします。
    - 検証用コピーに配置済みの `.vbs` を直接起動し（`wscript.exe`）、Global / Project を 1 回ずつ実行して、終了コードとログ、バックアップ、プレビュー設定を確認します。
    - 登録済みのタスクはこの確認に使わず、有効化もしません。移動済みのデータは同期を実行せずに `projects.json`・ログ・バックアップ・プレビュー設定の残存を確認します。
-   - Shirube のコードと操作、データの検証が終わったら、移行手順 1 で記録した有効/無効状態へ 2 つのタスクを戻します（元が有効なら有効化、無効なら無効のまま）。本番のタスクは、移行手順 1 で記録した有効/無効状態を戻すまで実行しません。
+   - Shirube のコードと操作、データの検証が終わったら、手順 1 で記録した有効/無効状態へ 2 つのタスクを戻します（元が有効なら有効化、無効なら無効のまま）。本番のタスクは、手順 1 で記録した有効/無効状態を戻すまで実行しません。
    - 残っている旧タスクを削除し、旧 `%LOCALAPPDATA%\Rulesync` をコピーで残した場合は、確認が終わるまで削除しないでください。
 
 </details>
