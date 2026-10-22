@@ -8,8 +8,7 @@ GitHub のルールリポジトリと各プロジェクトのローカルルー�
 ![Codex / OpenCode](https://img.shields.io/badge/targets-Codex%20%2F%20OpenCode-111827)
 [![MIT License](https://img.shields.io/badge/license-MIT-2EA043)](LICENSE)
 
-> [!NOTE]
-> Windows 専用です。Linux / macOS には対応していません。
+Windows 専用です。Linux / macOS には対応していません。
 
 ## 概要
 
@@ -65,8 +64,7 @@ rulesync は `--features rules` で `AGENTS.md` を生成します。Global は 
 
 管理画面はこの流れとは別プロセスで、プレビュー、適用、バックアップ、復元を行います。
 
-> [!IMPORTANT]
-> `AGENTS.md` は生成物です。直接編集しても次の同期で上書きされます。ルールは正本側を編集してください。
+`AGENTS.md` は生成物です。直接編集しても次の同期で上書きされます。ルールは正本側を編集してください。
 
 ## 動作要件
 
@@ -80,22 +78,20 @@ rulesync は `--features rules` で `AGENTS.md` を生成します。Global は 
 | Git | リポジトリのクローン用 |
 | ルール保管用リポジトリ | GitHub 上の 1 リポジトリ（`rules/global.md` と `rules/project.md`） |
 
-> [!IMPORTANT]
-> 自動同期は `npx`、`node`、`gh` を PATH から解決し、`gh auth token` で GitHub の認証情報を取得します。rulesync は `npx --yes rulesync@<version>` として実行され、バージョンは `settings.json` で変更できます。
+自動同期は `npx`、`node`、`gh` を PATH から解決し、`gh auth token` で GitHub の認証情報を取得します。rulesync は `npx --yes rulesync@<version>` として実行され、バージョンは `settings.json` で変更できます。
 
 ## セットアップ
 
 以下は、クローンしたリポジトリを `%LOCALAPPDATA%\Shirube` の保護コピーとして配置する手順です。
 
-> [!WARNING]
-> リポジトリは他のユーザーが書き込める場所に置かれる想定です。`管理.bat` はリポジトリ側のコードを直接実行せず、`%LOCALAPPDATA%\Shirube\.automation` の保護コピーだけを実行します。保護コピーが無い場合はエラーで終了し、開発用のフォールバックはありません。
+**リポジトリは他のユーザーが書き込める場所に置かれる想定です。**`管理.bat` はリポジトリ側のコードを直接実行せず、`%LOCALAPPDATA%\Shirube\.automation` の保護コピーだけを実行します。保護コピーが無い場合はエラーで終了し、開発用のフォールバックはありません。
 
 ### 1. リポジトリを取得する
 
 任意のフォルダへクローンします。
 
 ```powershell
-git clone <リポジトリURL>
+git clone https://github.com/Fizor-drm/Shirube.git
 ```
 
 ### 2. rulesync の設定を作る
@@ -180,8 +176,7 @@ Copy-Item 管理.bat $root
 
 `管理.bat` をダブルクリックすると、非表示のサーバーが起動し、既定のブラウザで管理画面が開きます。待受は `http://127.0.0.1:18721` のループバックのみです。二重起動時は既存のサーバーを再利用し、15 分間操作がないとサーバーは終了します（同期タスクは別プロセスで継続します）。
 
-> [!TIP]
-> 反映前に「プレビュー」を使うと、実ファイルを書かずに生成結果を確認できます。適用後に問題があれば「バックアップ」から復元できます。
+反映前に「プレビュー」を使うと、実ファイルを書かずに生成結果を確認できます。適用後に問題があれば「バックアップ」から復元できます。
 
 ## ルールの書き方
 
@@ -250,8 +245,7 @@ frontmatter は決まった形式だけを受け付けます。3 つのキーを
 
 設定するときは `settings.example.json` を同じフォルダへ `settings.json` としてコピーし、値を編集します。コピーしただけでは動作は変わりません（既定値と同じ内容のため）。値が既定と違っても、そのタスクが存在しなければ従来どおりエラーになります。
 
-> [!NOTE]
-> JSON が壊れている、キーが無い、型が違う（数値や配列など）場合は、例外を出さずに既定値へ戻ります。変更しないキーは書かなくて構いません。
+JSON が壊れている、キーが無い、型が違う（数値や配列など）場合は、例外を出さずに既定値へ戻ります。変更しないキーは書かなくて構いません。
 
 このファイルには秘密情報を置かないでください。認証トークンなどはここでは扱いません。
 
@@ -265,8 +259,7 @@ frontmatter は決まった形式だけを受け付けます。3 つのキーを
 | 英語版 README | 未作成です。 |
 | 上流エンジン由来の識別子 | `rulesync` パッケージ、`rulesync.jsonc`、`.rulesync`、`rulesync.lock`、`rulesyncVersion` は互換性のため旧名のままです。 |
 
-> [!NOTE]
-> セキュリティ監査は公開前プレリリースに限定して実施済みで、標準監査は未実施です。
+セキュリティ監査は公開前プレリリースに限定して実施済みで、標準監査は未実施です。
 
 ## 旧環境からの移行
 
