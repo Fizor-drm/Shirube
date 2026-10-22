@@ -198,6 +198,44 @@ try {
   try { Get-GlobalBackupDiff $auto '20200101-000000-legacy' $fakeHome | Out-Null; $legDiff = $false } catch { $legDiff = $true }
   Assert ($legDiff) 'G9 legacy backup without manifest refuses diff'
 
+  # G13: expanded provider catalog (fixed paths, case-sensitive, new provider backup/restore)
+  $cat13 = @(Get-GlobalProviderCatalog)
+  $ids13 = @($cat13 | ForEach-Object { [string]$_.id })
+  Assert (($cat13.Count -ge 18) -and (@($ids13 | Sort-Object -Unique).Count -eq $cat13.Count)) 'G13 catalog has unique fixed provider ids'
+  Assert ((@($cat13 | Where-Object { ([string]$_.id -ceq 'zed') -and ([string]$_.rel -ceq 'AppData\Roaming\Zed\AGENTS.md') }).Count -eq 1)) 'G13 zed path is fixed and exact'
+  Assert ((Test-GlobalTargetsValid @('pi', 'zed')) -and (Test-GlobalTargetsValid 'pi')) 'G13 new providers accepted'
+  Assert ((-not (Test-GlobalTargetsValid @('ZED'))) -and (-not (Test-GlobalTargetsValid @('zed', 'zed')))) 'G13 case-sensitive, no duplicates'
+  Assert ((-not (Test-GlobalTargetsValid @('../evil'))) -and (-not (Test-GlobalTargetsValid @('codex')))) 'G13 unknown/traversal rejected'
+  Set-GlobalTargets $auto @('pi') | Out-Null
+  $paths13 = Get-GlobalContentPaths $fakeHome
+  Assert (([string]$paths13['pi']).EndsWith('.pi\agent\AGENTS.md')) 'G13 nested pi path resolved from home'
+  New-Item -ItemType Directory -Force -Path (Join-Path $fakeHome '.pi\agent') | Out-Null
+  Set-Content -LiteralPath (Join-Path $fakeHome '.pi\agent\AGENTS.md') 'pi-body-G13' -Encoding Ascii
+  $gc13 = Get-GlobalContent $fakeHome 'tok-G13' @('pi')
+  Assert ((@($gc13.files).Count -eq 1) -and ([string]$gc13.files[0].target -ceq 'pi') -and ([string]$gc13.files[0].head).Contains('pi-body-G13')) 'G13 content reads selected new provider only'
+  $st13 = Get-GlobalStatus $auto
+  Assert (($null -ne $st13.providers['pi']) -and ($null -eq $st13.providers['codexcli'])) 'G13 status rows follow selected targets'
+  $bk13 = New-GlobalBackup $auto $fakeHome @('pi')
+  Assert ((Test-Path -LiteralPath (Join-Path $bk13 '.pi_agent_AGENTS.md')) -and (Test-Path -LiteralPath (Join-Path $bk13 'manifest.json'))) 'G13 new provider backup flattening+manifest'
+  Set-Content -LiteralPath (Join-Path $fakeHome '.pi\agent\AGENTS.md') 'pi-body-CHANGED' -Encoding Ascii
+  $bd13 = Get-GlobalBackupDiff $auto (Split-Path $bk13 -Leaf) $fakeHome
+  Assert (($bd13.same -eq $false) -and (@($bd13.lines).Count -gt 0)) 'G13 new provider diff shows change'
+  $script:pauseCalls = @()
+  function Disable-ScheduledTask { param([string]$TaskName) $script:pauseCalls += [string]$TaskName }
+  $cf13 = New-GlobalRestoreConfirm $auto (Split-Path $bk13 -Leaf) $fakeHome
+  $rs13 = Restore-GlobalBackup $auto (Split-Path $bk13 -Leaf) $true $fakeHome $cf13
+  Assert ((($rs13.ok -eq $true) -and ([string](Get-Content -LiteralPath (Join-Path $fakeHome '.pi\agent\AGENTS.md') -Raw)).Contains('pi-body-G13'))) 'G13 new provider restore roundtrip'
+  Remove-Item -Path 'function:Disable-ScheduledTask' -Force -ErrorAction SilentlyContinue
+  $mf13Path = Join-Path $bk13 'manifest.json'
+  $mf13 = Get-Content -LiteralPath $mf13Path -Raw -Encoding UTF8 | ConvertFrom-Json
+  $mf13.targets = @('evil')
+  foreach ($fe13 in @($mf13.files)) { $fe13.target = 'evil' }
+  Set-Content -LiteralPath $mf13Path (ConvertTo-Json -InputObject $mf13 -Depth 6 -Compress) -Encoding UTF8
+  $bad13 = $true
+  try { New-GlobalRestoreConfirm $auto (Split-Path $bk13 -Leaf) $fakeHome | Out-Null; $bad13 = $false } catch { $bad13 = ($_.Exception.Message.Contains('信頼')) }
+  Assert ($bad13) 'G13 unknown manifest target refused'
+  Set-GlobalTargets $auto (Get-GlobalDefaultTargets) | Out-Null
+
   # G10: interval validation + mocked scheduler (Global task only, 5..1440)
   Assert ((Test-GlobalIntervalValid 5) -and (Test-GlobalIntervalValid 1440) -and (-not (Test-GlobalIntervalValid 4)) -and (-not (Test-GlobalIntervalValid 1441))) 'G10 interval range 5..1440'
   $script:mockGInterval = 'PT15M'

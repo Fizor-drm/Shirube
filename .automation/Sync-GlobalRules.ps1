@@ -179,7 +179,7 @@ function Invoke-GlobalSync {
     if ($TargetNames -and ($TargetNames.Count -gt 0)) { $ReqTargets = @($TargetNames | ForEach-Object { [string]$_ }) }
 
     # Effective targets: explicit selection wins, then stored settings, then defaults.
-    $EffArr = Get-GlobalEffectiveTargets $AutoDir $ReqTargets
+    $EffArr = @(Get-GlobalEffectiveTargets $AutoDir $ReqTargets)
     $script:GblEffTargets = $EffArr
     $script:GblHaveTargets = $true
     $Targets = ($EffArr -join ',')
@@ -345,10 +345,9 @@ function Invoke-GlobalSync {
             # Collect BEFORE the finally cleanup below deletes the isolated home.
             $entries = @()
             $failedPrev = 0
+            $isoPaths = Get-GlobalContentPaths $iso
             foreach ($t in $EffArr) {
-              $isoFile = $null
-              if ($t -ceq 'codexcli') { $isoFile = Join-Path $iso '.codex\AGENTS.md' }
-              else { $isoFile = Join-Path $iso '.config\opencode\AGENTS.md' }
+              $isoFile = [string]$isoPaths[$t]
               if ([bool]$actualReadFailed[$t]) {
                 $failedPrev++
                 $entries += @{ target = $t; path = [string]$ContentPaths[$t]; exists = [bool]$actualExists[$t]; currentHash = $null; generatedHash = ''; generatedText = ''; currentText = ''; result = 'failed'; error = '現在の内容を確認できませんでした。' }

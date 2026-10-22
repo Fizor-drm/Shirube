@@ -119,15 +119,24 @@ exit 0
       # D3 targets roundtrip (stored selection)
       $tg0 = Get '/api/global-targets-get'
       Assert ((@($tg0.targets).Count -eq 2)) 'D3 default targets both'
+      $avail0 = @($tg0.available)
+      Assert (($avail0.Count -ge 18) -and (@($avail0 | Where-Object { [string]$_.id -ceq 'pi' }).Count -eq 1) -and (@($avail0 | Where-Object { [string]$_.id -ceq 'zed' }).Count -eq 1)) 'D3 available catalog includes new providers'
       $tg1 = Post '/api/global-targets-set' @{ targets = @('codexcli'); confirm = $true }
       Assert (($tg1.ok -eq $true) -and (@($tg1.targets).Count -eq 1)) 'D3 single target saved'
       Assert ((@( (Get '/api/global-targets-get').targets ).Count -eq 1)) 'D3 saved selection persists'
       $tgBad = $true; $tgCode = 0
       try { Post '/api/global-targets-set' @{ targets = @('evil'); confirm = $true } | Out-Null; $tgBad = $false } catch { $tgCode = $_.Exception.Response.StatusCode.value__ }
       Assert (($tgBad -and ($tgCode -eq 400))) 'D3 arbitrary targets are 400'
+      $tgCase = $true; $tgCaseCode = 0
+      try { Post '/api/global-targets-set' @{ targets = @('Pi'); confirm = $true } | Out-Null; $tgCase = $false } catch { $tgCaseCode = $_.Exception.Response.StatusCode.value__ }
+      Assert (($tgCase -and ($tgCaseCode -eq 400))) 'D3 provider ids are case-sensitive'
       $tgNc = $true
       try { Post '/api/global-targets-set' @{ targets = @('codexcli') } | Out-Null; $tgNc = $false } catch { $tgNc = ($_.Exception.Response.StatusCode.value__ -eq 400) }
       Assert ($tgNc) 'D3 targets-set without confirm is 400'
+      Post '/api/global-targets-set' @{ targets = @('pi'); confirm = $true } | Out-Null
+      $gsPi = Get '/api/global-status'
+      $rowPi = @($gsPi.providers)
+      Assert ((@($rowPi).Count -eq 1) -and ([string]$rowPi[0].target -ceq 'pi') -and ((([string]$rowPi[0].path).EndsWith('.pi\agent\AGENTS.md')))) 'D3 status rows follow new provider selection'
       Post '/api/global-targets-set' @{ targets = @('codexcli', 'opencode'); confirm = $true } | Out-Null
       # D4 content: actual current bytes + confirmed paths, no config content
       $gc = Get '/api/global-content'
@@ -201,6 +210,9 @@ exit 0
       # D12 served page: Global UI present, modal-only dialogs, JS parses
       $page = Invoke-WebRequest -UseBasicParsing -TimeoutSec 8 ("http://127.0.0.1:18798/?token=" + $tok)
       Assert (($page.Content.Contains('id="tblGlobal"') -and ($page.Content.Contains('id="btnGlobalSync')))) 'D12 served page has Global UI'
+      $d12ok = ($page.Content.Contains('id="globalTargetsList"') -and $page.Content.Contains('id="btnSyncGlobalOnly"') -and $page.Content.Contains('id="btnSyncProjectOnly"') -and (-not $page.Content.Contains('id="ckTCodex"')))
+      Assert $d12ok 'D12 provider choices and scope buttons are catalog-driven'
+      Assert ((-not ($page.Content.Contains('__GLOBAL_CATALOG__'))) -and ($page.Content.Contains('"label":"Pi"'))) 'D12 catalog JSON injected into served page'
       try {
         $nodeExe = (Get-Command node -ErrorAction SilentlyContinue).Source
         if (-not $nodeExe) { $nodeExe = (Get-Command nodejs -ErrorAction SilentlyContinue).Source }

@@ -87,6 +87,8 @@ if !ISGEN! equ 1 (
     echo generated-codex-marker-!N! > "%HOME_DIR%\.codex\AGENTS.md"
     if not exist "%HOME_DIR%\.config\opencode" mkdir "%HOME_DIR%\.config\opencode" >nul 2>&1
     echo generated-opencode-marker-!N! > "%HOME_DIR%\.config\opencode\AGENTS.md"
+    if not exist "%HOME_DIR%\.pi\agent" mkdir "%HOME_DIR%\.pi\agent" >nul 2>&1
+    echo generated-pi-marker-!N! > "%HOME_DIR%\.pi\agent\AGENTS.md"
   )
 )
 endlocal & exit /b %CODE%
@@ -145,6 +147,8 @@ exit /b 0
     Set-Content -LiteralPath (Join-Path $script:fakeHome '.codex\AGENTS.md') 'fake-codex-agents' -Encoding Ascii
     Set-Content -LiteralPath (Join-Path $script:fakeHome '.config\opencode\AGENTS.md') 'fake-opencode-agents' -Encoding Ascii
     Set-Content -LiteralPath (Join-Path $script:fakeHome '.config\opencode\opencode.jsonc') '{"fake":2}' -Encoding Ascii
+    New-Item -ItemType Directory -Force -Path (Join-Path $script:fakeHome '.pi\agent') | Out-Null
+    Set-Content -LiteralPath (Join-Path $script:fakeHome '.pi\agent\AGENTS.md') 'fake-pi-agents' -Encoding Ascii
   }
   function Get-Calls() {
     $p = Join-Path $script:scratch 'calls.log'
@@ -184,7 +188,7 @@ exit /b 0
   Assert (($null -ne $st) -and ([string]$st.providers.codexcli.result -ceq 'success')) 'S2 codexcli success recorded'
   Assert (([string]$st.providers.codexcli.sourceCommit -ceq '0123456789abcdef0123456789abcdef01234567')) 'S2 source commit recorded from preview lock'
   Assert (([string]$st.providers.codexcli.backupId -ne '')) 'S2 backup id recorded'
-  Assert ([string]$st.providers.opencode.result -ceq 'unknown') 'S2 unselected provider stays unknown'
+  Assert ($null -eq $st.providers.PSObject.Properties['opencode']) 'S2 unselected provider not reported'
   $bdirs = @(Get-ChildItem -LiteralPath (Join-Path $auto 'backups'))
   Assert ((@($bdirs).Count -eq 1) -and (Test-Path -LiteralPath (Join-Path $bdirs[0].FullName 'manifest.json'))) 'S2 backup carries manifest'
 
@@ -264,6 +268,29 @@ exit /b 0
   Assert ((@(Get-Calls).Count -eq 1)) 'S7 stale plan stops after shared fetch'
   $st = Read-Status
   Assert ([string]$st.providers.codexcli.result -ceq 'failed') 'S7 stale plan records failure'
+
+  # S8: new catalog provider uses the same isolated preview -> apply -> backup path.
+  Reset-Case @(0, 0, 0, 1, 0, 0)
+  Set-Content -LiteralPath (Join-Path $auto 'global-settings.json') '{"schemaVersion":1,"targets":["pi"]}' -Encoding Ascii
+  $planId8 = [System.Guid]::NewGuid().ToString('N')
+  $planFile8 = Join-Path $auto ("dashboard.global-plan-" + $planId8 + ".json")
+  $beforePi8 = Get-Content -LiteralPath (Join-Path $fakeHome '.pi\agent\AGENTS.md') -Raw
+  $code = Invoke-GlobalSync -PreviewOnly -PlanPath $planFile8
+  $plan8 = Get-Content -LiteralPath $planFile8 -Raw -Encoding UTF8 | ConvertFrom-Json
+  $pe8 = @($plan8.entries | Where-Object { [string]$_.target -ceq 'pi' })
+  Assert ((($code -eq 0) -and (@($plan8.targets).Count -eq 1) -and ([string]$plan8.targets[0] -ceq 'pi'))) 'S8 preview targets new provider only'
+  $pe8ok = (@($pe8).Count -eq 1) -and ([string]$pe8[0].result -ceq 'success') -and ([string]$pe8[0].generatedText).Contains('generated-pi-marker')
+  Assert $pe8ok 'S8 isolated generate reads nested catalog path'
+  Assert (([string]$pe8[0].currentText).Contains('fake-pi-agents')) 'S8 preview reads current new-provider text'
+  Assert ((Get-Content -LiteralPath (Join-Path $fakeHome '.pi\agent\AGENTS.md') -Raw) -ceq $beforePi8) 'S8 preview leaves new-provider file untouched'
+  $code = Invoke-GlobalSync
+  $afterPi8 = Get-Content -LiteralPath (Join-Path $fakeHome '.pi\agent\AGENTS.md') -Raw
+  Assert ((($code -eq 0) -and ($afterPi8.Contains('generated-pi-marker')))) 'S8 apply writes generated new-provider file'
+  $bdirs8 = @(Get-ChildItem -LiteralPath (Join-Path $auto 'backups') -Directory | Sort-Object Name)
+  $mf8 = $null
+  if (@($bdirs8).Count -gt 0) { $mf8 = Get-Content -LiteralPath (Join-Path $bdirs8[-1].FullName 'manifest.json') -Raw -Encoding UTF8 | ConvertFrom-Json }
+  Assert (($null -ne $mf8) -and ([string]$mf8.targets[0] -ceq 'pi') -and (Test-Path -LiteralPath (Join-Path $bdirs8[-1].FullName '.pi_agent_AGENTS.md'))) 'S8 apply backs up new provider with flattened rel'
+  Assert (((Get-Content -LiteralPath (Join-Path $bdirs8[-1].FullName '.pi_agent_AGENTS.md') -Raw).Contains('fake-pi-agents'))) 'S8 backup holds pre-apply bytes'
 
   # S9: install failure records per-provider failure, token kept.
   Reset-Case @(1)

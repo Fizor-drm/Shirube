@@ -328,16 +328,48 @@ function Get-GlobalScheduledTask {
   }
 }
 
+# Fixed provider catalog: one generated rules file per target. Paths are
+# hard-coded (never derived from user input), so a request can only name an
+# allowlisted ID. Order is display order; defaults stay codexcli/opencode.
+function Get-GlobalProviderCatalog {
+  return @(
+    @{ id = 'codexcli'; label = 'Codex'; rel = '.codex\AGENTS.md' },
+    @{ id = 'opencode'; label = 'OpenCode'; rel = '.config\opencode\AGENTS.md' },
+    @{ id = 'claudecode'; label = 'Claude Code'; rel = '.claude\CLAUDE.md' },
+    @{ id = 'cline'; label = 'Cline'; rel = '.agents\AGENTS.md' },
+    @{ id = 'copilotcli'; label = 'GitHub Copilot CLI'; rel = '.copilot\copilot-instructions.md' },
+    @{ id = 'antigravity-cli'; label = 'Antigravity CLI'; rel = '.gemini\GEMINI.md' },
+    @{ id = 'continue'; label = 'Continue'; rel = '.continue\rules\AGENTS.md' },
+    @{ id = 'roo'; label = 'Roo Code'; rel = '.roo\rules\AGENTS.md' },
+    @{ id = 'goose'; label = 'Goose'; rel = '.config\goose\.goosehints' },
+    @{ id = 'devin'; label = 'Devin'; rel = '.config\devin\AGENTS.md' },
+    @{ id = 'zed'; label = 'Zed'; rel = 'AppData\Roaming\Zed\AGENTS.md' },
+    @{ id = 'crush'; label = 'Crush'; rel = '.config\crush\CRUSH.md' },
+    @{ id = 'codebuddy'; label = 'CodeBuddy'; rel = '.codebuddy\CODEBUDDY.md' },
+    @{ id = 'commandcode'; label = 'CommandCode'; rel = '.commandcode\AGENTS.md' },
+    @{ id = 'kimi-code'; label = 'Kimi Code'; rel = '.kimi-code\AGENTS.md' },
+    @{ id = 'vibe'; label = 'Vibe'; rel = '.vibe\AGENTS.md' },
+    @{ id = 'qoder'; label = 'Qoder'; rel = '.qoder\AGENTS.md' },
+    @{ id = 'pi'; label = 'Pi'; rel = '.pi\agent\AGENTS.md' }
+  )
+}
+function Get-GlobalProviderIds {
+  $ids = @()
+  foreach ($e in @(Get-GlobalProviderCatalog)) { $ids += [string]$e.id }
+  return $ids
+}
 # Allowlisted generation targets only. Scalar singletons are accepted;
 # empty/null/unknown/duplicates are rejected (no arbitrary values).
 function Test-GlobalTargetsValid($Targets) {
   $arr = @()
   if ($Targets -is [string]) { $arr = @($Targets) }
   elseif ($null -ne $Targets) { $arr = @($Targets) }
-  if (($arr.Count -lt 1) -or ($arr.Count -gt 2)) { return $false }
+  $ids = @(Get-GlobalProviderIds)
+  if (($arr.Count -lt 1) -or ($arr.Count -gt $ids.Count)) { return $false }
   $seen = @{}
   foreach ($t in $arr) {
-    if (($t -isnot [string]) -or ([string]$t -cne 'codexcli' -and [string]$t -cne 'opencode')) { return $false }
+    if ($t -isnot [string]) { return $false }
+    if (-not ($ids -ccontains [string]$t)) { return $false }
     if ($seen.ContainsKey([string]$t)) { return $false }
     $seen[[string]$t] = $true
   }
@@ -355,14 +387,14 @@ function Get-GlobalSettings([string]$AutoDir) {
   catch { throw '設定ファイルを確認できませんでした。' }
   $tg = @()
   try { if ($o.PSObject.Properties['targets']) { $tg = @($o.targets | ForEach-Object { [string]$_ }) } } catch {}
-  if (-not (Test-GlobalTargetsValid $tg)) { throw '設定の対象が不正です。Codex/OpenCodeから選び直してください。' }
+  if (-not (Test-GlobalTargetsValid $tg)) { throw '設定の対象が不正です。一覧から選び直してください。' }
   return @{ schemaVersion = 1; targets = $tg }
 }
 function Set-GlobalTargets([string]$AutoDir, $Targets) {
   $arr = @()
   if ($Targets -is [string]) { $arr = @($Targets) }
   elseif ($null -ne $Targets) { $arr = @($Targets | ForEach-Object { [string]$_ }) }
-  if (-not (Test-GlobalTargetsValid $arr)) { throw '対象は Codex/OpenCode から1つ以上選んでください。' }
+  if (-not (Test-GlobalTargetsValid $arr)) { throw '対象は一覧から1つ以上選んでください。' }
   Write-GlobalPrivateJson (Join-Path $AutoDir 'global-settings.json') @{ schemaVersion = 1; updatedAt = ([DateTime]::UtcNow.ToString('o')); targets = $arr } $AutoDir
   return @{ ok = $true; targets = $arr }
 }
@@ -373,7 +405,7 @@ function Get-GlobalEffectiveTargets([string]$AutoDir, $RequestTargets) {
   if ($RequestTargets -is [string]) { $req = @($RequestTargets) }
   elseif ($null -ne $RequestTargets) { $req = @($RequestTargets | ForEach-Object { [string]$_ }) }
   if ($req.Count -gt 0) {
-    if (-not (Test-GlobalTargetsValid $req)) { throw '対象は Codex/OpenCode から1つ以上選んでください。' }
+    if (-not (Test-GlobalTargetsValid $req)) { throw '対象は一覧から1つ以上選んでください。' }
     return $req
   }
   return @((Get-GlobalSettings $AutoDir).targets)
@@ -412,13 +444,14 @@ function Resolve-GlobalHomeBase([string]$NodeExe = '') {
 }
 
 # Deployment paths resolved from the CURRENT home on every call (never cached).
-# Only the two generated AGENTS.md files; config files are never deployment paths.
+# Only the catalog's generated rules files; config files are never deployment paths.
 function Get-GlobalContentPaths([string]$HomeBase) {
   if ([string]::IsNullOrWhiteSpace($HomeBase)) { throw '配置先を確認できませんでした。' }
-  return @{
-    'codexcli' = (Join-Path $HomeBase '.codex\AGENTS.md')
-    'opencode' = (Join-Path $HomeBase '.config\opencode\AGENTS.md')
+  $map = @{}
+  foreach ($e in @(Get-GlobalProviderCatalog)) {
+    $map[[string]$e.id] = Join-Path $HomeBase ([string]$e.rel)
   }
+  return $map
 }
 function Get-GlobalBackupRel([string]$HomeBase, [string]$Full) {
   $rel = $Full.Substring($HomeBase.Length).TrimStart('\', '/') -replace '[\\/:]', '_'
@@ -427,11 +460,16 @@ function Get-GlobalBackupRel([string]$HomeBase, [string]$Full) {
 }
 # Actual current content with confirmed paths. Bounded heads; hashes for compare.
 # opencode.json/jsonc are backup-only and their content is never returned here.
-function Get-GlobalContent([string]$HomeBase, [string]$Token) {
+function Get-GlobalContent([string]$HomeBase, [string]$Token, $Targets = $null) {
   if (Global-Reparse $HomeBase) { throw '配置先を確認できませんでした。' }
   $map = Get-GlobalContentPaths $HomeBase
+  $tg = @()
+  if ($Targets -is [string]) { $tg = @($Targets) }
+  elseif ($null -ne $Targets) { $tg = @($Targets | ForEach-Object { [string]$_ }) }
+  if ($tg.Count -eq 0) { $tg = @(Get-GlobalDefaultTargets) }
+  if (-not (Test-GlobalTargetsValid $tg)) { throw '対象は一覧から1つ以上選んでください。' }
   $files = @()
-  foreach ($t in @('codexcli', 'opencode')) {
+  foreach ($t in $tg) {
     $p = [string]$map[$t]
     # Junctioned parents never read through: fail closed as absent, no bytes exposed.
     $linked = ((Test-Path -LiteralPath $p) -and (Global-Reparse $p))
@@ -459,15 +497,18 @@ function Get-GlobalContent([string]$HomeBase, [string]$Token) {
 # Structured per-provider status. Unknown until a structured result exists:
 # lock timestamps, caches, and log tails never imply success.
 function Get-GlobalStatus([string]$AutoDir) {
-  $rows = @{
-    'codexcli' = @{ target = 'codexcli'; lastAttemptAt = $null; lastSuccessAt = $null; result = 'unknown'; sourceCommit = ''; error = ''; backupId = '' }
-    'opencode' = @{ target = 'opencode'; lastAttemptAt = $null; lastSuccessAt = $null; result = 'unknown'; sourceCommit = ''; error = ''; backupId = '' }
+  $tg = @()
+  try { $tg = @((Get-GlobalSettings $AutoDir).targets) } catch { $tg = @(Get-GlobalDefaultTargets) }
+  if (-not (Test-GlobalTargetsValid $tg)) { $tg = @(Get-GlobalDefaultTargets) }
+  $rows = @{}
+  foreach ($t in $tg) {
+    $rows[[string]$t] = @{ target = [string]$t; lastAttemptAt = $null; lastSuccessAt = $null; result = 'unknown'; sourceCommit = ''; error = ''; backupId = '' }
   }
   $f = Join-Path $AutoDir 'global-status.json'
   if ((Test-Path -LiteralPath $f -PathType Leaf) -and (-not (Global-Reparse $f))) {
     try {
       $o = Get-Content -LiteralPath $f -Raw -Encoding UTF8 | ConvertFrom-Json
-      foreach ($t in @('codexcli', 'opencode')) {
+      foreach ($t in $tg) {
         try {
           if ($o.providers.PSObject.Properties[$t]) {
             $r = $o.providers.$t
@@ -485,7 +526,7 @@ function Get-GlobalStatus([string]$AutoDir) {
   return @{ schemaVersion = 1; providers = $rows }
 }
 function Save-GlobalProviderResult([string]$AutoDir, [string]$Target, [string]$Result, [string]$ErrorText, [string]$SourceCommit, [string]$BackupId = '') {
-  if (($Target -cne 'codexcli') -and ($Target -cne 'opencode')) { throw '対象は Codex/OpenCode から選んでください。' }
+  if (-not ((Get-GlobalProviderIds) -ccontains [string]$Target)) { throw '対象は一覧から選んでください。' }
   $cur = Get-GlobalStatus $AutoDir
   $at = ([DateTime]::UtcNow.ToString('o'))
   $prev = $cur.providers[$Target]
@@ -670,7 +711,7 @@ function New-GlobalBackup([string]$AutoDir, [string]$HomeBase, $Targets) {
   $arr = @()
   if ($Targets -is [string]) { $arr = @($Targets) }
   elseif ($null -ne $Targets) { $arr = @($Targets | ForEach-Object { [string]$_ }) }
-  if (-not (Test-GlobalTargetsValid $arr)) { throw '対象は Codex/OpenCode から1つ以上選んでください。' }
+  if (-not (Test-GlobalTargetsValid $arr)) { throw '対象は一覧から1つ以上選んでください。' }
   $map = Get-GlobalContentPaths $HomeBase
   $extra = @{
     'opencode.json' = (Join-Path $HomeBase '.config\opencode\opencode.json')
@@ -780,6 +821,7 @@ function Test-GlobalManifestValid($Manifest) {
     $files = @()
     try { $files = @(Global-Field $Manifest 'files') } catch {}
     if ($files.Count -eq 0) { return @{ ok = $false; error = 'manifest files' } }
+    $ids = @(Get-GlobalProviderIds)
     $seen = @{}
     $canon = @()
     foreach ($fe in $files) {
@@ -791,7 +833,7 @@ function Test-GlobalManifestValid($Manifest) {
       $hash = [string](Global-Field $fe 'hash')
       if (($kind -cne 'agents') -and ($kind -cne 'config')) { return @{ ok = $false; error = 'manifest kind' } }
       if ($kind -ceq 'agents') {
-        if (($t -cne 'codexcli') -and ($t -cne 'opencode')) { return @{ ok = $false; error = 'manifest target' } }
+        if (-not ($ids -ccontains $t)) { return @{ ok = $false; error = 'manifest target' } }
       }
       else {
         if ($t -cne 'opencode') { return @{ ok = $false; error = 'manifest target' } }
@@ -822,12 +864,13 @@ function Test-GlobalManifestValid($Manifest) {
 # A changed selected target is still refused by the pin comparison.
 function Global-AgentsTargets($Manifest) {
   $out = @()
+  $ids = @(Get-GlobalProviderIds)
   foreach ($fe in @(Global-Field $Manifest 'files')) {
     $kind = ''
     try { $kind = [string](Global-Field $fe 'kind') } catch {}
     if ($kind -cne 'agents') { continue }
     $t = [string](Global-Field $fe 'target')
-    if ((($t -ceq 'codexcli') -or ($t -ceq 'opencode')) -and (-not ($out -contains $t))) { $out += $t }
+    if (($ids -ccontains $t) -and (-not ($out -contains $t))) { $out += $t }
   }
   return $out
 }
@@ -889,6 +932,7 @@ function Get-GlobalBackupDiff([string]$AutoDir, [string]$BackupId, [string]$Home
   $canon0 = @($chk0.canon)
   $tgSorted0 = @($chk0.targets)
   $map = Get-GlobalContentPaths $HomeBase
+  $ids = @(Get-GlobalProviderIds)
   # Snapshot current bytes once (bounded before/during reads) for the agents
   # targets of this verified manifest only: unselected providers are never read,
   # so their size/link/later edits cannot block this backup's diff.
@@ -920,7 +964,7 @@ function Get-GlobalBackupDiff([string]$AutoDir, [string]$BackupId, [string]$Home
     try { $kind = [string]$fe.kind } catch {}
     if ($kind -cne 'agents') { continue }
     $t = [string]$fe.target
-    if (($t -cne 'codexcli') -and ($t -cne 'opencode')) { throw 'バックアップの対象を信頼できません。' }
+    if (-not ($ids -ccontains $t)) { throw 'バックアップの対象を信頼できません。' }
     $rel = ''
     try { $rel = [string]$fe.rel } catch {}
     $present = $false
@@ -989,7 +1033,7 @@ function Get-GlobalBackupDiff([string]$AutoDir, [string]$BackupId, [string]$Home
     }
     if ($kind -cne 'agents') { throw 'バックアップの対象を信頼できません。' }
     $t = [string]$fe.target
-    if (($t -cne 'codexcli') -and ($t -cne 'opencode')) { throw 'バックアップの対象を信頼できません。' }
+    if (-not ($ids -ccontains $t)) { throw 'バックアップの対象を信頼できません。' }
     # Display reuses the exact snapshot bytes hashed for the confirm below.
     $oldText = $bakText[$t]
     $newText = $curText[$t]
@@ -1167,6 +1211,7 @@ function Restore-GlobalBackup([string]$AutoDir, [string]$BackupId, [bool]$Confir
   }
   if (Global-Reparse $HomeBase) { throw 'リンク・ジャンクションの配置には戻せません。' }
   $map = Get-GlobalContentPaths $HomeBase
+  $ids = @(Get-GlobalProviderIds)
   # Plan every mutation first; refuse before touching anything.
   $steps = @()
   foreach ($fe in @($mf.files)) {
@@ -1179,7 +1224,7 @@ function Restore-GlobalBackup([string]$AutoDir, [string]$BackupId, [bool]$Confir
     $present = $false
     try { $present = [bool]$fe.present } catch {}
     $t = [string]$fe.target
-    if (($t -cne 'codexcli') -and ($t -cne 'opencode')) { throw 'バックアップの対象を信頼できません。' }
+    if (-not ($ids -ccontains $t)) { throw 'バックアップの対象を信頼できません。' }
     $dst = [string]$map[$t]
     if (-not (Global-Contained $dst $HomeBase)) { throw '配置先を確認できませんでした。' }
     if ($present) {

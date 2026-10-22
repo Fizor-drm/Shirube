@@ -27,8 +27,10 @@ const names = ['stateJa', 'resultJa', 'updateSyncUI', 'updateCommonSyncState',
   'renderSyncState', 'renderUnifiedProgress', 'renderProjectLog', 'renderGlobalLog', 'renderGlobalStatus',
   'refresh', 'refreshGlobal', 'pollUntilDone', 'pollGlobalUntilDone',
   'afterSyncNotify', 'afterGlobalSyncNotify', 'setUnifiedProgress',
-  'globalSelectedTargets', 'globalPlanIdForSelection', 'globalSyncApplyEnabled',
-  'updateGlobalSyncApplyButton', 'selectedNames', 'selectedNamesIn'];
+  'globalProviderEntry', 'globalProviderLabel', 'renderGlobalTargetChoices',
+  'globalTargetCheckboxes', 'markGlobalTargetsDirty', 'globalSelectedTargets', 'globalPlanIdForSelection',
+  'globalSyncApplyEnabled', 'updateGlobalSyncApplyButton', 'singleSyncTerminal',
+  'beginSingleSyncScope', 'finishSingleSyncScope', 'selectedNames', 'selectedNamesIn'];
 function setup() {
   const elements = new Map();
   function element() {
@@ -43,12 +45,14 @@ function setup() {
     if (!elements.has(id)) elements.set(id, element());
     return elements.get(id);
   }, createElement(tag) { const el=element(); el.tagName=String(tag).toUpperCase(); return el; },
+  createTextNode(text) { return { text: String(text) }; },
   querySelectorAll(selector) {
+    const cls = (selector.includes('global-target') || selector.includes('#globalTargetsList')) ? 'global-target' : 'selbox';
     return selector.split(',').flatMap(part => {
       const id = /#([A-Za-z0-9_-]+)/.exec(part)?.[1];
       const root = id ? elements.get(id) : null;
       const found = [];
-      const visit = n => { if(n && n.type === 'checkbox' && String(n.className).split(/\s+/).includes('selbox')) found.push(n); (n && n.children || []).forEach(visit); };
+      const visit = n => { if(n && n.type === 'checkbox' && String(n.className).split(/\s+/).includes(cls)) found.push(n); (n && n.children || []).forEach(visit); };
       visit(root);
       return found;
     });
@@ -87,6 +91,8 @@ function setup() {
     }
   });
   vm.runInContext('var commonSyncStates={project:null,global:null}; var commonSyncSource="project";' +
+    'var GLOBAL_CATALOG=[{id:"codexcli",label:"Codex",rel:".codex\\\\AGENTS.md"},{id:"opencode",label:"OpenCode",rel:".config\\\\opencode\\\\AGENTS.md"},{id:"pi",label:"Pi",rel:".pi\\\\agent\\\\AGENTS.md"}];' +
+    'var GLOBAL_DEFAULT_TARGETS=["codexcli","opencode"];' +
     'var currentLang="ja",localizedText={ja:new Map(),en:new Map(),"zh-CN":new Map()},I18N={};' +
     'var lastProjectCount=null,syncDisplayState=null,projectLogState={loaded:false,tail:"",error:null};' +
     'var currentGlobalStatus=null,globalLogState={loaded:false,tail:"",error:null};' +
@@ -98,7 +104,9 @@ function setup() {
     'var globalApplyInflight=false,globalTargetsDirty=false,globalIntervalDirty=false,lastGlobalPlan=null;' +
     'var unifiedProgressState={completed:0,total:2,text:"0/2 待機中",key:null,vars:null,indeterminate:false,lang:"ja"};' +
     names.map(actual).join('\n') +
-    '\nvar startUnified='+handler('btnSync')+';var applyGlobal='+handler('btnGlobalSync')+';', c);
+    '\nrenderGlobalTargetChoices();' +
+    '\nvar startUnified='+handler('btnSync')+';var applyGlobal='+handler('btnGlobalSync')+';' +
+    'var startGlobalOnly='+handler('btnSyncGlobalOnly')+';var startProjectOnly='+handler('btnSyncProjectOnly')+';', c);
   return {c, model, document, el:id=>document.getElementById(id)};
 }
 async function test(name, f) { await f(); console.log('PASS: '+name); }
@@ -204,13 +212,13 @@ await test('Project timeout never reaches 2/2 and stale IDs cannot complete a po
 await test('valid Global plan runs real after-notify and updates common state',async()=>{
   const t=setup(); t.model.globalResult='failed'; await t.c.startUnified();
   t.model.globalResult='success'; t.c.lastGlobalPlan={id:'approved',names:['codexcli']};
-  t.el('ckTCodex').checked=true; await t.c.applyGlobal(); await t.c.refresh();
+  t.model.global.targets=['codexcli']; await t.c.refreshGlobal(); await t.c.applyGlobal(); await t.c.refresh();
   assert.equal(t.el('stRun').dataset.state,'success');
   assert.ok(t.model.notices.some(n=>n.title==='Global同期が成功しました')); noErrors(t);
   assert.equal(t.c.lastGlobalPlan,null); assert.equal(t.el('btnGlobalSync').disabled,true);
 });
 await test('rejected plan is invalidated and duplicate starts are suppressed',async()=>{
-  const t=setup(); t.c.lastGlobalPlan={id:'old',names:['codexcli']};t.el('ckTCodex').checked=true;
+  const t=setup(); t.c.lastGlobalPlan={id:'old',names:['codexcli']}; t.model.global.targets=['codexcli']; await t.c.refreshGlobal();
   t.model.globalResponse=new Error('invalid plan'); await t.c.applyGlobal();
   assert.equal(t.c.lastGlobalPlan,null);assert.equal(t.el('btnGlobalSync').disabled,true);
   t.model.calls=[]; t.c.unifiedSyncActive=true; await t.c.startUnified();
@@ -237,5 +245,63 @@ await test('initial summary selection ignores response order and respects runnin
       assert.equal(t.el('stRun').dataset.state,active?'running':'success');
     }
   }
+});
+await test('Global-only scope posts only its endpoint with 1-step progress',async()=>{
+  const t=setup(); await t.c.refreshGlobal(); await t.c.startGlobalOnly();
+  assert.deepEqual(t.model.calls.filter(x=>x.method==='POST').map(x=>x.ep),['/api/global-sync']);
+  assert.equal(JSON.stringify(t.model.calls.find(x=>x.ep==='/api/global-sync').body),'{}');
+  assert.equal(t.el('syncProgress').max,1);
+  assert.equal(t.el('syncProgress').value,1);
+  assert.equal(t.el('stRun').dataset.state,'success');
+  assert.ok(t.model.notices.some(n=>n.title==='Global同期が成功しました'));
+  noErrors(t);
+});
+await test('Project-only scope posts only its endpoint with 1-step progress',async()=>{
+  const t=setup(); await t.c.startProjectOnly();
+  assert.deepEqual(t.model.calls.filter(x=>x.method==='POST').map(x=>x.ep),['/api/sync']);
+  assert.equal(JSON.stringify(t.model.calls.find(x=>x.ep==='/api/sync').body),'{}');
+  assert.equal(t.el('syncProgress').max,1);
+  assert.equal(t.el('syncProgress').value,1);
+  assert.equal(t.el('stRun').dataset.state,'success');
+  assert.ok(t.model.notices.some(n=>n.title==='同期が成功しました'));
+  noErrors(t);
+});
+await test('single-scope unknown and failure never become success',async()=>{
+  const g=setup(); g.model.globalResult='running'; await g.c.startGlobalOnly();
+  assert.equal(g.el('stRun').dataset.state,'unconfirmed');
+  assert.equal(g.el('syncProgress').max,1); assert.equal(g.el('syncProgress').value,0);
+  assert.ok(g.model.notices.some(n=>n.title==='Global同期は未確認です'));
+  assert.ok(!g.model.notices.some(n=>n.title==='Global同期が成功しました'));
+  const p=setup(); p.model.projectResult='failed'; await p.c.startProjectOnly();
+  assert.equal(p.el('stRun').dataset.state,'failed');
+  assert.equal(p.el('syncProgress').max,1); assert.equal(p.el('syncProgress').value,1);
+  assert.ok(p.model.notices.some(n=>n.title==='同期が失敗しました'));
+});
+await test('single-scope starts share the active and apply guards',async()=>{
+  const t=setup(); t.c.unifiedSyncActive=true; t.model.calls=[];
+  await t.c.startGlobalOnly(); await t.c.startProjectOnly();
+  assert.equal(t.model.calls.length,0);
+  t.c.unifiedSyncActive=false; t.c.globalApplyInflight=true;
+  await t.c.startGlobalOnly(); await t.c.startProjectOnly();
+  assert.equal(t.model.calls.length,0);
+});
+await test('provider choices come from the catalog and preserve unsaved selection',async()=>{
+  const t=setup();
+  assert.equal(t.c.globalProviderLabel('pi'),'Pi');
+  assert.deepEqual(Array.from(t.c.globalSelectedTargets()),['codexcli','opencode']);
+  t.model.global.targets=['pi']; await t.c.refreshGlobal();
+  assert.deepEqual(Array.from(t.c.globalSelectedTargets()),['pi']);
+  assert.equal(Array.from(t.c.globalTargetCheckboxes()).find(c=>c.value==='pi').checked,true);
+  const pi=Array.from(t.c.globalTargetCheckboxes()).find(c=>c.value==='pi');
+  const codex=Array.from(t.c.globalTargetCheckboxes()).find(c=>c.value==='codexcli');
+  pi.checked=false; codex.checked=true;
+  t.c.lastGlobalPlan={id:'p',names:['pi']};
+  t.c.markGlobalTargetsDirty();
+  assert.equal(t.c.globalTargetsDirty,true);
+  assert.equal(t.c.lastGlobalPlan,null);
+  assert.equal(t.el('btnGlobalSync').disabled,true);
+  t.model.global.targets=['pi']; await t.c.refreshGlobal();
+  assert.equal(pi.checked,false); assert.equal(codex.checked,true);
+  assert.deepEqual(Array.from(t.c.globalSelectedTargets()),['codexcli']);
 });
 console.log('ALL UNIFIED SYNC CHECKS PASSED');

@@ -807,7 +807,7 @@ function Clear-OldGlobalRequestFiles([string]$AutoDir) {
 function Start-HiddenGlobalSync([string]$AutoDir, [string[]]$TargetNames = @(), [bool]$PreviewOnly = $false, [string]$PlanId = '') {
   $sel = @()
   if ($TargetNames) { $sel = @($TargetNames | ForEach-Object { [string]$_ }) }
-  if (($sel.Count -gt 0) -and (-not (Test-GlobalTargetsValid $sel))) { throw '対象は Codex/OpenCode から1つ以上選んでください。' }
+  if (($sel.Count -gt 0) -and (-not (Test-GlobalTargetsValid $sel))) { throw '対象は一覧から1つ以上選んでください。' }
   if (($PlanId -ne '') -and ($PlanId -cnotmatch '^[0-9a-f]{32}$')) { throw 'plan id が不正です。' }
   $req = Write-GlobalSyncRequest $AutoDir
   $reqFile = Join-Path $AutoDir ("dashboard.global-request-" + $req.id + ".json")
@@ -836,11 +836,14 @@ function Get-GlobalStatusResponse([string]$AutoDir, [string]$Token, [string]$Run
   try { $homeBase = Resolve-GlobalHomeBase } catch { $homeBase = '' }
   $tg = @('codexcli', 'opencode')
   try { $tg = @((Get-GlobalSettings $AutoDir).targets) } catch {}
+  if (-not (Test-GlobalTargetsValid $tg)) { $tg = @(Get-GlobalDefaultTargets) }
+  $available = @()
+  foreach ($ce in @(Get-GlobalProviderCatalog)) { $available += @{ id = [string]$ce.id; label = [string]$ce.label } }
   $st = Get-GlobalStatus $AutoDir
   $map = @{}
   if ($homeBase -ne '') { try { $map = Get-GlobalContentPaths $homeBase } catch {} }
   $rows = @()
-  foreach ($t in @('codexcli', 'opencode')) {
+  foreach ($t in $tg) {
     $pr = $st.providers[$t]
     $p = ''
     try { if ($map.ContainsKey($t)) { $p = [string]$map[$t] } } catch {}
@@ -859,7 +862,7 @@ function Get-GlobalStatusResponse([string]$AutoDir, [string]$Token, [string]$Run
   $en = $null
   try { $en = Get-GlobalTaskEnabled } catch {}
   return @{
-    homeBase = $homeBase; targets = $tg; providers = $rows
+    homeBase = $homeBase; targets = $tg; providers = $rows; available = $available
     running = $sync.running; syncState = $sync.syncState; syncAt = $sync.syncAt; syncId = $sync.syncId
     logName = $sync.logName; logMtime = $sync.logMtime; finalLine = $sync.finalLine; tail = $sync.tail
     resultExit = $sync.resultExit; resultAt = $sync.resultAt
@@ -927,7 +930,7 @@ main{flex:1;min-width:0;display:flex;flex-direction:column;background:#0a0a0a;bo
 .summarybar .card{padding:10px 14px;min-width:0;overflow-wrap:anywhere;word-break:break-all}
 .summarybar .big{font-size:20px}
 .summarybar .muted{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;overflow-wrap:anywhere;word-break:break-all}
-.summarybar .btnrow button{white-space:nowrap}
+.summarybar .btnrow button{white-space:normal;padding:6px 9px}
 .syncprogress{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:4px;min-width:0}
 .syncprogress progress{flex:1 1 100%;min-width:0;height:8px;accent-color:#8fd694}
 .syncprogress .muted{margin:0;white-space:normal;overflow-wrap:anywhere;word-break:break-word}
@@ -971,6 +974,8 @@ button.danger{border-color:#5a2b2b;color:#f0b9b9}
 pre{background:#070707;border:1px solid #222;border-radius:6px;padding:12px;white-space:pre-wrap;word-break:break-all;font-size:12px;max-height:260px;overflow:auto;color:#d6d6d6}
 .ok{color:#8fd694}.err{color:#f0a3a3}.warn{color:#e8c87a}
 label.chk{display:flex;gap:8px;align-items:flex-start;margin-top:10px;font-size:13px;color:#d6d6d6}
+.targetlist{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0 12px}
+.targetlist label.chk{margin-top:6px}
 footer{margin-top:34px;border-top:1px solid #1d1d1d;padding-top:12px;color:#8a8a8a;font-size:12px}
 :focus-visible{outline:2px solid #f5f5f5;outline-offset:2px}
 .pathrow{display:flex;gap:8px}
@@ -1030,7 +1035,7 @@ input[type=number]{width:120px;background:#0a0a0a;border:1px solid #2c2c2c;color
 <div class="grid3">
 <div class="card"><h2 data-i18n="登録プロジェクト数">登録プロジェクト数</h2><p class="big" id="stCount">読込中</p><p class="muted helper" data-i18n="projects.json が正本です">projects.json が正本です</p></div>
 <div class="card"><h2 data-i18n="同期状態">同期状態</h2><p class="big" id="stRun">読込中</p><p class="muted helper" id="stLog">-</p><div class="syncprogress"><progress id="syncProgress" max="2" value="0" aria-label="同期進捗" aria-valuetext="0/2 待機中" data-i18n-aria="同期進捗"></progress><span class="muted" id="syncProgressText" aria-live="polite">0/2 待機中</span></div></div>
-<div class="card"><h2 data-i18n="最終結果">最終結果</h2><p class="muted" id="stTail">読込中</p><div class="btnrow"><button id="btnSync" class="primary" data-i18n="今すぐ同期">今すぐ同期</button></div></div>
+<div class="card"><h2 data-i18n="最終結果">最終結果</h2><p class="muted" id="stTail">読込中</p><div class="btnrow"><button id="btnSync" class="primary" data-i18n="すべて同期">すべて同期</button><button id="btnSyncGlobalOnly" data-i18n="Globalのみ">Globalのみ</button><button id="btnSyncProjectOnly" data-i18n="Projectのみ">Projectのみ</button></div></div>
 </div>
 <p class="muted helper" id="ovGlobal">Global同期: 読込中</p>
 </section>
@@ -1086,7 +1091,7 @@ input[type=number]{width:120px;background:#0a0a0a;border:1px solid #2c2c2c;color
 <div id="global" hidden>
 <div class="cols2">
 <section>
-<div class="card"><h2 data-i18n="Global同期（Codex/OpenCode 共通）">Global同期（Codex/OpenCode 共通）</h2>
+<div class="card"><h2 data-i18n="Global同期（選択した対象へ配布）">Global同期（選択した対象へ配布）</h2>
 <p class="muted" data-i18n="PC全体の共通ルールを配ります。Projectとは別の状態（最終成功・取得元・失敗理由）を持ちます。配布ファイルの直接編集はしません。">PC全体の共通ルールを配ります。Projectとは別の状態（最終成功・取得元・失敗理由）を持ちます。配布ファイルの直接編集はしません。</p>
 <p class="muted" id="emptyGlobal" data-i18n="まだGlobal同期の状態がありません。今すぐ同期で初回実行できます。">まだGlobal同期の状態がありません。今すぐ同期で初回実行できます。</p>
 <div class="tablewrap"><table id="tblGlobal" hidden><thead><tr><th data-i18n="対象">対象</th><th data-i18n="配置先">配置先</th><th data-i18n="最終試行">最終試行</th><th data-i18n="最終成功">最終成功</th><th data-i18n="取得元">取得元</th><th data-i18n="結果">結果</th><th data-i18n="失敗理由">失敗理由</th></tr></thead><tbody id="globalRows"></tbody></table></div>
@@ -1103,8 +1108,7 @@ input[type=number]{width:120px;background:#0a0a0a;border:1px solid #2c2c2c;color
 <section id="gsettings">
 <div class="card"><h2 data-i18n="Global設定">Global設定</h2>
 <p class="muted" data-i18n="配る対象の選択・自動同期の間隔と有効/無効を変えます。更新前バックアップと復元は「バックアップ」画面で行います。">配る対象の選択・自動同期の間隔と有効/無効を変えます。更新前バックアップと復元は「バックアップ」画面で行います。</p>
-<label class="chk"><input type="checkbox" id="ckTCodex" checked> Codex（.codex/AGENTS.md）</label>
-<label class="chk"><input type="checkbox" id="ckTOpenCode" checked> OpenCode（.config/opencode/AGENTS.md）</label>
+<div id="globalTargetsList" class="targetlist" aria-label="配る対象" data-i18n-aria="配る対象"></div>
 <div class="btnrow"><button id="btnGlobalTargets" class="primary" data-i18n="対象を保存">対象を保存</button></div>
 <div id="msgGlobalTargets" role="status"></div>
 <hr style="border:0;border-top:1px solid #1d1d1d;margin:16px 0">
@@ -1195,6 +1199,8 @@ input[type=number]{width:120px;background:#0a0a0a;border:1px solid #2c2c2c;color
 <script>
 "use strict";
 const TOKEN = "__TOKEN__";
+const GLOBAL_CATALOG = (typeof __GLOBAL_CATALOG__ !== "undefined") ? __GLOBAL_CATALOG__ : [];
+const GLOBAL_DEFAULT_TARGETS = ["codexcli", "opencode"];
 const H = {"Content-Type":"application/json","X-Dashboard-Token":TOKEN};
 const SCREENS=["top","projects","global","backups","local","logs","settings"];
 const LEGACY=Object.assign(Object.create(null),{"register":"projects","status":"projects","gsettings":"global","help":"settings"});
@@ -1261,6 +1267,8 @@ const I18N = {
     "1/2 Global同期: {state} / Project同期を実行中": "1/2 Global sync: {state} / Running Project sync",
     "1/2 Project同期: {state}": "1/2 Project sync: {state}",
     "1/2 Project同期: 開始できませんでした": "1/2 Project sync: could not start",
+    "1/1 Global同期: {state}": "1/1 Global sync: {state}",
+    "1/1 Project同期: {state}": "1/1 Project sync: {state}",
     "AGENTS.md なし: 登録後の同期で新規生成されます。既存 AGENTS.md がある場合は登録停止します。": "No AGENTS.md: a new one is generated on the sync after registration. If an existing AGENTS.md is present, registration stops.",
     "AGENTS.md は直接編集しません。": "AGENTS.md is never edited directly.",
     "AGENTSあり": "AGENTS present",
@@ -1273,7 +1281,13 @@ const I18N = {
     "Global同期": "Global sync",
     "Global同期: {summary}": "Global sync: {summary}",
     "Global同期: 読込中": "Global sync: loading",
-    "Global同期（Codex/OpenCode 共通）": "Global sync (shared by Codex/OpenCode)",
+    "Global同期（選択した対象へ配布）": "Global sync (distribute to selected targets)",
+    "Globalのみ": "Global only",
+    "Globalのみ同期の確認": "Confirm Global-only sync",
+    "Global同期（保存済み対象へ配布）を実行します。よろしいですか。": "Run Global sync (distribute to saved targets)?",
+    "0/1 Global同期: {state}": "0/1 Global sync: {state}",
+    "0/1 Global同期: 開始できませんでした": "0/1 Global sync: could not start",
+    "0/1 Global同期を実行中": "0/1 Running Global sync",
     "Global同期（保存済み対象へ配布）を実行し、完了を確認した後、登録済みプロジェクトの同期を実行します。よろしいですか。": "Run Global sync (distribute to saved targets), confirm completion, then sync the registered projects. Continue?",
     "Global同期が{state}のため、Project同期は実行しませんでした。": "Global sync was {state}, so Project sync was not started.",
     "Global同期が失敗しました": "Global sync failed",
@@ -1303,6 +1317,12 @@ const I18N = {
     "projects.json が正本です": "projects.json is authoritative",
     "Project同期できませんでした": "Project sync could not run",
     "Project同期は未確認です": "Project sync unconfirmed",
+    "Projectのみ": "Project only",
+    "Projectのみ同期の確認": "Confirm Project-only sync",
+    "Projectのみの同期を実行します。よろしいですか。": "Run Project-only sync?",
+    "0/1 Project同期: {state}": "0/1 Project sync: {state}",
+    "0/1 Project同期: 開始できませんでした": "0/1 Project sync: could not start",
+    "0/1 Project同期を実行中": "0/1 Running Project sync",
     "Project同期ログ": "Project sync log",
     "Shirube 管理": "Shirube Console",
     "Shirube 管理ダッシュボード": "Shirube Dashboard",
@@ -1316,6 +1336,7 @@ const I18N = {
     "キャンセルされました。登録は行いません。": "Cancelled. Nothing was registered.",
     "このPC専用。外部送信なし。": "This PC only. Nothing is sent externally.",
     "この内容でよければ「プレビューを適用」で反映します（反映前に再照合し、変化があれば拒否）。": "If this content is acceptable, use \"Apply preview\" to apply it (it is re-checked first and rejected if anything changed).",
+    "すべて同期": "Sync all",
     "すでにプレビュー適用中です。": "A preview is already being applied.",
     "すでに同期を実行中です。": "A sync is already running.",
     "パス": "Path",
@@ -1520,6 +1541,7 @@ const I18N = {
     "読込中": "Loading",
     "内容": "Contents",
     "内容を表示": "Show content",
+    "配る対象": "Targets to distribute",
     "配る対象の選択・自動同期の間隔と有効/無効を変えます。更新前バックアップと復元は「バックアップ」画面で行います。": "Choose distribution targets and change the automatic sync interval and enable/disable state. Pre-update backups and restores are handled on the Backups screen.",
     "配る対象を「{targets}」に変更します。よろしいですか。": "Change distribution targets to \"{targets}\"?",
     "配置元: {base}": "Source location: {base}",
@@ -1597,6 +1619,8 @@ const I18N = {
     "1/2 Global同期: {state} / Project同期を実行中": "1/2 Global 同步：{state} / 正在执行 Project 同步",
     "1/2 Project同期: {state}": "1/2 Project 同步：{state}",
     "1/2 Project同期: 開始できませんでした": "1/2 Project 同步：无法开始",
+    "1/1 Global同期: {state}": "1/1 Global 同步：{state}",
+    "1/1 Project同期: {state}": "1/1 Project 同步：{state}",
     "AGENTS.md なし: 登録後の同期で新規生成されます。既存 AGENTS.md がある場合は登録停止します。": "没有 AGENTS.md：注册后的同步会新建。如果存在现有 AGENTS.md，则停止注册。",
     "AGENTS.md は直接編集しません。": "不会直接编辑 AGENTS.md。",
     "AGENTSあり": "有 AGENTS",
@@ -1609,7 +1633,13 @@ const I18N = {
     "Global同期": "Global 同步",
     "Global同期: {summary}": "Global 同步：{summary}",
     "Global同期: 読込中": "Global 同步：加载中",
-    "Global同期（Codex/OpenCode 共通）": "Global 同步（Codex/OpenCode 共用）",
+    "Global同期（選択した対象へ配布）": "Global 同步（分发到所选对象）",
+    "Globalのみ": "仅 Global",
+    "Globalのみ同期の確認": "确认仅 Global 同步",
+    "Global同期（保存済み対象へ配布）を実行します。よろしいですか。": "将执行 Global 同步（分发到已保存对象）。是否继续？",
+    "0/1 Global同期: {state}": "0/1 Global 同步：{state}",
+    "0/1 Global同期: 開始できませんでした": "0/1 Global 同步：无法开始",
+    "0/1 Global同期を実行中": "0/1 正在执行 Global 同步",
     "Global同期（保存済み対象へ配布）を実行し、完了を確認した後、登録済みプロジェクトの同期を実行します。よろしいですか。": "将执行 Global 同步（分发到已保存的对象），确认完成后，再同步已注册的项目。是否继续？",
     "Global同期が{state}のため、Project同期は実行しませんでした。": "由于 Global 同步为{state}，未执行 Project 同步。",
     "Global同期が失敗しました": "Global 同步失败",
@@ -1639,6 +1669,12 @@ const I18N = {
     "projects.json が正本です": "以 projects.json 为准",
     "Project同期できませんでした": "无法执行 Project 同步",
     "Project同期は未確認です": "Project 同步未确认",
+    "Projectのみ": "仅 Project",
+    "Projectのみ同期の確認": "确认仅 Project 同步",
+    "Projectのみの同期を実行します。よろしいですか。": "将执行仅 Project 同步。是否继续？",
+    "0/1 Project同期: {state}": "0/1 Project 同步：{state}",
+    "0/1 Project同期: 開始できませんでした": "0/1 Project 同步：无法开始",
+    "0/1 Project同期を実行中": "0/1 正在执行 Project 同步",
     "Project同期ログ": "Project 同步日志",
     "Shirube 管理": "Shirube 管理",
     "Shirube 管理ダッシュボード": "Shirube 管理仪表板",
@@ -1652,6 +1688,7 @@ const I18N = {
     "キャンセルされました。登録は行いません。": "已取消。未执行注册。",
     "このPC専用。外部送信なし。": "仅限本机。不会对外发送。",
     "この内容でよければ「プレビューを適用」で反映します（反映前に再照合し、変化があれば拒否）。": "如果内容无误，点击“应用预览”即可生效（生效前会重新核对，如有变化则拒绝）。",
+    "すべて同期": "全部同步",
     "すでにプレビュー適用中です。": "已在应用预览。",
     "すでに同期を実行中です。": "已在执行同步。",
     "パス": "路径",
@@ -1856,6 +1893,7 @@ const I18N = {
     "読込中": "加载中",
     "内容": "内容",
     "内容を表示": "显示内容",
+    "配る対象": "分发对象",
     "配る対象の選択・自動同期の間隔と有効/無効を変えます。更新前バックアップと復元は「バックアップ」画面で行います。": "选择分发对象，并更改自动同步的间隔与启用/禁用状态。更新前备份和恢复在“备份”页面进行。",
     "配る対象を「{targets}」に変更します。よろしいですか。": "将分发对象改为“{targets}”。是否继续？",
     "配置元: {base}": "来源位置：{base}",
@@ -2200,10 +2238,11 @@ function renderStatusTable(list, selected){
   });
 }
 async function afterSyncNotify(r){
+  let st = "unconfirmed";
   if(r && r.sync === "started"){
     const dl = Date.now() + 60000;
     await refresh(dl);
-    const st = await pollUntilDone(r.syncId, 30, 2000, dl);
+    st = await pollUntilDone(r.syncId, 30, 2000, dl);
     if(Date.now() < dl) await refresh(dl);
     if(st === "success") await showNotify(L("同期が成功しました"), L("同期が成功しました。ログを確認してください。"));
     else if(st === "failed") await showNotify(L("同期が失敗しました"), L("同期が失敗しました。ログを確認してください。"));
@@ -2213,6 +2252,7 @@ async function afterSyncNotify(r){
     await refresh();
     await showNotify(L("同期は未確認です"), L("同期状態は未確認です。ログを確認してください。"));
   }
+  return st;
 }
 async function refresh(deadline){
   try{
@@ -2642,6 +2682,124 @@ document.getElementById("btnSync").onclick = async function(){
     try{ safeFocus(b); }catch(e4){}
   }
 };
+function singleSyncTerminal(st){ return st === "success" || st === "failed" || st === "skipped"; }
+function beginSingleSyncScope(scope){
+  unifiedBaselineProjectRunId = unifiedObservedProjectRunId;
+  unifiedBaselineGlobalRunId = unifiedObservedGlobalRunId;
+  unifiedFinalState = null;
+  unifiedProjectRunId = null;
+  unifiedGlobalRunId = null;
+  unifiedStateLock = true;
+  commonSyncSource = scope;
+  setUnifiedProgress(0, 1, scope === "global" ? L("0/1 Global同期を実行中") : L("0/1 Project同期を実行中"), false);
+}
+function finishSingleSyncScope(scope){
+  if(unifiedFinalState){
+    const cur = commonSyncStates[scope];
+    const rid = scope === "global" ? unifiedGlobalRunId : unifiedProjectRunId;
+    const match = cur && rid && cur.syncId === rid;
+    syncDisplayState = {unified:false, source:scope, status:unifiedFinalState, logName:match?(cur.logName||""):"", logMtime:match?(cur.logMtime||""):""};
+    renderSyncState();
+  }
+  unifiedSyncActive = false;
+  unifiedStateLock = false;
+}
+document.getElementById("btnSyncGlobalOnly").onclick = async function(){
+  const b = document.getElementById("btnSyncGlobalOnly");
+  if(unifiedSyncActive){ await showNotify(L("同期中"), L("すでに同期を実行中です。")); return; }
+  if(globalApplyInflight){ await showNotify(L("同期中"), L("Globalプレビュー適用中です。")); return; }
+  const originallyDisabled = b.disabled;
+  unifiedSyncActive = true;
+  unifiedFinalState = null;
+  b.disabled = true;
+  try{
+    const okGo = await showConfirm(L("Globalのみ同期の確認"), L("Global同期（保存済み対象へ配布）を実行します。よろしいですか。"), L("同期する"), L("やめる"));
+    if(!okGo){ return; }
+    beginSingleSyncScope("global");
+    let gr = null;
+    try{ gr = await api("/api/global-sync","POST",{}); }
+    catch(e){
+      setUnifiedProgress(0, 1, L("0/1 Global同期: 開始できませんでした"), false);
+      await showNotify(L("Global同期できませんでした"), e.message);
+      unifiedFinalState = "unconfirmed";
+      return;
+    }
+    if(!gr || gr.sync !== "started"){
+      setUnifiedProgress(0, 1, L("0/1 Global同期: 開始できませんでした"), false);
+      await showNotify(L("Global同期できませんでした"), L("同期を開始できませんでした。"));
+      unifiedFinalState = "failed";
+      return;
+    }
+    if(!gr.syncId){
+      setUnifiedProgress(0, 1, L("0/1 Global同期: {state}", {state:stateJa("unconfirmed")}), false);
+      await showNotify(L("Global同期は未確認です"), L("同期IDを取得できませんでした。"));
+      unifiedFinalState = "unconfirmed";
+      return;
+    }
+    unifiedGlobalRunId = gr.syncId;
+    const st = (await afterGlobalSyncNotify(gr)) || "unconfirmed";
+    unifiedFinalState = st;
+    if(singleSyncTerminal(st)) setUnifiedProgress(1, 1, L("1/1 Global同期: {state}", {state:stateJa(st)}), false);
+    else setUnifiedProgress(0, 1, L("0/1 Global同期: {state}", {state:stateJa(st)}), false);
+  }catch(e){
+    try{ await showNotify(L("Global同期できませんでした"), e.message); }catch(e2){}
+    unifiedFinalState = unifiedFinalState || "failed";
+    try{ setUnifiedProgress(0, 1, L("0/1 Global同期: {state}", {state:stateJa(unifiedFinalState)}), false); }catch(e3){}
+  }
+  finally{
+    finishSingleSyncScope("global");
+    try{ b.disabled = originallyDisabled; }catch(e4){}
+    try{ safeFocus(b); }catch(e5){}
+  }
+};
+document.getElementById("btnSyncProjectOnly").onclick = async function(){
+  const b = document.getElementById("btnSyncProjectOnly");
+  if(unifiedSyncActive){ await showNotify(L("同期中"), L("すでに同期を実行中です。")); return; }
+  if(globalApplyInflight){ await showNotify(L("同期中"), L("Globalプレビュー適用中です。")); return; }
+  const originallyDisabled = b.disabled;
+  unifiedSyncActive = true;
+  unifiedFinalState = null;
+  b.disabled = true;
+  try{
+    const okGo = await showConfirm(L("Projectのみ同期の確認"), L("Projectのみの同期を実行します。よろしいですか。"), L("同期する"), L("やめる"));
+    if(!okGo){ return; }
+    beginSingleSyncScope("project");
+    let pr = null;
+    try{ pr = await api("/api/sync","POST",{}); }
+    catch(e){
+      setUnifiedProgress(0, 1, L("0/1 Project同期: 開始できませんでした"), false);
+      await showNotify(L("Project同期できませんでした"), e.message);
+      unifiedFinalState = "unconfirmed";
+      return;
+    }
+    if(!pr || pr.sync !== "started"){
+      setUnifiedProgress(0, 1, L("0/1 Project同期: 開始できませんでした"), false);
+      await showNotify(L("Project同期できませんでした"), L("同期を開始できませんでした。"));
+      unifiedFinalState = "failed";
+      return;
+    }
+    if(!pr.syncId){
+      setUnifiedProgress(0, 1, L("0/1 Project同期: {state}", {state:stateJa("unconfirmed")}), false);
+      await showNotify(L("Project同期は未確認です"), L("同期IDを取得できませんでした。"));
+      unifiedFinalState = "unconfirmed";
+      return;
+    }
+    unifiedProjectRunId = pr.syncId;
+    const st = (await afterSyncNotify(pr)) || "unconfirmed";
+    unifiedFinalState = st;
+    if(singleSyncTerminal(st)) setUnifiedProgress(1, 1, L("1/1 Project同期: {state}", {state:stateJa(st)}), false);
+    else setUnifiedProgress(0, 1, L("0/1 Project同期: {state}", {state:stateJa(st)}), false);
+  }catch(e){
+    try{ await showNotify(L("同期できませんでした"), e.message); }catch(e2){}
+    unifiedFinalState = unifiedFinalState || "failed";
+    try{ setUnifiedProgress(0, 1, L("0/1 Project同期: {state}", {state:stateJa(unifiedFinalState)}), false); }catch(e3){}
+  }
+  finally{
+    finishSingleSyncScope("project");
+    try{ b.disabled = originallyDisabled; }catch(e4){}
+    try{ safeFocus(b); }catch(e5){}
+  }
+};
 function renderBackupDiff(da, d){
   lastBackupDiff = d;
   da.innerHTML = "";
@@ -2723,9 +2881,11 @@ document.getElementById("btnSyncSel").onclick = async function(){
   const names = selectedNames();
   if(!names.length){ await showNotify(L("選択なし"), L("同期するプロジェクトを選択してください（一覧または状態表の選択欄）。")); return; }
   if(unifiedSyncActive){ await showNotify(L("同期中"), L("統合同期の実行中は選択同期できません。")); return; }
+  if(globalApplyInflight){ await showNotify(L("同期中"), L("Globalプレビュー適用中です。")); return; }
   const b = document.getElementById("btnSyncSel");
   const originallyDisabled = b.disabled;
   b.disabled = true;
+  unifiedSyncActive = true;
   try{
     unifiedFinalState = null;
     unifiedProjectRunId = null;
@@ -2734,7 +2894,7 @@ document.getElementById("btnSyncSel").onclick = async function(){
     lastPlan = null;
     await afterSyncNotify(r);
   }catch(e){ try{ await showNotify(L("同期できませんでした"), e.message); }catch(e2){} }
-  finally{ try{ b.disabled = originallyDisabled; }catch(e3){} try{ safeFocus(b); }catch(e4){} }
+  finally{ unifiedSyncActive = false; try{ b.disabled = originallyDisabled; }catch(e3){} try{ safeFocus(b); }catch(e4){} }
 };
 document.getElementById("btnPlanSel").onclick = async function(){
   const names = selectedNames();
@@ -3034,7 +3194,7 @@ function renderGlobalTable(list){
   list.forEach(function(e){
     const tr = document.createElement("tr");
     try{ tr.dataset.search = (e.target + " " + (e.path || "") + " " + (e.error || "")).toLowerCase(); }catch(e2){}
-    const tdT = document.createElement("td"); tdT.textContent = (e.target === "codexcli") ? "Codex" : "OpenCode";
+    const tdT = document.createElement("td"); tdT.textContent = globalProviderLabel(e.target);
     const tdP = document.createElement("td"); const c = document.createElement("code"); c.className = "path"; c.textContent = e.path || "-"; tdP.appendChild(c);
     const tdA = document.createElement("td"); tdA.textContent = e.lastAttemptAt || "-";
     const tdS = document.createElement("td"); tdS.textContent = e.lastSuccessAt || "-";
@@ -3057,8 +3217,9 @@ function updateGlobalUI(g){
   // refreshed only after save or explicit reload.
   if(!globalTargetsDirty){
     try{
-      document.getElementById("ckTCodex").checked = (g.targets || []).indexOf("codexcli") >= 0;
-      document.getElementById("ckTOpenCode").checked = (g.targets || []).indexOf("opencode") >= 0;
+      const wanted = g.targets || [];
+      const cs = globalTargetCheckboxes();
+      for(let i=0;i<cs.length;i++){ cs[i].checked = wanted.indexOf(cs[i].value) >= 0; }
     }catch(e2){}
   }
   try{ if(g.intervalMinutes !== null && g.intervalMinutes !== undefined && !globalIntervalDirty) document.getElementById("numGlobalInterval").value = g.intervalMinutes; }catch(e4){}
@@ -3075,7 +3236,7 @@ function renderGlobalStatus(){
   }
   let sum = L("待機中");
   const st = g.syncState || "idle";
-  sum = L("{state}（対象 {targets}）", {state:stateJa(st), targets:(g.targets || []).join(L("・"))});
+  sum = L("{state}（対象 {targets}）", {state:stateJa(st), targets:(g.targets || []).map(globalProviderLabel).join(L("・"))});
   if(st === "success") sum = L("成功: {tail}", {tail:(g.finalLine || g.tail || "").slice(-160)});
   if(st === "failed") sum = L("失敗: {tail}", {tail:(g.finalLine || g.tail || "").slice(-160)});
   if(st === "skipped") sum = L("見送りです。別の同期が実行中のため今回は見送りました。しばらくして今すぐ同期でやり直してください。");
@@ -3113,23 +3274,64 @@ let unifiedBaselineGlobalRunId = null;
 let globalApplyInflight = false;
 let globalTargetsDirty = false;
 let globalIntervalDirty = false;
+function globalProviderEntry(id){
+  try{
+    for(let i=0;i<GLOBAL_CATALOG.length;i++){ if(GLOBAL_CATALOG[i] && GLOBAL_CATALOG[i].id === id) return GLOBAL_CATALOG[i]; }
+  }catch(e){}
+  return null;
+}
+function globalProviderLabel(id){
+  const e = globalProviderEntry(id);
+  return e ? (e.label || id) : id;
+}
+function renderGlobalTargetChoices(){
+  const box = document.getElementById("globalTargetsList");
+  if(!box) return;
+  box.innerHTML = "";
+  (GLOBAL_CATALOG || []).forEach(function(e){
+    if(!e || !e.id) return;
+    const l = document.createElement("label"); l.className = "chk";
+    const c = document.createElement("input"); c.type = "checkbox"; c.className = "global-target"; c.value = e.id;
+    c.checked = GLOBAL_DEFAULT_TARGETS.indexOf(e.id) >= 0;
+    l.appendChild(c);
+    l.appendChild(document.createTextNode(" " + (e.label || e.id) + "（" + (e.rel || "") + "）"));
+    box.appendChild(l);
+  });
+}
+function globalTargetCheckboxes(){
+  try{ return document.querySelectorAll("#globalTargetsList input[type=checkbox]"); }catch(e){ return []; }
+}
+function markGlobalTargetsDirty(){
+  globalTargetsDirty = true;
+  lastGlobalPlan = null;
+  updateGlobalSyncApplyButton();
+}
 function globalSelectedTargets(){
   const tg = [];
-  try{ if(document.getElementById("ckTCodex").checked) tg.push("codexcli"); }catch(e){}
-  try{ if(document.getElementById("ckTOpenCode").checked) tg.push("opencode"); }catch(e){}
+  try{
+    const cs = globalTargetCheckboxes();
+    for(let i=0;i<cs.length;i++){ if(cs[i].checked) tg.push(cs[i].value); }
+  }catch(e){}
   return tg;
 }
 function globalPlanIdForSelection(names){
   try{
     if(!lastGlobalPlan || !lastGlobalPlan.id) return null;
-    const a = ((names || []).slice().sort().join(""));
-    const b = (((lastGlobalPlan.names) || []).slice().sort().join(""));
+    const a = ((names || []).slice().sort().join("|"));
+    const b = (((lastGlobalPlan.names) || []).slice().sort().join("|"));
     if(a !== "" && a === b) return lastGlobalPlan.id;
   }catch(e){}
   return null;
 }
-try{ document.getElementById("ckTCodex").addEventListener("change", function(){ globalTargetsDirty = true; updateGlobalSyncApplyButton(); }); }catch(eT1){}
-try{ document.getElementById("ckTOpenCode").addEventListener("change", function(){ globalTargetsDirty = true; updateGlobalSyncApplyButton(); }); }catch(eT2){}
+try{
+  const box = document.getElementById("globalTargetsList");
+  if(box) box.addEventListener("change", function(ev){
+    const t = ev && ev.target;
+    if(!t || t.type !== "checkbox") return;
+    markGlobalTargetsDirty();
+  });
+}catch(eT1){}
+renderGlobalTargetChoices();
 try{ document.getElementById("numGlobalInterval").addEventListener("input", function(){ globalIntervalDirty = true; }); }catch(eT3){}
 async function refreshGlobal(deadline){
   try{
@@ -3161,10 +3363,11 @@ async function pollGlobalUntilDone(syncId, tries, delayMs, deadline){
   return "unconfirmed";
 }
 async function afterGlobalSyncNotify(r){
+  let st = "unconfirmed";
   if(r && r.sync === "started"){
     const dl = Date.now() + 60000;
     await refreshGlobal(dl);
-    const st = await pollGlobalUntilDone(r.syncId, 30, 2000, dl);
+    st = await pollGlobalUntilDone(r.syncId, 30, 2000, dl);
     if(Date.now() < dl) await refreshGlobal(dl);
     if(st === "success") await showNotify(L("Global同期が成功しました"), L("Global同期が成功しました。ログを確認してください。"));
     else if(st === "failed") await showNotify(L("Global同期が失敗しました"), L("Global同期が失敗しました。ログを確認してください。"));
@@ -3174,6 +3377,7 @@ async function afterGlobalSyncNotify(r){
     await refreshGlobal();
     await showNotify(L("Global同期は未確認です"), L("Global同期状態は未確認です。ログを確認してください。"));
   }
+  return st;
 }
 function setUnifiedProgress(completed, total, text, indeterminate){
   const recipe = localizedText[currentLang].get(text || "");
@@ -3219,11 +3423,11 @@ function renderGlobalPlan(plan){
   h.textContent = L("取得元: {commit} 作成: {at}", {commit:((plan.sourceCommit||"").slice(0,12) || "-"), at:(plan.createdAt||"")});
   pa.appendChild(h);
   (plan.entries||[]).forEach(function(en){
-    if(en.result === "failed"){ const t = document.createElement("p"); t.className = "err"; t.textContent = L("失敗: {target}：{error}", {target:en.target, error:(en.error||"")}); pa.appendChild(t); return; }
+    if(en.result === "failed"){ const t = document.createElement("p"); t.className = "err"; t.textContent = L("失敗: {target}：{error}", {target:globalProviderLabel(en.target), error:(en.error||"")}); pa.appendChild(t); return; }
     const d = diffLinesLocal(en.currentText||"", en.generatedText||"");
     const t = document.createElement("p");
     t.className = d.same ? "ok" : "warn";
-    t.textContent = (d.same ? L("変更なし: {target}", {target:en.target}) : L("変更あり: {target}", {target:en.target}));
+    t.textContent = (d.same ? L("変更なし: {target}", {target:globalProviderLabel(en.target)}) : L("変更あり: {target}", {target:globalProviderLabel(en.target)}));
     pa.appendChild(t);
     if(!d.same){
       const pre = document.createElement("pre");
@@ -3326,10 +3530,9 @@ document.getElementById("btnGlobalLogs").onclick = async function(){
 document.getElementById("btnGlobalTargets").onclick = async function(){
   const b = document.getElementById("btnGlobalTargets"); b.disabled = true;
   try{
-    const tg = [];
-    if(document.getElementById("ckTCodex").checked) tg.push("codexcli");
-    if(document.getElementById("ckTOpenCode").checked) tg.push("opencode");
-    const okGo = await showConfirm(L("対象の変更"), L("配る対象を「{targets}」に変更します。よろしいですか。", {targets:tg.join(L("・"))}), L("変更する"), L("やめる"));
+    const tg = globalSelectedTargets();
+    const names = tg.map(globalProviderLabel);
+    const okGo = await showConfirm(L("対象の変更"), L("配る対象を「{targets}」に変更します。よろしいですか。", {targets:names.join(L("・"))}), L("変更する"), L("やめる"));
     if(!okGo){ return; }
     await api("/api/global-targets-set","POST",{targets:tg, confirm:true});
     globalTargetsDirty = false;
@@ -3429,7 +3632,7 @@ async function loadGlobalBackups(){
       try{ tr.dataset.search = (gbid + " " + (e.targets || []).join(" ")).toLowerCase(); }catch(e3){}
       const td0 = document.createElement("td"); const c0 = document.createElement("code"); c0.className="path"; c0.textContent = e.id; td0.appendChild(c0);
       const td1 = document.createElement("td"); td1.textContent = e.createdAt || "-";
-      const td2 = document.createElement("td"); td2.textContent = (e.targets || []).join(L("・"));
+      const td2 = document.createElement("td"); td2.textContent = (e.targets || []).map(globalProviderLabel).join(L("・"));
       const td3 = document.createElement("td");
       const acts = document.createElement("div"); acts.className = "acts";
       const bd = document.createElement("button"); bd.textContent = L("差分");
@@ -3527,7 +3730,8 @@ function Start-Dashboard {
       if ($path -eq '/' -and $method -eq 'GET') {
         $tok = $req.QueryString['token']
         if ($tok -cne $Token) { Send-Text $ctx 403 'token が不正です。管理バッチから開き直してください。' 'text/plain; charset=utf-8'; continue }
-        Send-Text $ctx 200 ((Get-PageHtml) -replace '__TOKEN__', $Token) 'text/html; charset=utf-8'
+        $catalogJson = ConvertTo-Json -InputObject @(Get-GlobalProviderCatalog) -Depth 3 -Compress
+        Send-Text $ctx 200 ((Get-PageHtml).Replace('__TOKEN__', $Token).Replace('__GLOBAL_CATALOG__', $catalogJson)) 'text/html; charset=utf-8'
         continue
       }
       if ($path -eq '/api/status' -and $method -eq 'GET') {
@@ -3603,14 +3807,21 @@ function Start-Dashboard {
         if ($req.Headers['X-Dashboard-Token'] -cne $Token) { Send-Json $ctx 403 @{ error = 'token 不正のため拒否しました。' }; continue }
         try {
           $homeG = Resolve-GlobalHomeBase
-          Send-Json $ctx 200 (Get-GlobalContent $homeG $Token)
+          $tgG = @(Get-GlobalDefaultTargets)
+          try { $tgG = @((Get-GlobalSettings $AutoDir).targets) } catch {}
+          Send-Json $ctx 200 (Get-GlobalContent $homeG $Token $tgG)
         }
         catch { Send-Json $ctx 500 @{ error = $_.Exception.Message } }
         continue
       }
       if ($path -eq '/api/global-targets-get' -and $method -eq 'GET') {
         if ($req.Headers['X-Dashboard-Token'] -cne $Token) { Send-Json $ctx 403 @{ error = 'token 不正のため拒否しました。' }; continue }
-        try { Send-Json $ctx 200 (Get-GlobalSettings $AutoDir) }
+        try {
+          $gsGet = Get-GlobalSettings $AutoDir
+          $availGet = @()
+          foreach ($ceG in @(Get-GlobalProviderCatalog)) { $availGet += @{ id = [string]$ceG.id; label = [string]$ceG.label } }
+          Send-Json $ctx 200 @{ schemaVersion = [int]$gsGet.schemaVersion; targets = @($gsGet.targets); available = $availGet }
+        }
         catch { Send-Json $ctx 500 @{ error = $_.Exception.Message } }
         continue
       }
@@ -4241,7 +4452,7 @@ function Start-Dashboard {
           if (Test-GlobalSyncLocked $AutoDir) { Send-Json $ctx 409 @{ error = '同期実行中のため、終了後にやり直してください。(busy)' }; continue }
           $selNames = @()
           try { if ($body.targetNames) { $selNames = @($body.targetNames | ForEach-Object { [string]$_ }) } } catch {}
-          if (($selNames.Count -gt 0) -and (-not (Test-GlobalTargetsValid $selNames))) { Send-Json $ctx 400 @{ error = '対象は Codex/OpenCode から1つ以上選んでください。' }; continue }
+          if (($selNames.Count -gt 0) -and (-not (Test-GlobalTargetsValid $selNames))) { Send-Json $ctx 400 @{ error = '対象は一覧から1つ以上選んでください。' }; continue }
           $planIdS = ''
           try { if ($body.planId) { $planIdS = ([string]$body.planId).Trim() } } catch {}
           $sr2 = $null
@@ -4278,7 +4489,7 @@ function Start-Dashboard {
           if (Test-GlobalSyncLocked $AutoDir) { Send-Json $ctx 409 @{ error = '同期実行中のため、終了後にやり直してください。(busy)' }; continue }
           $selP = @()
           try { if ($body.targetNames) { $selP = @($body.targetNames | ForEach-Object { [string]$_ }) } } catch {}
-          if (($selP.Count -gt 0) -and (-not (Test-GlobalTargetsValid $selP))) { Send-Json $ctx 400 @{ error = '対象は Codex/OpenCode から1つ以上選んでください。' }; continue }
+          if (($selP.Count -gt 0) -and (-not (Test-GlobalTargetsValid $selP))) { Send-Json $ctx 400 @{ error = '対象は一覧から1つ以上選んでください。' }; continue }
           $gplanId = [System.Guid]::NewGuid().ToString('N')
           $srP = $null
           try {
@@ -4291,7 +4502,7 @@ function Start-Dashboard {
           if ($body.confirm -ne $true) { Send-Json $ctx 400 @{ error = '確認チェックを入れてください。' }; continue }
           $tgNew = @()
           try { if ($body.targets) { $tgNew = @($body.targets | ForEach-Object { [string]$_ }) } } catch {}
-          if (-not (Test-GlobalTargetsValid $tgNew)) { Send-Json $ctx 400 @{ error = '対象は Codex/OpenCode から1つ以上選んでください。' }; continue }
+          if (-not (Test-GlobalTargetsValid $tgNew)) { Send-Json $ctx 400 @{ error = '対象は一覧から1つ以上選んでください。' }; continue }
           $tlock = $null
           try { $tlock = Open-GlobalSyncLock $AutoDir }
           catch {

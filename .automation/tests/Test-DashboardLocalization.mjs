@@ -298,6 +298,7 @@ test('every used string key exists in English and Simplified Chinese', () => {
 
 // --- real rendering functions keep user data verbatim ---------------------
 const names = ['stateJa', 'resultJa', 'globalResultJa', 'renderStatusTable', 'renderGlobalTable',
+  'globalProviderEntry', 'globalProviderLabel',
   'updateSyncUI', 'updateCommonSyncState', 'renderSyncState', 'renderUnifiedProgress', 'setUnifiedProgress', 'renderGlobalContent', 'renderProjectLog', 'renderBackupDiff', 'renderGlobalBackupDiff'];
 function block(pos) {
   let level = 0, i = src.indexOf('{', pos);
@@ -325,6 +326,7 @@ function renderHarness() {
   };
   const context = {
     document, console, Promise, Date,
+    GLOBAL_CATALOG: [{id:'codexcli',label:'Codex'},{id:'opencode',label:'OpenCode'},{id:'pi',label:'Pi'}],
     commonSyncStates: { project: null, global: null }, commonSyncSource: 'project',
     unifiedStateLock: false, unifiedFinalState: null, unifiedProjectRunId: null,
     unifiedGlobalRunId: null, unifiedBaselineProjectRunId: null, unifiedBaselineGlobalRunId: null,

@@ -217,29 +217,43 @@ function sliceFn(a, b) {
   return src.substring(i, j);
 }
 var UI_END = 'document.getElementById("btnGlobalContent")';
+var GLOBAL_CATALOG = [{id:'codexcli',label:'Codex',rel:'.codex\\AGENTS.md'},{id:'opencode',label:'OpenCode',rel:'.config\\opencode\\AGENTS.md'},{id:'pi',label:'Pi',rel:'.pi\\agent\\AGENTS.md'}];
+var GLOBAL_DEFAULT_TARGETS = ['codexcli', 'opencode'];
 function mkEl(id) {
-  var el = { id: id, checked: false, value: '', textContent: '', className: '', hidden: false,
+  var el = { id: id, checked: false, value: '', type: '', textContent: '', className: '', hidden: false,
     children: [], onclick: null, parentNode: null, dataset: {}, _l: {},
     addEventListener: function (t, f) { this._l[t] = f; },
-    fire: function (t) { if (this._l[t]) this._l[t](); },
+    fire: function (t) { if (this._l[t]) this._l[t]({target: this}); },
     appendChild: function (c) { c.parentNode = this; this.children.push(c); return c; } };
   Object.defineProperty(el, 'innerHTML', { get: function () { return this._h || ''; },
     set: function (v) { this._h = v; this.children = []; } });
   return el;
 }
-var ckC = mkEl('ckTCodex'), ckO = mkEl('ckTOpenCode'), numI = mkEl('numGlobalInterval');
+var numI = mkEl('numGlobalInterval');
 numI.value = '15';
 var planArea = mkEl('globalPlanArea');
-var byId = { ckTCodex: ckC, ckTOpenCode: ckO, numGlobalInterval: numI,
+var byId = { numGlobalInterval: numI,
   globalPlanArea: planArea, globalSummary: mkEl('gs'), globalLogPre: mkEl('gl'),
   globalRows: mkEl('gr'), tblGlobal: mkEl('tg'), emptyGlobal: mkEl('eg'),
   globalEnabledState: mkEl('es') };
+function findGlobalBoxes(selector) {
+  var idm = /#([A-Za-z0-9_-]+)/.exec(selector);
+  var root = idm ? byId[idm[1]] : null, out = [];
+  function visit(n) {
+    if (n && n.type === 'checkbox' && String(n.className).split(/\s+/).indexOf('global-target') >= 0) out.push(n);
+    (n && n.children || []).forEach(visit);
+  }
+  visit(root);
+  return out;
+}
 global.document = { getElementById: function (id) {
     if (!byId[id]) byId[id] = mkEl(id);
     return byId[id]; },
-  createElement: function (t) { return mkEl(''); }, activeElement: null,
+  createElement: function (t) { var e = mkEl(''); e.tagName = String(t).toUpperCase(); return e; },
+  createTextNode: function (t) { return { textContent: String(t) }; },
+  activeElement: null,
   addEventListener: function () {}, removeEventListener: function () {},
-  querySelectorAll: function () { return []; } };
+  querySelectorAll: function (sel) { return findGlobalBoxes(sel); } };
 global.window = { addEventListener: function () {} };
 var sent = [];
 global.api = async function (ep, m, b) {
@@ -273,6 +287,8 @@ function L(s) { return s; }
 eval(sliceFn('function updateCommonSyncState', '\nfunction resultJa'));
 eval(sliceFn('let lastGlobalPlan', UI_END).split('let ').join('var '));
 eval(sliceFn('function updateGlobalUI(g){', '\nasync function refreshGlobal').split('let ').join('var '));
+var ckC = findGlobalBoxes('#globalTargetsList input[type=checkbox]').filter(function (c) { return c.value === 'codexcli'; })[0];
+var ckO = findGlobalBoxes('#globalTargetsList input[type=checkbox]').filter(function (c) { return c.value === 'opencode'; })[0];
 (async function () {
   ckC.checked = true; ckO.checked = false;
   await document.getElementById('btnGlobalPreview').onclick();
@@ -289,7 +305,7 @@ eval(sliceFn('function updateGlobalUI(g){', '\nasync function refreshGlobal').sp
   var syncCalls2 = sent.filter(function (s) { return s.ep === '/api/global-sync'; });
   ok(syncCalls2.length === 1, 'R7-F2 changed selection does not apply stale plan');
   ckC.checked = true; ckO.checked = false;
-  ckC.fire('change');
+  (document.getElementById('globalTargetsList')._l['change'])({ target: ckC });
   ckC.checked = false;
   updateGlobalUI({ providers: [], targets: ['codexcli', 'opencode'], syncState: 'idle', intervalMinutes: 30, taskEnabled: true });
   ok(ckC.checked === false, 'R7-F11 dirty checkboxes survive status poll');
