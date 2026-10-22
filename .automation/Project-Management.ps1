@@ -1051,7 +1051,11 @@ function Get-MgmtProjectScheduledTask([string]$TaskName) {
     if ($_.CategoryInfo.Category -ne [System.Management.Automation.ErrorCategory]::ObjectNotFound) { throw $original }
     $legacy = 'Rulesync Project Auto Sync'
     try { return @{ name = $legacy; task = (Get-ScheduledTask -TaskName $legacy -ErrorAction Stop) } }
-    catch { throw $original }
+    catch {
+      # A missing legacy task keeps the new-name error; any other failure is real.
+      if ($_.CategoryInfo.Category -eq [System.Management.Automation.ErrorCategory]::ObjectNotFound) { throw $original }
+      throw
+    }
   }
 }
 

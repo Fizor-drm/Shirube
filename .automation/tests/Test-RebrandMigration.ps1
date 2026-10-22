@@ -94,6 +94,22 @@ try {
   Assert (-not (@($script:taskCalls) -contains 'Rulesync Global Auto Sync')) 'R2 global access-denied lookup never falls back to legacy'
   $script:taskErrors = @{}
 
+  # R2b: once the new default is absent, a legacy lookup failure other than
+  # "not found" must surface instead of the new task's not-found error. Both
+  # absent still names the new task.
+  $script:taskIntervals = @{}
+  $script:taskErrors = @{ 'Rulesync Global Auto Sync' = [System.Management.Automation.ErrorRecord]::new(
+      [System.Exception]::new('Access is denied.'), 'TaskLookupDenied,Get-ScheduledTask',
+      [System.Management.Automation.ErrorCategory]::PermissionDenied, 'Rulesync Global Auto Sync') }
+  $legacyDeniedGlobal = $null
+  try { Get-GlobalInterval | Out-Null } catch { $legacyDeniedGlobal = $_ }
+  Assert (($null -ne $legacyDeniedGlobal) -and ([string]$legacyDeniedGlobal.Exception.Message).Contains('Access is denied') -and ($legacyDeniedGlobal.CategoryInfo.Category -eq [System.Management.Automation.ErrorCategory]::PermissionDenied)) 'R2b global legacy access-denied lookup surfaces the legacy error'
+  Assert (($null -ne $legacyDeniedGlobal) -and ($legacyDeniedGlobal.CategoryInfo.Category -ne [System.Management.Automation.ErrorCategory]::ObjectNotFound) -and (-not ([string]$legacyDeniedGlobal.Exception.Message).Contains('Shirube Global Auto Sync'))) 'R2b global legacy access-denied is not reported as the new task missing'
+  $script:taskErrors = @{}
+  $bothAbsentGlobal = $null
+  try { Get-GlobalInterval | Out-Null } catch { $bothAbsentGlobal = $_ }
+  Assert (($null -ne $bothAbsentGlobal) -and ([string]$bothAbsentGlobal).Contains('Shirube Global Auto Sync') -and (-not ([string]$bothAbsentGlobal).Contains('Rulesync Global Auto Sync'))) 'R2b global new and legacy absent reports the new task missing'
+
   # R3: Project has the same fallback; custom configured names never fall back.
   Remove-Item -LiteralPath (Join-Path $auto 'settings.json') -Force -ErrorAction SilentlyContinue
   $script:taskIntervals = @{ 'Rulesync Project Auto Sync' = 15 }
@@ -112,6 +128,21 @@ try {
   Assert $deniedProject 'R3 project access-denied lookup propagates the original error'
   Assert (-not (@($script:taskCalls) -contains 'Rulesync Project Auto Sync')) 'R3 project access-denied lookup never falls back to legacy'
   $script:taskErrors = @{}
+
+  # R3b: same legacy-failure rule for Project.
+  $script:taskIntervals = @{}
+  $script:taskErrors = @{ 'Rulesync Project Auto Sync' = [System.Management.Automation.ErrorRecord]::new(
+      [System.Exception]::new('Access is denied.'), 'TaskLookupDenied,Get-ScheduledTask',
+      [System.Management.Automation.ErrorCategory]::PermissionDenied, 'Rulesync Project Auto Sync') }
+  $legacyDeniedProject = $null
+  try { Get-MgmtProjectInterval | Out-Null } catch { $legacyDeniedProject = $_ }
+  Assert (($null -ne $legacyDeniedProject) -and ([string]$legacyDeniedProject.Exception.Message).Contains('Access is denied') -and ($legacyDeniedProject.CategoryInfo.Category -eq [System.Management.Automation.ErrorCategory]::PermissionDenied)) 'R3b project legacy access-denied lookup surfaces the legacy error'
+  Assert (($null -ne $legacyDeniedProject) -and ($legacyDeniedProject.CategoryInfo.Category -ne [System.Management.Automation.ErrorCategory]::ObjectNotFound) -and (-not ([string]$legacyDeniedProject.Exception.Message).Contains('Shirube Project Auto Sync'))) 'R3b project legacy access-denied is not reported as the new task missing'
+  $script:taskErrors = @{}
+  $bothAbsentProject = $null
+  try { Get-MgmtProjectInterval | Out-Null } catch { $bothAbsentProject = $_ }
+  Assert (($null -ne $bothAbsentProject) -and ([string]$bothAbsentProject).Contains('Shirube Project Auto Sync') -and (-not ([string]$bothAbsentProject).Contains('Rulesync Project Auto Sync'))) 'R3b project new and legacy absent reports the new task missing'
+
   $script:taskIntervals = @{ 'Rulesync Project Auto Sync' = 15; 'Shirube Project Auto Sync' = 25 }
   $script:setCalls = @()
   Assert ((Get-MgmtProjectInterval) -eq 25) 'R3 new project task wins when both exist'
@@ -175,6 +206,17 @@ try {
   Write-RegistryAtomicLocked $auto @()
   $pv = Get-MgmtImportPreview $auto (($exp | ConvertTo-Json -Depth 6) | ConvertFrom-Json)
   Assert (($exp.schemaVersion -eq 1) -and ($pv.invalid.Count -eq 0) -and ($pv.conflict.Count -eq 0) -and (@($pv.add).Count -eq 1) -and ([string]@($pv.add)[0].name -ceq 'ExportProbe')) 'R7 exported settings JSON still imports unchanged'
+
+  # R8: migration registers the new tasks disabled, validates behavior only via
+  # the deployed VBS from an isolated protected copy that cannot reach real
+  # registered projects, and restores the recorded state after validation.
+  Assert ($readme.Contains('移行中は 2 つのタスクを無効のままにし、登録・改名の後も有効化しないでください')) 'R8 README keeps both tasks disabled after registration/rename'
+  Assert ($readme.Contains('本番の自動実行は手順 7 の検証が終わるまで開始しません')) 'R8 README defers production task execution until validation'
+  Assert ($readme.Contains('3.4 と同じ保護設定を施した隔離済みの検証用コピー')) 'R8 README validates from a protected isolated copy'
+  Assert ($readme.Contains('実際の登録プロジェクトを対象にできない')) 'R8 README verification copy cannot target actual registered projects'
+  Assert ($readme.Contains('検証用コピーの `projects.json` には実際の登録プロジェクトを入れない')) 'R8 README keeps registered projects out of the verification copy'
+  Assert ($readme.Contains('配置済みの `.vbs` を直接起動')) 'R8 README checks behavior through the deployed VBS directly'
+  Assert ($readme.Contains('本番のタスクは、手順 1 で記録した有効/無効状態を戻すまで実行しません')) 'R8 README runs production tasks only after restoring the recorded state'
 } finally {
   $env:LOCALAPPDATA = $origLocal
   Remove-Item -Path 'function:Get-ScheduledTask' -Force -ErrorAction SilentlyContinue
