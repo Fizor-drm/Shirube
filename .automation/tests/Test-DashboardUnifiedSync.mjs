@@ -112,6 +112,10 @@ function setup() {
   return {c, model, document, el:id=>document.getElementById(id)};
 }
 async function test(name, f) { await f(); console.log('PASS: '+name); }
+function selectProject(t, name) {
+  const box=t.document.createElement('input'); box.type='checkbox'; box.className='selbox'; box.value=name||'A'; box.checked=true;
+  t.el('statusRows').appendChild(box);
+}
 function noErrors(t) {
   assert.ok(!t.model.notices.some(n=>/できません/.test(n.title)), JSON.stringify(t.model.notices));
   assert.ok(!t.el('logPre').textContent.startsWith('取得失敗'),t.el('logPre').textContent);
@@ -255,7 +259,6 @@ for(const scope of ['global','project']) {
     assert.deepEqual(posts.map(x=>x.ep),['/api/sync']);
     assert.deepEqual(Array.from(posts[0].body.projectNames),['A']);
     assert.equal(t.c.unifiedSyncActive,false,'guard released after selected sync');
-    await t.c.refresh();
     assert.equal(t.el('stRun').dataset.state,'success');
   });
   await test(scope+'-only cancel lets Global plan apply run and succeed',async()=>{
@@ -271,6 +274,44 @@ for(const scope of ['global','project']) {
     assert.equal(t.el('stRun').dataset.state,'success');
   });
 }
+await test('selected sync shows running while its completion notification is deferred and settles without refresh',async()=>{
+  const t=setup(); await t.c.refresh(); selectProject(t);
+  let releaseNotify; const notifyGate=new Promise(r=>{releaseNotify=r;});
+  t.model.hook=()=>notifyGate;
+  const run=t.c.startSelected();
+  for(let i=0;i<50 && !t.model.notices.length;i++) await Promise.resolve();
+  assert.ok(t.model.notices.length,'terminal notification opened');
+  assert.equal(t.el('stRun').dataset.state,'running');
+  assert.equal(t.c.unifiedSyncActive,true,'guard held while notification is open');
+  releaseNotify(); await run;
+  assert.equal(t.el('stRun').dataset.state,'success');
+  assert.equal(t.c.unifiedSyncActive,false,'guard released after selected sync');
+  assert.equal(t.el('btnSyncSel').disabled,false,'button re-enabled after selected sync');
+});
+await test('selected sync renders terminal failure when its notification closes without refresh',async()=>{
+  const t=setup(); selectProject(t); t.model.projectResult='failed';
+  await t.c.startSelected();
+  assert.equal(t.el('stRun').dataset.state,'failed');
+  assert.ok(t.model.notices.some(n=>n.title==='同期が失敗しました'),JSON.stringify(t.model.notices));
+  assert.equal(t.c.unifiedSyncActive,false,'guard released after selected sync');
+  assert.equal(t.el('btnSyncSel').disabled,false,'button re-enabled after selected sync');
+});
+await test('selected sync cancel and request failure preserve the previous display and release the guard',async()=>{
+  const t=setup(); await t.c.refresh();
+  const before=t.el('stRun').dataset.state;
+  await t.c.startSelected();
+  assert.ok(t.model.notices.some(n=>n.title==='選択なし'),JSON.stringify(t.model.notices));
+  assert.equal(t.el('stRun').dataset.state,before);
+  assert.equal(t.c.unifiedSyncActive,false,'guard released after cancel');
+  assert.equal(t.el('btnSyncSel').disabled,false,'button enabled after cancel');
+  assert.ok(!t.model.calls.some(x=>x.method==='POST'));
+  selectProject(t); t.model.projectResponse=new Error('request lost');
+  await t.c.startSelected();
+  assert.ok(t.model.notices.some(n=>n.title==='同期できませんでした'),JSON.stringify(t.model.notices));
+  assert.equal(t.el('stRun').dataset.state,before);
+  assert.equal(t.c.unifiedSyncActive,false,'guard released after request failure');
+  assert.equal(t.el('btnSyncSel').disabled,false,'button re-enabled after request failure');
+});
 
 await test('new Global owns summary across old Project refresh and settles progress',async()=>{
   const t=setup(); await t.c.startUnified();

@@ -2897,7 +2897,7 @@ document.getElementById("btnSyncSel").onclick = async function(){
     lastPlan = null;
     await afterSyncNotify(r);
   }catch(e){ try{ await showNotify(L("同期できませんでした"), e.message); }catch(e2){} }
-  finally{ unifiedSyncActive = false; try{ b.disabled = originallyDisabled; }catch(e3){} try{ safeFocus(b); }catch(e4){} }
+  finally{ unifiedSyncActive = false; renderSyncState(); try{ b.disabled = originallyDisabled; }catch(e3){} try{ safeFocus(b); }catch(e4){} }
 };
 document.getElementById("btnPlanSel").onclick = async function(){
   const names = selectedNames();
