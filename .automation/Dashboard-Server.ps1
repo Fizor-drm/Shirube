@@ -2012,7 +2012,7 @@ document.getElementById("btnExport").onclick = async function(){
     const blob = new Blob([JSON.stringify(r, null, 2)], {type:"application/json"});
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = "rulesync-settings.json";
+    a.download = "shirube-settings.json";
     document.body.appendChild(a); a.click();
     try{ URL.revokeObjectURL(a.href); }catch(e){}
     a.remove();

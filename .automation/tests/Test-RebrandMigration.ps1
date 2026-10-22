@@ -56,11 +56,10 @@ function Set-TestSettings([string]$Text) {
 
 $origLocal = $env:LOCALAPPDATA
 try {
-  foreach ($f in @('Settings.ps1', 'Global-Management.ps1', 'Project-Management.ps1')) {
+  foreach ($f in @('Settings.ps1', 'Global-Management.ps1', 'Project-Management.ps1', 'Dashboard-Server.ps1')) {
     Copy-Item -LiteralPath (Join-Path $devAuto $f) -Destination (Join-Path $auto $f) -Force
   }
-  . (Join-Path $auto 'Global-Management.ps1')
-  . (Join-Path $auto 'Project-Management.ps1')
+  . (Join-Path $auto 'Dashboard-Server.ps1')
 
   # R1: renamed defaults, one source of truth in the example settings.
   Assert ((Get-GlobalTaskName) -ceq 'Shirube Global Auto Sync') 'R1 global task default is Shirube'
@@ -164,6 +163,18 @@ try {
   Assert (($readme.Contains('実際のタスク名')) -and ($readme.Contains('有効/無効状態を記録'))) 'R6 README identifies the configured task names and records their state before stopping'
   Assert ($readme.Contains('元が有効なら有効化')) 'R6 README restores the recorded task state after verification'
   Assert (($readme.Contains('.automation\*.ps1') -and $readme.Contains('%LOCALAPPDATA%\Shirube\.automation') -and $readme.Contains('`管理.bat` と `Shirube-Manager.bat` は `%LOCALAPPDATA%\Shirube`'))) 'R6 README places scripts under .automation and both launchers at the Shirube root'
+
+  # R7: the dashboard export filename follows the rename; the JSON format and
+  # import compatibility stay unchanged.
+  $dashSrc = Get-Content -LiteralPath (Join-Path $devAuto 'Dashboard-Server.ps1') -Raw -Encoding UTF8
+  Assert (($dashSrc.Contains('a.download = "shirube-settings.json"')) -and (-not $dashSrc.Contains('rulesync-settings.json'))) 'R7 dashboard export downloads shirube-settings.json'
+  $probe = Join-Path $scratch 'probe'
+  New-Item -ItemType Directory -Force -Path $probe | Out-Null
+  Write-RegistryAtomicLocked $auto @([pscustomobject]@{ name = 'ExportProbe'; path = $probe; enabled = $true })
+  $exp = Get-MgmtExport $auto
+  Write-RegistryAtomicLocked $auto @()
+  $pv = Get-MgmtImportPreview $auto (($exp | ConvertTo-Json -Depth 6) | ConvertFrom-Json)
+  Assert (($exp.schemaVersion -eq 1) -and ($pv.invalid.Count -eq 0) -and ($pv.conflict.Count -eq 0) -and (@($pv.add).Count -eq 1) -and ([string]@($pv.add)[0].name -ceq 'ExportProbe')) 'R7 exported settings JSON still imports unchanged'
 } finally {
   $env:LOCALAPPDATA = $origLocal
   Remove-Item -Path 'function:Get-ScheduledTask' -Force -ErrorAction SilentlyContinue
