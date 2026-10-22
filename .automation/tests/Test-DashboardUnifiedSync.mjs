@@ -103,7 +103,7 @@ function setup() {
     'var unifiedProjectRunId=null,unifiedGlobalRunId=null,completedUnifiedRunIds={};' +
     'var unifiedObservedProjectRunId=null,unifiedObservedGlobalRunId=null;' +
     'var unifiedBaselineProjectRunId=null,unifiedBaselineGlobalRunId=null;' +
-    'var globalApplyInflight=false,globalTargetsDirty=false,globalIntervalDirty=false,lastGlobalPlan=null;' +
+    'var globalApplyInflight=false,globalTargetsDirty=false,globalIntervalDirty=false,lastGlobalPlan=null,globalTargetsEditGen=0,globalIntervalEditGen=0;' +
     'var globalSavedTargets=["codexcli","opencode"],globalTargetsSaving=false,globalEnabledInflight=false;' +
     'var unifiedProgressState={completed:0,total:2,text:"0/2 待機中",key:null,vars:null,indeterminate:false,lang:"ja"};var lastPlan=null;' +
     names.map(actual).join('\n') +

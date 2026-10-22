@@ -459,6 +459,99 @@ await testAsync('explicit reload adopts the saved selection only after a success
   must(h.byId('btnGlobalTargets').disabled === false, 'failed reload keeps save available');
 });
 
+await testAsync('a target edit made while reload is pending survives the reload response', async () => {
+  const h = harness();
+  h.model.globalStatus.targets = ['claudecode', 'pi'];
+  h.model.globalStatus.intervalMinutes = 30;
+  let release;
+  h.model.statusGetGate = new Promise(resolve => { release = resolve; });
+  const pending = h.byId('btnGlobalReload').onclick();
+  h.checkFor('pi').checked = true;
+  h.gs.markGlobalTargetsDirty();
+  release();
+  await pending;
+  must(h.state().selected.join('|') === 'codexcli|opencode|pi', 'target edit made during the GET is kept');
+  must(h.state().saved.join('|') === 'codexcli|opencode', 'the pre-reload saved baseline is kept');
+  must(h.state().dirty === true, 'the surviving target edit stays dirty');
+  must(h.checkFor('claudecode').checked === false, 'the response does not check the server target');
+  must(String(h.byId('numGlobalInterval').value) === '30', 'the untouched interval is still adopted');
+});
+
+await testAsync('an interval edit made while reload is pending survives while targets still adopt', async () => {
+  const h = harness();
+  h.model.globalStatus.targets = ['claudecode', 'pi'];
+  h.model.globalStatus.intervalMinutes = 30;
+  let release;
+  h.model.statusGetGate = new Promise(resolve => { release = resolve; });
+  const pending = h.byId('btnGlobalReload').onclick();
+  const input = h.byId('numGlobalInterval');
+  input.value = '45';
+  input.listeners.input();
+  release();
+  await pending;
+  must(String(input.value) === '45', 'interval edit made during the GET is kept');
+  must(h.state().saved.join('|') === 'claudecode|pi', 'untouched targets adopt the response');
+  must(h.state().selected.join('|') === 'claudecode|pi', 'untouched checkboxes follow the response');
+  must(h.state().dirty === false, 'adopted targets clear dirty');
+  h.gs.updateGlobalUI({ providers: [], targets: ['claudecode', 'pi'], syncState: 'idle', intervalMinutes: 30, taskEnabled: true });
+  must(String(input.value) === '45', 'a later poll keeps the unsaved interval');
+});
+
+await testAsync('target and interval edits made while reload is pending are both preserved', async () => {
+  const h = harness();
+  h.model.globalStatus.targets = ['claudecode', 'pi'];
+  h.model.globalStatus.intervalMinutes = 30;
+  let release;
+  h.model.statusGetGate = new Promise(resolve => { release = resolve; });
+  const pending = h.byId('btnGlobalReload').onclick();
+  const input = h.byId('numGlobalInterval');
+  h.checkFor('pi').checked = true;
+  h.gs.markGlobalTargetsDirty();
+  input.value = '45';
+  input.listeners.input();
+  release();
+  await pending;
+  must(h.state().selected.join('|') === 'codexcli|opencode|pi', 'target edit made during the GET is kept');
+  must(h.state().saved.join('|') === 'codexcli|opencode', 'saved targets are not overwritten');
+  must(h.state().dirty === true, 'the target edit stays dirty');
+  must(String(input.value) === '45', 'interval edit made during the GET is kept');
+});
+
+await testAsync('a reload with no edits during the GET still adopts targets and interval', async () => {
+  const h = harness();
+  h.model.globalStatus.targets = ['claudecode', 'pi'];
+  h.model.globalStatus.intervalMinutes = 30;
+  let release;
+  h.model.statusGetGate = new Promise(resolve => { release = resolve; });
+  const pending = h.byId('btnGlobalReload').onclick();
+  release();
+  await pending;
+  must(h.state().selected.join('|') === 'claudecode|pi', 'targets adopt when untouched through the GET');
+  must(h.state().saved.join('|') === 'claudecode|pi', 'the saved target baseline moves');
+  must(h.state().dirty === false, 'dirty clears after untouched adoption');
+  must(String(h.byId('numGlobalInterval').value) === '30', 'interval adopts when untouched through the GET');
+});
+
+await testAsync('a reverted edit made during reload still blocks target adoption', async () => {
+  const h = harness();
+  h.model.globalStatus.targets = ['claudecode', 'pi'];
+  h.model.globalStatus.intervalMinutes = 30;
+  let release;
+  h.model.statusGetGate = new Promise(resolve => { release = resolve; });
+  const pending = h.byId('btnGlobalReload').onclick();
+  h.checkFor('pi').checked = true;
+  h.gs.markGlobalTargetsDirty();
+  h.checkFor('pi').checked = false;
+  h.gs.markGlobalTargetsDirty();
+  release();
+  await pending;
+  must(h.state().selected.join('|') === 'codexcli|opencode', 'the reverted selection is kept');
+  must(h.checkFor('claudecode').checked === false, 'the response is not adopted after an edit-then-revert');
+  must(h.state().saved.join('|') === 'codexcli|opencode', 'the saved targets stay at the pre-reload baseline');
+  must(h.state().dirty === false, 'a reverted selection has no unsaved difference');
+  must(String(h.byId('numGlobalInterval').value) === '30', 'the untouched interval is still adopted');
+});
+
 // --- save flow -----------------------------------------------------------
 await testAsync('save sends only a real changed nonempty canonical selection', async () => {
   const h = harness();

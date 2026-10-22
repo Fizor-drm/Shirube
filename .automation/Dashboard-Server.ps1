@@ -3309,7 +3309,12 @@ const GLOBAL_LOGOS = Object.freeze({
   "pi":"data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA4MDAgODAwIj4KICAKICAKICA8cGF0aCBjbGFzcz0ibG9nby1tYXJrIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiIGQ9IgogICAgTTE2NS4yOSAxNjUuMjkKICAgIEg1MTcuMzYKICAgIFY0MDAKICAgIEg0MDAKICAgIFY1MTcuMzYKICAgIEgyODIuNjUKICAgIFY2MzQuNzIKICAgIEgxNjUuMjkKICAgIFoKICAgIE0yODIuNjUgMjgyLjY1CiAgICBWNDAwCiAgICBINDAwCiAgICBWMjgyLjY1CiAgICBaCiAgIi8+CiAgCiAgPHBhdGggY2xhc3M9ImxvZ28tbWFyayIgZD0iTTUxNy4zNiA0MDAgSDYzNC43MiBWNjM0LjcyIEg1MTcuMzYgWiIvPgo8L3N2Zz4=",
 });
 function updateGlobalUI(g){
-  const forceAdopt = arguments.length > 1 && !!arguments[1];
+  const adoptGuard = arguments.length > 1 && arguments[1] ? arguments[1] : null;
+  const forceAdopt = !!adoptGuard;
+  // Explicit reload discards drafts only for fields the user did not touch
+  // while its GET was in flight; edits after the snapshot must survive.
+  const targetsEdited = !!(adoptGuard && typeof adoptGuard === "object" && adoptGuard.targetsGen !== undefined && adoptGuard.targetsGen !== globalTargetsEditGen);
+  const intervalEdited = !!(adoptGuard && typeof adoptGuard === "object" && adoptGuard.intervalGen !== undefined && adoptGuard.intervalGen !== globalIntervalEditGen);
   currentGlobalStatus = g;
   updateCommonSyncState("global", g);
   renderGlobalTable(g.providers || []);
@@ -3323,15 +3328,21 @@ function updateGlobalUI(g){
   try{ if(!forceAdopt && !globalTargetsDirty && globalTargetsDirtyNow()){ globalTargetsDirty = true; lastGlobalPlan = null; } }catch(e0){}
   if(!globalTargetsSaving && (forceAdopt || !globalTargetsDirty)){
     try{
-      const wanted = (g.targets || []).slice();
-      const cs = globalTargetCheckboxes();
-      for(let i=0;i<cs.length;i++){ cs[i].checked = wanted.indexOf(cs[i].value) >= 0; }
-      globalSavedTargets = wanted;
-      if(forceAdopt){ globalTargetsDirty = false; globalIntervalDirty = false; }
+      if(targetsEdited){
+        globalTargetsDirty = globalTargetsDirtyNow();
+      } else {
+        const wanted = (g.targets || []).slice();
+        const cs = globalTargetCheckboxes();
+        for(let i=0;i<cs.length;i++){ cs[i].checked = wanted.indexOf(cs[i].value) >= 0; }
+        globalSavedTargets = wanted;
+        if(forceAdopt){ globalTargetsDirty = false; }
+      }
     }catch(e2){}
   }
   try{ renderGlobalTargetsUI(); }catch(e6){}
-  try{ if(g.intervalMinutes !== null && g.intervalMinutes !== undefined && !globalIntervalDirty) document.getElementById("numGlobalInterval").value = g.intervalMinutes; }catch(e4){}
+  const intervalAdoptable = !globalIntervalDirty || (forceAdopt && !globalTargetsSaving && !intervalEdited);
+  try{ if(g.intervalMinutes !== null && g.intervalMinutes !== undefined && intervalAdoptable) document.getElementById("numGlobalInterval").value = g.intervalMinutes; }catch(e4){}
+  if(forceAdopt && !globalTargetsSaving && !intervalEdited){ globalIntervalDirty = false; }
   try{ updateGlobalSyncApplyButton(); }catch(e5){}
 }
 function renderGlobalStatus(){
@@ -3396,6 +3407,8 @@ let globalTargetsSaving = false;
 let globalSavedTargets = (GLOBAL_DEFAULT_TARGETS || []).slice();
 let globalEnabledInflight = false;
 let globalIntervalDirty = false;
+let globalTargetsEditGen = 0;
+let globalIntervalEditGen = 0;
 function globalProviderEntry(id){
   try{
     for(let i=0;i<GLOBAL_CATALOG.length;i++){ if(GLOBAL_CATALOG[i] && GLOBAL_CATALOG[i].id === id) return GLOBAL_CATALOG[i]; }
@@ -3485,6 +3498,7 @@ function globalTargetsSetAll(on){
   markGlobalTargetsDirty();
 }
 function markGlobalTargetsDirty(){
+  globalTargetsEditGen++;
   globalTargetsDirty = globalTargetsDirtyNow();
   lastGlobalPlan = null;
   renderGlobalTargetsUI();
@@ -3516,13 +3530,14 @@ try{
   });
 }catch(eT1){}
 renderGlobalTargetChoices();
-try{ document.getElementById("numGlobalInterval").addEventListener("input", function(){ globalIntervalDirty = true; }); }catch(eT3){}
+try{ document.getElementById("numGlobalInterval").addEventListener("input", function(){ globalIntervalEditGen++; globalIntervalDirty = true; }); }catch(eT3){}
 async function refreshGlobal(deadline, forceAdopt){
   try{
     let t = 8000;
     if(typeof deadline === "number"){ t = Math.min(8000, deadline - Date.now()); if(t <= 0) return; }
+    const adoptGuard = forceAdopt ? {targetsGen:globalTargetsEditGen, intervalGen:globalIntervalEditGen} : null;
     const g = await api("/api/global-status", "GET", null, t);
-    updateGlobalUI(g, forceAdopt);
+    updateGlobalUI(g, adoptGuard);
   }catch(e){ globalLogState = {loaded:true, tail:"", error:e.message}; renderGlobalLog(); }
 }
 async function pollGlobalUntilDone(syncId, tries, delayMs, deadline){
