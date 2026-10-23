@@ -8,6 +8,7 @@ $ErrorActionPreference = 'Stop'
 
 . (Join-Path $PSScriptRoot 'Project-Management.ps1')
 . (Join-Path $PSScriptRoot 'Global-Management.ps1')
+. (Join-Path $PSScriptRoot 'GitHub-Management.ps1')
 
 function Get-AutoDir { return $PSScriptRoot }
 function Get-DashboardPort {
@@ -1002,6 +1003,41 @@ input[type=number]{width:120px;background:#0a0a0a;border:1px solid #2c2c2c;color
 .diff-add{color:#8fd694}.diff-del{color:#f0a3a3}.diff-note{color:#9a9a9a}
 #ovl input[type=text]{margin-bottom:12px}
 .searchrow{display:flex;gap:8px;margin:0 0 10px}
+/* GitHub integration: topbar button + source settings dialog */
+.topbar-right{display:flex;align-items:center;gap:8px;flex:none}
+.ghbtn{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;padding:0;border-radius:6px;border:1px solid #2a2a2a;background:#0a0a0a;color:#f5f5f5;cursor:pointer;flex:none}
+.ghbtn:hover{background:#161616;border-color:#3a3a3a}
+.ghbtn:focus-visible,.ghicon:focus-visible,.ghclose:focus-visible{outline:2px solid #4c9aff;outline-offset:2px}
+.ghovl{position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;z-index:60;padding:20px}
+.ghovl[hidden]{display:none}
+.ghbox{position:relative;box-sizing:border-box;width:min(560px,100%);max-height:calc(100vh - 40px);max-height:calc(100dvh - 40px);overflow:auto;background:#0d0d0d;border:1px solid #2a2a2a;border-radius:10px;padding:22px 24px 24px}
+.ghbox *{box-sizing:border-box}
+.ghbox h3{margin:0 0 6px;font-size:16px}
+.ghbox .ghlead{margin:0 0 16px;color:#b5b5b5;font-size:13px}
+.ghclose{position:absolute;top:12px;right:12px;width:30px;height:30px;border-radius:6px;border:1px solid #2a2a2a;background:#0a0a0a;color:#f5f5f5;font-size:18px;line-height:1;cursor:pointer}
+.ghclose:hover{background:#161616}
+.ghfield{margin:0 0 14px;border:0;padding:0;min-width:0}
+.ghfield>label,.ghfield>legend{display:block;margin:0 0 6px;padding:0;color:#d6d6d6;font-size:12px;font-weight:600}
+.ghrow{display:flex;gap:8px;align-items:center}
+.ghrow input{flex:1;min-width:0}
+#ghToken{width:100%;background:#0a0a0a;border:1px solid #2c2c2c;color:#fff;border-radius:6px;padding:10px 12px;font-size:13px;font-family:Consolas,"MS Gothic",monospace}
+#ghToken:focus{outline:2px solid #f5f5f5;outline-offset:1px}
+.ghicon{flex:none;width:38px;height:38px;padding:0;border-radius:6px;border:1px solid #2c2c2c;background:#0a0a0a;color:#f5f5f5;cursor:pointer;font-size:15px}
+.ghicon:hover{background:#161616}
+.ghhint{margin:6px 0 0;color:#9a9a9a;font-size:11px;line-height:1.6}
+.ghradio{display:flex;align-items:center;gap:8px;margin:0 0 6px;color:#e8e8ea;font-size:13px;font-weight:400}
+.ghradio input{width:16px;height:16px;flex:none}
+#ghFolderCustom{margin-top:6px}
+.ghpreview{margin:8px 0 0;padding:8px 10px;border:1px dashed #2a2a30;border-radius:6px;color:#9a9aa3;font:11px/1.7 Consolas,"MS Gothic",monospace;white-space:pre-wrap;word-break:break-all}
+.ghstatus{min-height:20px;margin:2px 0 12px;font-size:12px;color:#b5b5b5;word-break:break-word}
+.ghstatus.ok{color:#8fd694}
+.ghstatus.err{color:#f0a3a3}
+.ghactions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.ghactions button{padding:8px 16px}
+.ghactions .primary{border-color:#4c9aff;background:#1f6feb;color:#fff}
+.ghactions .primary:hover{background:#2b7bf0}
+.ghactions button:disabled{opacity:.6;cursor:not-allowed}
+@media(max-width:520px){.ghovl{padding:10px}.ghbox{padding:18px}}
 /* #gsettings card selector */
 #gsettings{--gs-accent:#4c9aff;--gs-accent-soft:rgba(76,154,255,.12);--gs-card:#17171a;--gs-card-hover:#1d1d21;--gs-border:#2a2a30;--gs-muted:#9a9aa3;--gs-text:#e8e8ea;--gs-ok:#3fb950;--gs-off:#6b6b75;--gs-on-accent:#0b0b0c}
 #gsettings .gs-toolbar{display:flex;align-items:center;gap:4px;margin:16px 0 12px;flex-wrap:wrap}
@@ -1064,7 +1100,7 @@ input[type=number]{width:120px;background:#0a0a0a;border:1px solid #2c2c2c;color
 <div class="side-note"><span data-i18n="このPC専用。外部送信なし。">このPC専用。外部送信なし。</span><br><span data-i18n="AGENTS.md は直接編集しません。">AGENTS.md は直接編集しません。</span></div>
 </aside>
 <main>
-<div class="topbar"><div><strong data-i18n="Shirube 管理">Shirube 管理</strong> <span class="sub" data-i18n="プロジェクト同期ダッシュボード">プロジェクト同期ダッシュボード</span></div><select id="selLang" class="lang" aria-label="表示言語" data-i18n-aria="表示言語"><option value="ja">日本語</option><option value="en">English</option><option value="zh-CN">简体中文</option></select></div>
+<div class="topbar"><div><strong data-i18n="Shirube 管理">Shirube 管理</strong> <span class="sub" data-i18n="プロジェクト同期ダッシュボード">プロジェクト同期ダッシュボード</span></div><div class="topbar-right"><button type="button" id="btnGitHub" class="ghbtn" aria-label="GitHub連携" data-i18n-aria="GitHub連携" title="GitHub連携"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></button><select id="selLang" class="lang" aria-label="表示言語" data-i18n-aria="表示言語"><option value="ja">日本語</option><option value="en">English</option><option value="zh-CN">简体中文</option></select></div></div>
 <nav class="topnav" aria-label="画面切替" data-i18n-aria="画面切替">
 <a href="#top" class="active" aria-current="page" data-i18n="概要">概要</a>
 <a href="#projects" data-i18n="プロジェクト">プロジェクト</a>
@@ -1257,6 +1293,33 @@ input[type=number]{width:120px;background:#0a0a0a;border:1px solid #2c2c2c;color
 </main>
 </div>
 <div class="ovl" id="ovl" hidden><div class="mbox" role="dialog" aria-modal="true" aria-labelledby="mTitle" aria-describedby="mMsg"><h3 id="mTitle"></h3><p id="mMsg"></p><div class="btnrow" id="mBtns"></div></div></div>
+<div class="ghovl" id="ghOvl" hidden>
+<div class="ghbox" role="dialog" aria-modal="true" aria-labelledby="ghTitle" aria-describedby="ghLead">
+<button type="button" class="ghclose" id="ghClose" aria-label="閉じる" data-i18n-aria="閉じる">&times;</button>
+<h3 id="ghTitle" data-i18n="GitHub連携">GitHub連携</h3>
+<p class="ghlead" id="ghLead" data-i18n="ルールの取得元リポジトリを設定します。">ルールの取得元リポジトリを設定します。</p>
+<form id="ghForm" autocomplete="off" novalidate>
+<div class="ghfield">
+<label for="ghToken">Personal access token</label>
+<div class="ghrow"><input type="password" id="ghToken" placeholder="ghp_..." autocomplete="off" spellcheck="false" aria-describedby="ghTokenHint"><button type="button" class="ghicon" id="ghEye" aria-label="トークンを表示" data-i18n-aria="トークンを表示" aria-pressed="false">&#128065;</button></div>
+<p class="ghhint" id="ghTokenHint"></p>
+</div>
+<div class="ghfield"><label for="ghRepo" data-i18n="リポジトリ">リポジトリ</label><input type="text" id="ghRepo" placeholder="owner/repo" spellcheck="false" autocomplete="off"></div>
+<div class="ghfield"><label for="ghBranch" data-i18n="ブランチ">ブランチ</label><input type="text" id="ghBranch" placeholder="main" spellcheck="false" autocomplete="off"></div>
+<fieldset class="ghfield">
+<legend data-i18n="ルールフォルダ">ルールフォルダ</legend>
+<label class="ghradio"><input type="radio" name="ghFolder" value="rules" checked><span data-i18n="rules/（既定）">rules/（既定）</span></label>
+<label class="ghradio"><input type="radio" name="ghFolder" value="."><span data-i18n="リポジトリ直下">リポジトリ直下</span></label>
+<label class="ghradio"><input type="radio" name="ghFolder" value="__custom"><span data-i18n="カスタム">カスタム</span></label>
+<input type="text" id="ghFolderCustom" placeholder="config/rules" spellcheck="false" autocomplete="off" hidden>
+<p class="ghpreview" id="ghPreview"></p>
+<p class="ghhint" data-i18n="対象を保存すると、このフォルダの global.md と project.md に選択中の対象を自動追記します。">対象を保存すると、このフォルダの global.md と project.md に選択中の対象を自動追記します。</p>
+</fieldset>
+<div class="ghstatus" id="ghStatus" role="status" aria-live="polite"></div>
+<div class="ghactions"><button type="button" id="ghTest" data-i18n="接続テスト">接続テスト</button><button type="submit" id="ghSave" class="primary" data-i18n="保存">保存</button></div>
+</form>
+</div>
+</div>
 <script>
 "use strict";
 const TOKEN = "__TOKEN__";
@@ -1657,7 +1720,33 @@ const I18N = {
     "有効にしました。": "Enabled.",
     "要求がタイムアウトしました。少し待って更新ボタンで確認してください。": "The request timed out. Wait a moment and refresh to check.",
     "例 C:\\Project\\A": "e.g. C:\\Project\\A",
-    "例 C:\\Project\\MyRepo": "e.g. C:\\Project\\MyRepo"
+    "例 C:\\Project\\MyRepo": "e.g. C:\\Project\\MyRepo",
+    "GitHub連携": "GitHub integration",
+    "ルールの取得元リポジトリを設定します。": "Set the repository that holds the rules.",
+    "リポジトリ": "Repository",
+    "ブランチ": "Branch",
+    "ルールフォルダ": "Rule folder",
+    "rules/（既定）": "rules/ (default)",
+    "リポジトリ直下": "Repository root",
+    "カスタム": "Custom",
+    "接続テスト": "Test connection",
+    "保存": "Save",
+    "トークンを表示": "Show token",
+    "トークンを隠す": "Hide token",
+    "保存済みのトークンを使用します。": "Using the saved token.",
+    "gh CLI のトークンを使用します。": "Using the gh CLI token.",
+    "トークンが未設定です。": "No token is configured.",
+    "Contents: Read and write 権限が必要です。空欄なら保存済みのトークンを使います。": "Requires the Contents: Read and write permission. Leave blank to keep the saved token.",
+    "リポジトリを入力してください。": "Enter a repository.",
+    "ブランチを入力してください。": "Enter a branch.",
+    "接続を確認しています…": "Checking the connection...",
+    "接続できました。": "Connected.",
+    "保存しています…": "Saving...",
+    "GitHub: 対象を追記しました（{targets}）。": "GitHub: added {targets} to the rule targets.",
+    "GitHub: 追記は不要でした。": "GitHub: already up to date.",
+    "GitHub: {reason}": "GitHub: {reason}",
+    "GitHubへの追記に失敗しました：{reason}": "Could not add targets on GitHub: {reason}",
+    "連携が未設定です。": "not configured."
   },
   "zh-CN": {
     " 既存 AGENTS.md はバックアップ後に同期で再生成されます（固有内容は自動転記されません）。": " 现有 AGENTS.md 会在备份后由同步重新生成（其中专有内容不会自动转写）。",
@@ -2020,7 +2109,33 @@ const I18N = {
     "有効にしました。": "已启用。",
     "要求がタイムアウトしました。少し待って更新ボタンで確認してください。": "请求超时。请稍等后使用刷新按钮确认。",
     "例 C:\\Project\\A": "例：C:\\Project\\A",
-    "例 C:\\Project\\MyRepo": "例：C:\\Project\\MyRepo"
+    "例 C:\\Project\\MyRepo": "例：C:\\Project\\MyRepo",
+    "GitHub連携": "GitHub 集成",
+    "ルールの取得元リポジトリを設定します。": "设置规则来源仓库。",
+    "リポジトリ": "仓库",
+    "ブランチ": "分支",
+    "ルールフォルダ": "规则文件夹",
+    "rules/（既定）": "rules/（默认）",
+    "リポジトリ直下": "仓库根目录",
+    "カスタム": "自定义",
+    "接続テスト": "测试连接",
+    "保存": "保存",
+    "トークンを表示": "显示令牌",
+    "トークンを隠す": "隐藏令牌",
+    "保存済みのトークンを使用します。": "使用已保存的令牌。",
+    "gh CLI のトークンを使用します。": "使用 gh CLI 的令牌。",
+    "トークンが未設定です。": "未设置令牌。",
+    "Contents: Read and write 権限が必要です。空欄なら保存済みのトークンを使います。": "需要 Contents: Read and write 权限。留空则使用已保存的令牌。",
+    "リポジトリを入力してください。": "请输入仓库。",
+    "ブランチを入力してください。": "请输入分支。",
+    "接続を確認しています…": "正在检查连接…",
+    "接続できました。": "连接成功。",
+    "保存しています…": "正在保存…",
+    "GitHub: 対象を追記しました（{targets}）。": "GitHub：已将 {targets} 添加到规则目标。",
+    "GitHub: 追記は不要でした。": "GitHub：无需追加。",
+    "GitHub: {reason}": "GitHub：{reason}",
+    "GitHubへの追記に失敗しました：{reason}": "无法在 GitHub 中添加目标：{reason}",
+    "連携が未設定です。": "未设置。"
   }
 };
 let currentLang = "ja";
@@ -3299,6 +3414,7 @@ const GLOBAL_LOGOS = Object.freeze({
   "cline":"data:image/svg+xml;base64,PHN2ZyBmaWxsPSJjdXJyZW50Q29sb3IiIGZpbGwtcnVsZT0iZXZlbm9kZCIgaGVpZ2h0PSIxZW0iIHN0eWxlPSJmbGV4Om5vbmU7bGluZS1oZWlnaHQ6MSIgdmlld0JveD0iMCAwIDI0IDI0IiB3aWR0aD0iMWVtIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjx0aXRsZT5DbGluZTwvdGl0bGU+PHBhdGggZD0iTTE3LjAzNSAzLjk5MWMyLjc1IDAgNC45OCAyLjI0IDQuOTggNS4wMDN2MS42NjdsMS40NSAyLjg5NmExLjAxIDEuMDEgMCAwMS0uMDAyLjkwOWwtMS40NDggMi44NjR2MS42NjhjMCAyLjc2Mi0yLjIzIDUuMDAyLTQuOTggNS4wMDJINy4wNzRjLTIuNzUxIDAtNC45OC0yLjI0LTQuOTgtNS4wMDJWMTcuMzNsLTEuNDgtMi44NTVhMS4wMSAxLjAxIDAgMDEtLjAwMy0uOTI3bDEuNDgyLTIuODg3VjguOTk0YzAtMi43NjMgMi4yMy01LjAwMyA0Ljk4LTUuMDAzaDkuOTYyek04LjI2NSA5LjZhMi4yNzQgMi4yNzQgMCAwMC0yLjI3NCAyLjI3NHY0LjA0MmEyLjI3NCAyLjI3NCAwIDAwNC41NDcgMHYtNC4wNDJBMi4yNzQgMi4yNzQgMCAwMDguMjY1IDkuNnptNy4zMjYgMGEyLjI3NCAyLjI3NCAwIDAwLTIuMjc0IDIuMjc0djQuMDQyYTIuMjc0IDIuMjc0IDAgMTA0LjU0OCAwdi00LjA0MkEyLjI3NCAyLjI3NCAwIDAwMTUuNTkgOS42eiI+PC9wYXRoPjxwYXRoIGQ9Ik0xMi4wNTQgNS41NThhMi43NzkgMi43NzkgMCAxMDAtNS41NTggMi43NzkgMi43NzkgMCAwMDAgNS41NTh6Ij48L3BhdGg+PC9zdmc+",
   "copilotcli":"data:image/svg+xml;base64,PHN2ZyBmaWxsPSJjdXJyZW50Q29sb3IiIGZpbGwtcnVsZT0iZXZlbm9kZCIgaGVpZ2h0PSIxZW0iIHN0eWxlPSJmbGV4Om5vbmU7bGluZS1oZWlnaHQ6MSIgdmlld0JveD0iMCAwIDI0IDI0IiB3aWR0aD0iMWVtIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjx0aXRsZT5HaXRodWJDb3BpbG90PC90aXRsZT48cGF0aCBkPSJNMTkuMjQ1IDUuMzY0YzEuMzIyIDEuMzYgMS44NzcgMy4yMTYgMi4xMSA1LjgxNy42MjIgMCAxLjIuMTM1IDEuNTkyLjY1NGwuNzMuOTY0Yy4yMS4yNzguMzIzLjYxLjMyMy45NTV2Mi42MmMwIC4zMzktLjE3My42NjktLjQ1My44NjhDMjAuMjM5IDE5LjYwMiAxNi4xNTcgMjEuNSAxMiAyMS41Yy00LjYgMC05LjIwNS0yLjU4My0xMS41NDctNC4yNTgtLjI4LS4yLS40NTItLjUzLS40NTMtLjg2OHYtMi42MmMwLS4zNDUuMTEzLS42NzkuMzIxLS45NTZsLjczLS45NjNjLjM5Mi0uNTE3Ljk3NC0uNjU0IDEuNTkzLS42NTRsLjAyOS0uMjk3Yy4yNS0yLjQ0Ni44MS00LjIxMyAyLjA4Mi01LjUyIDIuNDYxLTIuNTQgNS43MS0yLjg1MSA3LjE0Ni0yLjg2NGguMTk4YzEuNDM2LjAxMyA0LjY4NS4zMjMgNy4xNDYgMi44NjR6bS03LjI0NCA0LjMyOGMtLjI4NCAwLS42MTMuMDE2LS45NjIuMDUtLjEyMy40NDctLjMwNS44NS0uNTcgMS4xMDgtMS4wNSAxLjAyMy0yLjMxNiAxLjE4LTIuOTk0IDEuMTgtLjYzOCAwLTEuMzA2LS4xMy0xLjg1MS0uNDY0LS41MTYuMTY1LTEuMDEyLjQwMy0xLjA0NC45OTZhNjUuODgyIDY1Ljg4MiAwIDAwLS4wNjMgMi44ODRsLS4wMDIuNDhjLS4wMDIuNTYzLS4wMDUgMS4xMjYtLjAxMyAxLjY5LjAwMi4zMjYuMjA0LjYzLjUxLjc2NSAyLjQ4MiAxLjEwMiA0LjgzIDEuNjU3IDYuOTkgMS42NTcgMi4xNTYgMCA0LjUwNC0uNTU1IDYuOTg1LTEuNjU3YS44NTQuODU0IDAgMDAuNTEtLjc2NmMuMDMtMS42ODIuMDA2LTMuMzcyLS4wNzYtNS4wNTMtLjAzMS0uNTk2LS41MjgtLjgzLTEuMDQ2LS45OTYtLjU0Ni4zMzMtMS4yMTIuNDY0LTEuODUuNDY0LS42NzcgMC0xLjk0Mi0uMTU3LTIuOTkzLTEuMTgtLjI2Ni0uMjU4LS40NDctLjY2MS0uNTctMS4xMDgtLjMyLS4wMzItLjY0LS4wNDktLjk2LS4wNXptLTIuNTI1IDQuMDEzYy41MzkgMCAuOTc2LjQyNi45NzYuOTV2MS43NTNjMCAuNTI1LS40MzcuOTUtLjk3Ni45NWEuOTY0Ljk2NCAwIDAxLS45NzYtLjk1di0xLjc1MmMwLS41MjUuNDM3LS45NTEuOTc2LS45NTF6bTUgMGMuNTM5IDAgLjk3Ni40MjYuOTc2Ljk1djEuNzUzYzAgLjUyNS0uNDM3Ljk1LS45NzYuOTVhLjk2NC45NjQgMCAwMS0uOTc2LS45NXYtMS43NTJjMC0uNTI1LjQzNy0uOTUxLjk3Ni0uOTUxek03LjYzNSA1LjA4N2MtMS4wNS4xMDItMS45MzUuNDM4LTIuMzg1LjkwNi0uOTc1IDEuMDM3LS43NjUgMy42NjgtLjIxIDQuMjI0LjQwNS4zOTQgMS4xNy42NTcgMS45OTUuNjU3aC4wOWMuNjQ5LS4wMTMgMS43ODUtLjE3NiAyLjczLTEuMTEuNDM1LS40MS43MDUtMS40MzMuNjc1LTIuNDctLjAzLS44MzQtLjI3LTEuNTItLjYzLTEuODEzLS4zOS0uMzM2LTEuMjc1LS40ODItMi4yNjUtLjM5NHptNi40NjUuMzk0Yy0uMzYuMjkyLS42Ljk4LS42MyAxLjgxMy0uMDMgMS4wMzcuMjQgMi4wNi42NzUgMi40Ny45NjguOTU3IDIuMTM2IDEuMTA0IDIuNzc2IDEuMTFoLjA0NGMuODI1IDAgMS41OS0uMjYzIDEuOTk1LS42NTcuNTU1LS41NTYuNzY1LTMuMTg3LS4yMS00LjIyNC0uNDUtLjQ2OC0xLjMzNS0uODA0LTIuMzg1LS45MDYtLjk5LS4wODgtMS44NzUuMDU4LTIuMjY1LjM5NHpNMTIgNy42MTVjLS4yNCAwLS41MjUuMDE1LS44NC4wNDQuMDMuMTYuMDQ1LjMzNi4wNi41MjZsLS4wMDEuMTU5YTIuOTQgMi45NCAwIDAxLS4wMTQuMjVjLjIyNS0uMDIyLjQyNS0uMDI3LjYxMi0uMDI4aC4zNjZjLjE4NyAwIC4zODcuMDA2LjYxMi4wMjgtLjAxNS0uMTQ2LS4wMTUtLjI3Ny0uMDE1LS40MDkuMDE1LS4xOS4wMy0uMzY1LjA2LS41MjZhOS4yOSA5LjI5IDAgMDAtLjg0LS4wNDR6Ij48L3BhdGg+PC9zdmc+",
   "antigravity-cli":"data:image/svg+xml;base64,PHN2ZyBoZWlnaHQ9IjFlbSIgc3R5bGU9ImZsZXg6bm9uZTtsaW5lLWhlaWdodDoxIiB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIxZW0iIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHRpdGxlPkFudGlncmF2aXR5PC90aXRsZT48bWFzayBoZWlnaHQ9IjIzIiBpZD0ibG9iZS1pY29ucy1hbnRpZ3Jhdml0eS0wLV9SXzBfIiBtYXNrVW5pdHM9InVzZXJTcGFjZU9uVXNlIiB3aWR0aD0iMjQiIHg9IjAiIHk9IjEiPjxwYXRoIGQ9Ik0yMS43NTEgMjIuNjA3YzEuMzQgMS4wMDUgMy4zNS4zMzUgMS41MDgtMS41MDhDMTcuNzMgMTUuNzQgMTguOTA0IDEgMTIuMDM3IDEgNS4xNyAxIDYuMzQyIDE1Ljc0LjgxNSAyMS4xYy0yLjAxIDIuMDA5LjE2NyAyLjUxMSAxLjUwNyAxLjUwNiA1LjE5Mi0zLjUxNyA0Ljg1Ny05LjcxNCA5LjcxNS05LjcxNCA0Ljg1NyAwIDQuNTIyIDYuMTk3IDkuNzE0IDkuNzE1eiIgZmlsbD0iI2ZmZiI+PC9wYXRoPjwvbWFzaz48ZyBtYXNrPSJ1cmwoI2xvYmUtaWNvbnMtYW50aWdyYXZpdHktMC1fUl8wXykiPjxnIGZpbHRlcj0idXJsKCNsb2JlLWljb25zLWFudGlncmF2aXR5LTEtX1JfMF8pIj48cGF0aCBkPSJNLTEuMDE4LTMuOTkyYy0uNDA4IDMuNTkxIDIuNjg2IDYuODkgNi45MSA3LjM3IDQuMjI1LjQ4IDcuOTgtMi4wNDMgOC4zODctNS42MzMuNDA4LTMuNTktMi42ODYtNi44OS02LjkxLTcuMzctNC4yMjUtLjQ3OS03Ljk4IDIuMDQzLTguMzg3IDUuNjMzeiIgZmlsbD0iI0ZGRTQzMiI+PC9wYXRoPjwvZz48ZyBmaWx0ZXI9InVybCgjbG9iZS1pY29ucy1hbnRpZ3Jhdml0eS0yLV9SXzBfKSI+PHBhdGggZD0iTTE1LjI2OSA3Ljc0N2MxLjA1OCA0LjU1NyA1LjY5MSA3LjM3NCAxMC4zNDggNi4yOTMgNC42NTctMS4wODIgNy41NzUtNS42NTMgNi41MTYtMTAuMjEtMS4wNTgtNC41NTYtNS42OTEtNy4zNzQtMTAuMzQ4LTYuMjkyLTQuNjU3IDEuMDgyLTcuNTc1IDUuNjUzLTYuNTE2IDEwLjIxeiIgZmlsbD0iI0ZDNDEzRCI+PC9wYXRoPjwvZz48ZyBmaWx0ZXI9InVybCgjbG9iZS1pY29ucy1hbnRpZ3Jhdml0eS0zLV9SXzBfKSI+PHBhdGggZD0iTS0xMi40NDMgMTAuODA0YzEuMzM4IDQuNzAzIDcuMzYgNy4xMSAxMy40NTMgNS4zNzggNi4wOTItMS43MzMgOS45NDctNi45NSA4LjYxLTExLjY1MkM4LjI4Mi0uMTczIDIuMjYtMi41OC0zLjgzMy0uODQ4LTkuOTI1Ljg4NC0xMy43OCA2LjEtMTIuNDQzIDEwLjgwNHoiIGZpbGw9IiMwMEI5NUMiPjwvcGF0aD48L2c+PGcgZmlsdGVyPSJ1cmwoI2xvYmUtaWNvbnMtYW50aWdyYXZpdHktNC1fUl8wXykiPjxwYXRoIGQ9Ik0tMTIuNDQzIDEwLjgwNGMxLjMzOCA0LjcwMyA3LjM2IDcuMTEgMTMuNDUzIDUuMzc4IDYuMDkyLTEuNzMzIDkuOTQ3LTYuOTUgOC42MS0xMS42NTJDOC4yODItLjE3MyAyLjI2LTIuNTgtMy44MzMtLjg0OC05LjkyNS44ODQtMTMuNzggNi4xLTEyLjQ0MyAxMC44MDR6IiBmaWxsPSIjMDBCOTVDIj48L3BhdGg+PC9nPjxnIGZpbHRlcj0idXJsKCNsb2JlLWljb25zLWFudGlncmF2aXR5LTUtX1JfMF8pIj48cGF0aCBkPSJNLTcuNjA4IDE0LjcwM2MzLjM1MiAzLjQyNCA5LjEyNiAzLjIwOCAxMi44OTYtLjQ4MyAzLjc3LTMuNjkgNC4xMDgtOS40NTkuNzU2LTEyLjg4M0MyLjY5LTIuMDg3LTMuMDgzLTEuODcxLTYuODUzIDEuODJjLTMuNzcgMy42OS00LjEwOCA5LjQ1OC0uNzU1IDEyLjg4M3oiIGZpbGw9IiMwMEI5NUMiPjwvcGF0aD48L2c+PGcgZmlsdGVyPSJ1cmwoI2xvYmUtaWNvbnMtYW50aWdyYXZpdHktNi1fUl8wXykiPjxwYXRoIGQ9Ik05LjkzMiAyNy42MTdjMS4wNCA0LjQ4MiA1LjM4NCA3LjMwMyA5LjcgNi4zIDQuMzE2LTEuMDAyIDYuOTcxLTUuNDQ4IDUuOTMtOS45My0xLjA0LTQuNDgzLTUuMzg0LTcuMzA0LTkuNy02LjMwMS00LjMxNiAxLjAwMi02Ljk3MSA1LjQ0OC01LjkzIDkuOTN6IiBmaWxsPSIjMzE4NkZGIj48L3BhdGg+PC9nPjxnIGZpbHRlcj0idXJsKCNsb2JlLWljb25zLWFudGlncmF2aXR5LTctX1JfMF8pIj48cGF0aCBkPSJNMi41NzItOC4xODVDLjM5Mi0zLjMyOSAyLjc3OCAyLjQ3MiA3LjkgNC43NzFjNS4xMjIgMi4zIDExLjA0Mi4yMjcgMTMuMjIyLTQuNjMgMi4xOC00Ljg1NS0uMjA1LTEwLjY1Ni01LjMyNy0xMi45NTUtNS4xMjItMi4zLTExLjA0Mi0uMjI3LTEzLjIyMiA0LjYzeiIgZmlsbD0iI0ZCQkMwNCI+PC9wYXRoPjwvZz48ZyBmaWx0ZXI9InVybCgjbG9iZS1pY29ucy1hbnRpZ3Jhdml0eS04LV9SXzBfKSI+PHBhdGggZD0iTS0zLjI2NyAzOC42ODZjLTUuMjc3LTIuMDcyIDMuNzQyLTE5LjExNyA1Ljk4NC0yNC44MyAyLjI0My01LjcxMiA4LjM0LTguNjY0IDEzLjYxNi02LjU5MiA1LjI3OCAyLjA3MSAxMS41MzMgMTMuNDgyIDkuMjkgMTkuMTk1LTIuMjQyIDUuNzEzLTIzLjYxMyAxNC4yOTgtMjguODkgMTIuMjI3eiIgZmlsbD0iIzMxODZGRiI+PC9wYXRoPjwvZz48ZyBmaWx0ZXI9InVybCgjbG9iZS1pY29ucy1hbnRpZ3Jhdml0eS05LV9SXzBfKSI+PHBhdGggZD0iTTI4LjcxIDE3LjQ3MWMtMS40MTMgMS42NDktNS4xLjgwOC04LjIzNi0xLjg3OC0zLjEzNS0yLjY4Ny00LjUzMS02LjIwMS0zLjExOC03Ljg1IDEuNDEyLTEuNjQ5IDUuMS0uODA4IDguMjM1IDEuODc4czQuNTMyIDYuMiAzLjExOSA3Ljg1eiIgZmlsbD0iIzc0OUJGRiI+PC9wYXRoPjwvZz48ZyBmaWx0ZXI9InVybCgjbG9iZS1pY29ucy1hbnRpZ3Jhdml0eS0xMC1fUl8wXykiPjxwYXRoIGQ9Ik0xOC4xNjMgOS4wNzdjNS44MSAzLjkzIDEyLjUwMiA0LjE5IDE0Ljk0Ni41NzcgMi40NDMtMy42MTItLjI4Ny05LjcyNy02LjA5OC0xMy42NTgtNS44MS0zLjkzMS0xMi41MDItNC4xOS0xNC45NDYtLjU3Ny0yLjQ0MyAzLjYxMi4yODcgOS43MjcgNi4wOTggMTMuNjU4eiIgZmlsbD0iI0ZDNDEzRCI+PC9wYXRoPjwvZz48ZyBmaWx0ZXI9InVybCgjbG9iZS1pY29ucy1hbnRpZ3Jhdml0eS0xMS1fUl8wXykiPjxwYXRoIGQ9Ik0tLjkxNSAyLjY4NGMtMS40NCAzLjQ3My0uOTcgNi45NjcgMS4wNSA3LjgwNCAyLjAyLjgzNyA0LjgyNC0xLjMgNi4yNjQtNC43NzIgMS40NC0zLjQ3My45Ny02Ljk2Ny0xLjA1LTcuODA0LTIuMDItLjgzNy00LjgyNCAxLjMtNi4yNjQgNC43NzJ6IiBmaWxsPSIjRkZFRTQ4Ij48L3BhdGg+PC9nPjwvZz48ZGVmcz48ZmlsdGVyIGNvbG9yLWludGVycG9sYXRpb24tZmlsdGVycz0ic1JHQiIgZmlsdGVyVW5pdHM9InVzZXJTcGFjZU9uVXNlIiBoZWlnaHQ9IjE3LjU4NyIgaWQ9ImxvYmUtaWNvbnMtYW50aWdyYXZpdHktMS1fUl8wXyIgd2lkdGg9IjE5LjgzOCIgeD0iLTMuMjg4IiB5PSItMTEuOTE3Ij48ZmVGbG9vZCBmbG9vZC1vcGFjaXR5PSIwIiByZXN1bHQ9IkJhY2tncm91bmRJbWFnZUZpeCI+PC9mZUZsb29kPjxmZUJsZW5kIGluPSJTb3VyY2VHcmFwaGljIiBpbjI9IkJhY2tncm91bmRJbWFnZUZpeCIgcmVzdWx0PSJzaGFwZSI+PC9mZUJsZW5kPjxmZUdhdXNzaWFuQmx1ciByZXN1bHQ9ImVmZmVjdDFfZm9yZWdyb3VuZEJsdXJfOTc3XzExNSIgc3RkRGV2aWF0aW9uPSIxLjExNyI+PC9mZUdhdXNzaWFuQmx1cj48L2ZpbHRlcj48ZmlsdGVyIGNvbG9yLWludGVycG9sYXRpb24tZmlsdGVycz0ic1JHQiIgZmlsdGVyVW5pdHM9InVzZXJTcGFjZU9uVXNlIiBoZWlnaHQ9IjM4LjU2NSIgaWQ9ImxvYmUtaWNvbnMtYW50aWdyYXZpdHktMi1fUl8wXyIgd2lkdGg9IjM4LjkiIHg9IjQuMjUxIiB5PSItMTMuNDkzIj48ZmVGbG9vZCBmbG9vZC1vcGFjaXR5PSIwIiByZXN1bHQ9IkJhY2tncm91bmRJbWFnZUZpeCI+PC9mZUZsb29kPjxmZUJsZW5kIGluPSJTb3VyY2VHcmFwaGljIiBpbjI9IkJhY2tncm91bmRJbWFnZUZpeCIgcmVzdWx0PSJzaGFwZSI+PC9mZUJsZW5kPjxmZUdhdXNzaWFuQmx1ciByZXN1bHQ9ImVmZmVjdDFfZm9yZWdyb3VuZEJsdXJfOTc3XzExNSIgc3RkRGV2aWF0aW9uPSI1LjQiPjwvZmVHYXVzc2lhbkJsdXI+PC9maWx0ZXI+PGZpbHRlciBjb2xvci1pbnRlcnBvbGF0aW9uLWZpbHRlcnM9InNSR0IiIGZpbHRlclVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgaGVpZ2h0PSIzNi41MTciIGlkPSJsb2JlLWljb25zLWFudGlncmF2aXR5LTMtX1JfMF8iIHdpZHRoPSI0MC45NTUiIHg9Ii0yMS44ODkiIHk9Ii0xMC41OTIiPjxmZUZsb29kIGZsb29kLW9wYWNpdHk9IjAiIHJlc3VsdD0iQmFja2dyb3VuZEltYWdlRml4Ij48L2ZlRmxvb2Q+PGZlQmxlbmQgaW49IlNvdXJjZUdyYXBoaWMiIGluMj0iQmFja2dyb3VuZEltYWdlRml4IiByZXN1bHQ9InNoYXBlIj48L2ZlQmxlbmQ+PGZlR2F1c3NpYW5CbHVyIHJlc3VsdD0iZWZmZWN0MV9mb3JlZ3JvdW5kQmx1cl85NzdfMTE1IiBzdGREZXZpYXRpb249IjQuNTkxIj48L2ZlR2F1c3NpYW5CbHVyPjwvZmlsdGVyPjxmaWx0ZXIgY29sb3ItaW50ZXJwb2xhdGlvbi1maWx0ZXJzPSJzUkdCIiBmaWx0ZXJVbml0cz0idXNlclNwYWNlT25Vc2UiIGhlaWdodD0iMzYuNTE3IiBpZD0ibG9iZS1pY29ucy1hbnRpZ3Jhdml0eS00LV9SXzBfIiB3aWR0aD0iNDAuOTU1IiB4PSItMjEuODg5IiB5PSItMTAuNTkyIj48ZmVGbG9vZCBmbG9vZC1vcGFjaXR5PSIwIiByZXN1bHQ9IkJhY2tncm91bmRJbWFnZUZpeCI+PC9mZUZsb29kPjxmZUJsZW5kIGluPSJTb3VyY2VHcmFwaGljIiBpbjI9IkJhY2tncm91bmRJbWFnZUZpeCIgcmVzdWx0PSJzaGFwZSI+PC9mZUJsZW5kPjxmZUdhdXNzaWFuQmx1ciByZXN1bHQ9ImVmZmVjdDFfZm9yZWdyb3VuZEJsdXJfOTc3XzExNSIgc3RkRGV2aWF0aW9uPSI0LjU5MSI+PC9mZUdhdXNzaWFuQmx1cj48L2ZpbHRlcj48ZmlsdGVyIGNvbG9yLWludGVycG9sYXRpb24tZmlsdGVycz0ic1JHQiIgZmlsdGVyVW5pdHM9InVzZXJTcGFjZU9uVXNlIiBoZWlnaHQ9IjM2LjU5NSIgaWQ9ImxvYmUtaWNvbnMtYW50aWdyYXZpdHktNS1fUl8wXyIgd2lkdGg9IjM2LjYzMiIgeD0iLTE5LjA5OSIgeT0iLTEwLjI3OCI+PGZlRmxvb2QgZmxvb2Qtb3BhY2l0eT0iMCIgcmVzdWx0PSJCYWNrZ3JvdW5kSW1hZ2VGaXgiPjwvZmVGbG9vZD48ZmVCbGVuZCBpbj0iU291cmNlR3JhcGhpYyIgaW4yPSJCYWNrZ3JvdW5kSW1hZ2VGaXgiIHJlc3VsdD0ic2hhcGUiPjwvZmVCbGVuZD48ZmVHYXVzc2lhbkJsdXIgcmVzdWx0PSJlZmZlY3QxX2ZvcmVncm91bmRCbHVyXzk3N18xMTUiIHN0ZERldmlhdGlvbj0iNC41OTEiPjwvZmVHYXVzc2lhbkJsdXI+PC9maWx0ZXI+PGZpbHRlciBjb2xvci1pbnRlcnBvbGF0aW9uLWZpbHRlcnM9InNSR0IiIGZpbHRlclVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgaGVpZ2h0PSIzNC4wODciIGlkPSJsb2JlLWljb25zLWFudGlncmF2aXR5LTYtX1JfMF8iIHdpZHRoPSIzMy41MzMiIHg9Ii45ODEiIHk9IjguNzU4Ij48ZmVGbG9vZCBmbG9vZC1vcGFjaXR5PSIwIiByZXN1bHQ9IkJhY2tncm91bmRJbWFnZUZpeCI+PC9mZUZsb29kPjxmZUJsZW5kIGluPSJTb3VyY2VHcmFwaGljIiBpbjI9IkJhY2tncm91bmRJbWFnZUZpeCIgcmVzdWx0PSJzaGFwZSI+PC9mZUJsZW5kPjxmZUdhdXNzaWFuQmx1ciByZXN1bHQ9ImVmZmVjdDFfZm9yZWdyb3VuZEJsdXJfOTc3XzExNSIgc3RkRGV2aWF0aW9uPSI0LjM2MyI+PC9mZUdhdXNzaWFuQmx1cj48L2ZpbHRlcj48ZmlsdGVyIGNvbG9yLWludGVycG9sYXRpb24tZmlsdGVycz0ic1JHQiIgZmlsdGVyVW5pdHM9InVzZXJTcGFjZU9uVXNlIiBoZWlnaHQ9IjM1LjI3NiIgaWQ9ImxvYmUtaWNvbnMtYW50aWdyYXZpdHktNy1fUl8wXyIgd2lkdGg9IjM1Ljk3OCIgeD0iLTYuMTQzIiB5PSItMjEuNjU5Ij48ZmVGbG9vZCBmbG9vZC1vcGFjaXR5PSIwIiByZXN1bHQ9IkJhY2tncm91bmRJbWFnZUZpeCI+PC9mZUZsb29kPjxmZUJsZW5kIGluPSJTb3VyY2VHcmFwaGljIiBpbjI9IkJhY2tncm91bmRJbWFnZUZpeCIgcmVzdWx0PSJzaGFwZSI+PC9mZUJsZW5kPjxmZUdhdXNzaWFuQmx1ciByZXN1bHQ9ImVmZmVjdDFfZm9yZWdyb3VuZEJsdXJfOTc3XzExNSIgc3RkRGV2aWF0aW9uPSIzLjk1NCI+PC9mZUdhdXNzaWFuQmx1cj48L2ZpbHRlcj48ZmlsdGVyIGNvbG9yLWludGVycG9sYXRpb24tZmlsdGVycz0ic1JHQiIgZmlsdGVyVW5pdHM9InVzZXJTcGFjZU9uVXNlIiBoZWlnaHQ9IjQ2LjUyMyIgaWQ9ImxvYmUtaWNvbnMtYW50aWdyYXZpdHktOC1fUl8wXyIgd2lkdGg9IjQ1LjExNCIgeD0iLTExLjk2IiB5PSItLjQ2Ij48ZmVGbG9vZCBmbG9vZC1vcGFjaXR5PSIwIiByZXN1bHQ9IkJhY2tncm91bmRJbWFnZUZpeCI+PC9mZUZsb29kPjxmZUJsZW5kIGluPSJTb3VyY2VHcmFwaGljIiBpbjI9IkJhY2tncm91bmRJbWFnZUZpeCIgcmVzdWx0PSJzaGFwZSI+PC9mZUJsZW5kPjxmZUdhdXNzaWFuQmx1ciByZXN1bHQ9ImVmZmVjdDFfZm9yZWdyb3VuZEJsdXJfOTc3XzExNSIgc3RkRGV2aWF0aW9uPSIzLjUzMSI+PC9mZUdhdXNzaWFuQmx1cj48L2ZpbHRlcj48ZmlsdGVyIGNvbG9yLWludGVycG9sYXRpb24tZmlsdGVycz0ic1JHQiIgZmlsdGVyVW5pdHM9InVzZXJTcGFjZU9uVXNlIiBoZWlnaHQ9IjI0LjA1NCIgaWQ9ImxvYmUtaWNvbnMtYW50aWdyYXZpdHktOS1fUl8wXyIgd2lkdGg9IjI1LjA5NCIgeD0iMTAuNDg1IiB5PSIuNTgiPjxmZUZsb29kIGZsb29kLW9wYWNpdHk9IjAiIHJlc3VsdD0iQmFja2dyb3VuZEltYWdlRml4Ij48L2ZlRmxvb2Q+PGZlQmxlbmQgaW49IlNvdXJjZUdyYXBoaWMiIGluMj0iQmFja2dyb3VuZEltYWdlRml4IiByZXN1bHQ9InNoYXBlIj48L2ZlQmxlbmQ+PGZlR2F1c3NpYW5CbHVyIHJlc3VsdD0iZWZmZWN0MV9mb3JlZ3JvdW5kQmx1cl85NzdfMTE1IiBzdGREZXZpYXRpb249IjMuMTU5Ij48L2ZlR2F1c3NpYW5CbHVyPjwvZmlsdGVyPjxmaWx0ZXIgY29sb3ItaW50ZXJwb2xhdGlvbi1maWx0ZXJzPSJzUkdCIiBmaWx0ZXJVbml0cz0idXNlclNwYWNlT25Vc2UiIGhlaWdodD0iMzAuMDA3IiBpZD0ibG9iZS1pY29ucy1hbnRpZ3Jhdml0eS0xMC1fUl8wXyIgd2lkdGg9IjMzLjUwOCIgeD0iNS44MzMiIHk9Ii0xMi40NjciPjxmZUZsb29kIGZsb29kLW9wYWNpdHk9IjAiIHJlc3VsdD0iQmFja2dyb3VuZEltYWdlRml4Ij48L2ZlRmxvb2Q+PGZlQmxlbmQgaW49IlNvdXJjZUdyYXBoaWMiIGluMj0iQmFja2dyb3VuZEltYWdlRml4IiByZXN1bHQ9InNoYXBlIj48L2ZlQmxlbmQ+PGZlR2F1c3NpYW5CbHVyIHJlc3VsdD0iZWZmZWN0MV9mb3JlZ3JvdW5kQmx1cl85NzdfMTE1IiBzdGREZXZpYXRpb249IjIuNjY5Ij48L2ZlR2F1c3NpYW5CbHVyPjwvZmlsdGVyPjxmaWx0ZXIgY29sb3ItaW50ZXJwb2xhdGlvbi1maWx0ZXJzPSJzUkdCIiBmaWx0ZXJVbml0cz0idXNlclNwYWNlT25Vc2UiIGhlaWdodD0iMjYuMTUxIiBpZD0ibG9iZS1pY29ucy1hbnRpZ3Jhdml0eS0xMS1fUl8wXyIgd2lkdGg9IjIyLjE5NCIgeD0iLTguMzU1IiB5PSItOC44NzYiPjxmZUZsb29kIGZsb29kLW9wYWNpdHk9IjAiIHJlc3VsdD0iQmFja2dyb3VuZEltYWdlRml4Ij48L2ZlRmxvb2Q+PGZlQmxlbmQgaW49IlNvdXJjZUdyYXBoaWMiIGluMj0iQmFja2dyb3VuZEltYWdlRml4IiByZXN1bHQ9InNoYXBlIj48L2ZlQmxlbmQ+PGZlR2F1c3NpYW5CbHVyIHJlc3VsdD0iZWZmZWN0MV9mb3JlZ3JvdW5kQmx1cl85NzdfMTE1IiBzdGREZXZpYXRpb249IjMuMzAzIj48L2ZlR2F1c3NpYW5CbHVyPjwvZmlsdGVyPjwvZGVmcz48L3N2Zz4=",
+  "commandcode":"data:image/svg+xml;base64,PHN2ZyBmaWxsPSJub25lIiBoZWlnaHQ9IjEzNyIgdmlld0JveD0iMCAwIDEzNyAxMzciIHdpZHRoPSIxMzciIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0ibTAgNjYuNzk1OWMwLTMxLjQ4NzkgMC00Ny4yMzE4IDkuNzgyMDQtNTcuMDEzODYgOS43ODIwNi05Ljc4MjA0IDI1LjUyNTk2LTkuNzgyMDQgNTcuMDEzOTYtOS43ODIwNGgyLjUzNTdjMzEuNDg4MyAwIDQ3LjIzMjMgMCA1Ny4wMTQzIDkuNzgyMDQgOS43ODIgOS43ODIwNiA5Ljc4MiAyNS41MjU5NiA5Ljc4MiA1Ny4wMTM5NnYyLjUzNTdjMCAzMS40ODgzIDAgNDcuMjMyMy05Ljc4MiA1Ny4wMTQzcy0yNS41MjYgOS43ODItNTcuMDE0NCA5Ljc4MmgtMi41MzU3Yy0zMS40ODc5IDAtNDcuMjMxOCAwLTU3LjAxMzg2LTkuNzgyLTkuNzgyMDQtOS43ODItOS43ODIwNC0yNS41MjYtOS43ODIwNC01Ny4wMTQ0eiIgZmlsbD0iIzAwMCIvPjxnIGZpbGw9IiNmZmYiPjxwYXRoIGNsaXAtcnVsZT0iZXZlbm9kZCIgZD0ibTY5LjMzMTcgNS41NjYzM2gtMi41MzU3Yy0xNS45MDE0IDAtMjcuMjY3NC4wMTE4Mi0zNS45MDUgMS4xNzMxMi04LjQ3NzUgMS4xMzk3Ny0xMy40ODg2IDMuMjk0MTUtMTcuMTczIDYuOTc4NTVzLTUuODM4NzggOC42OTU1LTYuOTc4NTUgMTcuMTczYy0xLjE2MTMgOC42Mzc2LTEuMTczMTIgMjAuMDAzNi0xLjE3MzEyIDM1LjkwNDl2Mi41MzU3YzAgMTUuOTAxNC4wMTE4MiAyNy4yNjc0IDEuMTczMTIgMzUuOTA1NCAxLjEzOTc3IDguNDc3IDMuMjk0MTUgMTMuNDg4IDYuOTc4NTUgMTcuMTczIDMuNjg0NCAzLjY4NCA4LjY5NTUgNS44MzggMTcuMTczIDYuOTc4IDguNjM3NiAxLjE2MSAyMC4wMDM2IDEuMTczIDM1LjkwNDkgMS4xNzNoMi41MzU3YzE1LjkwMTQgMCAyNy4yNjc0LS4wMTIgMzUuOTA1NC0xLjE3MyA4LjQ3Ny0xLjE0IDEzLjQ4OC0zLjI5NCAxNy4xNzMtNi45NzggMy42ODQtMy42ODUgNS44MzgtOC42OTYgNi45NzgtMTcuMTczIDEuMTYxLTguNjM4IDEuMTczLTIwLjAwNCAxLjE3My0zNS45MDUzdi0yLjUzNTdjMC0xNS45MDE0LS4wMTItMjcuMjY3NC0xLjE3My0zNS45MDUtMS4xNC04LjQ3NzUtMy4yOTQtMTMuNDg4Ni02Ljk3OC0xNy4xNzMtMy42ODUtMy42ODQ0LTguNjk2LTUuODM4NzgtMTcuMTczLTYuOTc4NTUtOC42MzgtMS4xNjEzLTIwLjAwNC0xLjE3MzEyLTM1LjkwNTMtMS4xNzMxMnptLTU5LjU0OTY2IDQuMjE1NzFjLTkuNzgyMDQgOS43ODIwNi05Ljc4MjA0IDI1LjUyNTk2LTkuNzgyMDQgNTcuMDEzODZ2Mi41MzU3YzAgMzEuNDg4NCAwIDQ3LjIzMjQgOS43ODIwNCA1Ny4wMTQ0IDkuNzgyMDYgOS43ODIgMjUuNTI1OTYgOS43ODIgNTcuMDEzODYgOS43ODJoMi41MzU3YzMxLjQ4ODQgMCA0Ny4yMzI0IDAgNTcuMDE0NC05Ljc4MnM5Ljc4Mi0yNS41MjYgOS43ODItNTcuMDE0M3YtMi41MzU3YzAtMzEuNDg4IDAtNDcuMjMxOS05Ljc4Mi01Ny4wMTM5Ni05Ljc4Mi05Ljc4MjA0LTI1LjUyNi05Ljc4MjA0LTU3LjAxNDMtOS43ODIwNGgtMi41MzU3Yy0zMS40ODggMC00Ny4yMzE5IDAtNTcuMDEzOTYgOS43ODIwNHoiIGZpbGwtcnVsZT0iZXZlbm9kZCIvPjxwYXRoIGQ9Im05My42NjA0IDI2LjE3ODRjLTguOTgyIDAtMTYuMjg4NyA3LjMwNjctMTYuMjg4NyAxNi4yODg4djYuOTgwOWgtMTguNjE1OHYtNi45ODA5YzAtOC45ODIxLTcuMzA2Ny0xNi4yODg4LTE2LjI4ODctMTYuMjg4OC04Ljk4MjEgMC0xNi4yODg4IDcuMzA2Ny0xNi4yODg4IDE2LjI4ODhzNy4zMDY3IDE2LjI4ODcgMTYuMjg4OCAxNi4yODg3aDYuOTgwOXYxOC42MTU4aC02Ljk4MDljLTguOTgyMSAwLTE2LjI4ODggNy4zMDY3LTE2LjI4ODggMTYuMjg4OCAwIDguOTgyNSA3LjMwNjcgMTYuMjg4NSAxNi4yODg4IDE2LjI4ODUgOC45ODIgMCAxNi4yODg3LTcuMzA2IDE2LjI4ODctMTYuMjg4NXYtNi45ODFoMTguNjE1OHY2Ljk4MWMwIDguOTgyNSA3LjMwNjcgMTYuMjg4NSAxNi4yODg3IDE2LjI4ODUgOC45ODI2IDAgMTYuMjg4Ni03LjMwNiAxNi4yODg2LTE2LjI4ODUgMC04Ljk4MjEtNy4zMDYtMTYuMjg4OC0xNi4yODg2LTE2LjI4ODhoLTYuOTgwOXYtMTguNjE1OGg2Ljk4MDljOC45ODI2IDAgMTYuMjg4Ni03LjMwNjYgMTYuMjg4Ni0xNi4yODg3cy03LjMwNi0xNi4yODg4LTE2LjI4ODYtMTYuMjg4OHptLTYuOTgwOSAyMy4yNjk3di02Ljk4MDljMC0zLjg2MjggMy4xMTgyLTYuOTgwOSA2Ljk4MDktNi45ODA5IDMuODYyOCAwIDYuOTgwNiAzLjExODEgNi45ODA2IDYuOTgwOSAwIDMuODYyNy0zLjExNzggNi45ODA5LTYuOTgwNiA2Ljk4MDl6bS00NC4yMTIzIDBjLTMuODYyOCAwLTYuOTgwOS0zLjExODItNi45ODA5LTYuOTgwOSAwLTMuODYyOCAzLjExODEtNi45ODA5IDYuOTgwOS02Ljk4MDkgMy44NjI3IDAgNi45ODA5IDMuMTE4MSA2Ljk4MDkgNi45ODA5djYuOTgwOXptMTYuMjg4NyAyNy45MjM2di0xOC42MTU4aDE4LjYxNTh2MTguNjE1OHptMzQuOTA0NSAyMy4yNjkzYy0zLjg2MjcgMC02Ljk4MDktMy4xMTc4LTYuOTgwOS02Ljk4MDV2LTYuOTgxaDYuOTgwOWMzLjg2MjggMCA2Ljk4MDYgMy4xMTgyIDYuOTgwNiA2Ljk4MSAwIDMuODYyNy0zLjExNzggNi45ODA1LTYuOTgwNiA2Ljk4MDV6bS01MS4xOTMyIDBjLTMuODYyOCAwLTYuOTgwOS0zLjExNzgtNi45ODA5LTYuOTgwNSAwLTMuODYyOCAzLjExODEtNi45ODEgNi45ODA5LTYuOTgxaDYuOTgwOXY2Ljk4MWMwIDMuODYyNy0zLjExODIgNi45ODA1LTYuOTgwOSA2Ljk4MDV6Ii8+PC9nPjwvc3ZnPg==",
   "roo":"data:image/svg+xml;base64,PHN2ZyBmaWxsPSJjdXJyZW50Q29sb3IiIGZpbGwtcnVsZT0iZXZlbm9kZCIgaGVpZ2h0PSIxZW0iIHN0eWxlPSJmbGV4Om5vbmU7bGluZS1oZWlnaHQ6MSIgdmlld0JveD0iMCAwIDI0IDI0IiB3aWR0aD0iMWVtIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjx0aXRsZT5Sb29Db2RlPC90aXRsZT48cGF0aCBkPSJNMjAuMTEzIDUuNWwtLjQ0MiAxLjU1N2EuMTU3LjE1NyAwIDAxLS4xOTYuMTA2bC03LjQxNC0yLjE1N2EuMTYuMTYgMCAwMC0uMTQzLjAyOGwtNy4zNDIgNS43NGEuMTU5LjE1OSAwIDAxLS4wNzQuMDMybC00LjM3LjY1NmEuMTU0LjE1NCAwIDAwLS4xMzIuMTYybC4wMi4yNDVjLjAwNS4wNzguMDcxLjE0LjE1Mi4xNDFsNS4wNzQuMTI4LjA1OC4wMDIgMy43NS0xLjk1M2EuMTYuMTYgMCAwMS4xNjQuMDFsMi42NTcgMS44NDdhLjE1Mi4xNTIgMCAwMS4wNjYuMTI1bC0uMDIzIDIuNDVjMCAuMDMyLjAxLjA2My4wMjguMDg5bDMuNzM3IDUuMjI3Yy4wMy4wNC4wNzcuMDY1LjEyOS4wNjVoMS4xODJhLjE1My4xNTMgMCAwMC4xNC0uMjI0bC0yLjY2NC00LjkxOWEuMTUuMTUgMCAwMS4wMDUtLjE1MmwxLjM4OS0yLjE2OWEuMTU2LjE1NiAwIDAxLjA2Mi0uMDU1bDQuOTY1LTIuNDU2YS4xNi4xNiAwIDAxLjE1OC4wMWwxLjQxOC45MjFhLjE2LjE2IDAgMDAuMDg3LjAyNmgxLjI4OWMuMTI1IDAgLjItLjEzNi4xMy0uMjM3bC0zLjU3OC01LjI5Yy0uMDc0LS4xMDktLjI0Ni0uMDgyLS4yODIuMDQ0eiI+PC9wYXRoPjwvc3ZnPg==",
   "goose":"data:image/svg+xml;base64,PHN2ZyBmaWxsPSJjdXJyZW50Q29sb3IiIGZpbGwtcnVsZT0iZXZlbm9kZCIgaGVpZ2h0PSIxZW0iIHN0eWxlPSJmbGV4Om5vbmU7bGluZS1oZWlnaHQ6MSIgdmlld0JveD0iMCAwIDI0IDI0IiB3aWR0aD0iMWVtIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjx0aXRsZT5Hb29zZTwvdGl0bGU+PHBhdGggZD0iTTIxLjU5NSAyMy42MWMxLjE2Ny0uMjU0IDIuNDA1LS45NDQgMi40MDUtLjk0NGwtMi4xNjctMS43ODRhMTIuMTI0IDEyLjEyNCAwIDAxLTIuNjk1LTMuMTMxIDEyLjEyNyAxMi4xMjcgMCAwMC0zLjk3LTQuMDQ5bC0uNzk0LS40NjJhMS4xMTUgMS4xMTUgMCAwMS0uNDg4LS44MTUuODQ0Ljg0NCAwIDAxLjE1NC0uNTc1Yy40MTMtLjU4MiAyLjU0OC0zLjExNSAyLjk0LTMuNDQuNTAzLS40MTYgMS4wNjUtLjc2MiAxLjU4Ni0xLjE1OS4wNzQtLjA1Ni4xNDgtLjExMi4yMjEtLjE3LjAwMy0uMDAyLjAwNy0uMDA0LjAwOS0uMDA3LjE2Ny0uMTMxLjMyNS0uMjcyLjQ1LS40MzguNDUzLS41MjQuNTYzLS45ODguNTktMS4xOTMtLjA2MS0uMTk3LS4yNDQtLjYzOS0uNzUzLTEuMTQ4LjMxOS4wMi43MDUuMjcyIDEuMDU2LjU2OS4yMzUtLjM3Ni40ODEtLjc3My43MjctMS4xNzEuMTY1LS4yNjYtLjA4LS40NjUtLjA4Ni0uNDcxaC0uMDAxVjMuMjJjLS4wMDctLjAwNy0uMjA2LS4yNS0uNDcxLS4wODYtLjU2Ny4zNS0xLjEzNC43MDItMS42MzkgMS4wMjEgMCAwLS41OTctLjAxMi0xLjMwNS41OTlhMi40NjQgMi40NjQgMCAwMC0uNDM4LjQ1bC0uMDA3LjAwOWMtLjA1OC4wNzItLjExNC4xNDctLjE3LjIyMS0uMzk3LjUyMS0uNzQzIDEuMDgzLTEuMTYgMS41ODctLjMyMy4zOTEtMi44NTcgMi41MjYtMy40NCAyLjk0YS44NDIuODQyIDAgMDEtLjU3NC4xNTMgMS4xMTUgMS4xMTUgMCAwMS0uODE1LS40ODhsLS40NjItLjc5NGExMi4xMjMgMTIuMTIzIDAgMDAtNC4wNDktMy45NyAxMi4xMzMgMTIuMTMzIDAgMDEtMy4xMy0yLjY5NUwxLjMzMiAwUy42NDMgMS4yMzguMzkgMi40MDVjLjM1Mi40MjggMS4yNyAxLjQ5IDIuMzQgMi4zMDJDMS41OCA0LjE2Ny43MyAzLjc1LjA2IDMuNGMtLjEwMy43NjUtLjA2MyAxLjkyLjA0MyAyLjgxNi43MjYuMzE3IDEuOTYxLjgwNiAzLjIxOSAxLjA2Ni0xLjAwNi4yMzYtMi4xMS4yNzgtMi45NjEuMjYyLjE1LjU1NC4zNTggMS4xMTkuNjQgMS42ODguMTE5LjI2My4yNS41Mi4zOS43Ny40NTIuMTI1IDIuMjIyLjM4MyAzLjE2NC4xNzFsLTIuNTEuODk3YTI3Ljc3NiAyNy43NzYgMCAwMDIuNTQ0IDIuNzI2YzIuMDMxLTEuMDkyIDIuNDk0LTEuMjQxIDQuMDE4LTIuMjM4LTIuNDY3IDIuMDA4LTMuMTA4IDIuODI4LTMuOCAzLjY3bC0uNDgzLjY3OGMtLjI1LjM1MS0uNDY5LjcyNS0uNjUgMS4xMTctLjYxIDEuMzEtMS40NyA0LjEtMS40NyA0LjEtLjE1NC40ODYuMjAyLjg0Mi42NzQuNjc0IDAgMCAyLjc5LS44NjEgNC4xLTEuNDcuMzkyLS4xODIuNzY2LS40IDEuMTE4LS42NWwuNjc3LS40ODNjLjIyNy0uMTg3LjQ1My0uMzcuNzAxLS41ODYgMCAwIDEuNzA1IDIuMDIgMy40NTggMy4zNDlsLjg5Ni0yLjUxMWMtLjIxMS45NDIuMDQ2IDIuNzEyLjE3IDMuMTYzLjI1Mi4xNDIuNTA5LjI3Mi43NzIuMzkyLjU2OS4yOCAxLjEzNC40OSAxLjY4OC42NC0uMDE2LS44NTMuMDI2LTEuOTU2LjI2MS0yLjk2Mi4yNiAxLjI1OC43NSAyLjQ5MyAxLjA2NyAzLjIxOS44OTUuMTA2IDIuMDUxLjE0NiAyLjgxNi4wNDNhNzMuODcgNzMuODcgMCAwMS0xLjMwOC0yLjY3Yy44MTEgMS4wNyAxLjg3NCAxLjk4OCAyLjMwMiAyLjM0aC0uMDAxeiI+PC9wYXRoPjwvc3ZnPg==",
   "devin":"data:image/svg+xml;base64,PHN2ZyBoZWlnaHQ9IjFlbSIgc3R5bGU9ImZsZXg6bm9uZTtsaW5lLWhlaWdodDoxIiB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIxZW0iIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHRpdGxlPkRldmluPC90aXRsZT48cGF0aCBkPSJNMi4wMzMgOS44NjdsMi41NTQgMS40ODNhLjU4OS41ODkgMCAwMC41OTIgMGwyLjU1NC0xLjQ4My4wMS0uMDA4YS42MDguNjA4IDAgMDAuMTEtLjA4NGwuMDEzLS4wMTVhLjYzMS42MzEgMCAwMC4wNzYtLjFjLjAwMy0uMDA1LjAwOC0uMDEuMDEtLjAxNmEuNTU4LjU1OCAwIDAwLjA1Mi0uMTI1bC4wMDctLjAyOGEuNjExLjYxMSAwIDAwLjAxOS0uMTRWNy44NjhjMC0uNTcyLjMwNy0xLjEwNS44LTEuMzkyYTEuNTk1IDEuNTk1IDAgMDExLjU5OCAwbDEuMjc3Ljc0MmEuNTQuNTQgMCAwMC4xMjkuMDUzbC4wMjguMDFjLjA0NC4wMS4wODguMDE1LjEzMy4wMTZoLjAwNmwuMDEzLS4wMDJhLjU4Ny41ODcgMCAwMC4yNy0uMDc0bC4wMTEtLjAwNCAyLjU1NC0xLjQ4M2EuNTk2LjU5NiAwIDAwLjI5Ny0uNTE2VjIuMjUzYS41OTUuNTk1IDAgMDAtLjI5Ny0uNTE2TDEyLjI5My4yNTdhLjU4Ny41ODcgMCAwMC0uNTkxIDBMOS4xNDggMS43MzdsLS4wMS4wMWEuNjA5LjYwOSAwIDAwLS4xMDkuMDgzbC0uMDE0LjAxNWEuNjMyLjYzMiAwIDAwLS4wNzYuMWMtLjAwMy4wMDUtLjAwOC4wMS0uMDEuMDE2YS41Ny41NyAwIDAwLS4wNTIuMTI0bC0uMDA3LjAyOGEuNjEyLjYxMiAwIDAwLS4wMTguMTR2MS40ODNjMCAuNTcyLS4zMDcgMS4xMDUtLjggMS4zOTNhMS41OTcgMS41OTcgMCAwMS0xLjU5OSAwbC0xLjI3Ni0uNzQyYS42MDMuNjAzIDAgMDAtLjEzLS4wNTNsLS4wMjgtLjAwOGEuNjU4LjY1OCAwIDAwLS4xMzMtLjAxOGgtLjAyYS41Ny41NyAwIDAwLS4yNjkuMDc0Yy0uMDAzLjAwMi0uMDA4LjAwMi0uMDEyLjAwNUwyLjAzMyA1Ljg3MmEuNTk2LjU5NiAwIDAwLS4yOTcuNTE1djIuOTY2YzAgLjIxMy4xMTMuNDEuMjk3LjUxNXoiIGZpbGw9IiMzOTY5Q0EiPjwvcGF0aD48cGF0aCBkPSJNMTUuOTQzIDEwLjYwN2ExLjU5NiAxLjU5NiAwIDAxMS41OTkgMGwxLjI3Ni43NGMuMDQxLjAyNS4wODUuMDQuMTMuMDU1bC4wMjguMDA4Yy4wNDMuMDEuMDg4LjAxNi4xMzMuMDE4aC4wMDVjLjAwNSAwIC4wMS0uMDAyLjAxNC0uMDAzYS40NzQuNDc0IDAgMDAuMTIyLS4wMTZsLjAyMS0uMDA1YS42MTYuNjE2IDAgMDAuMTI2LS4wNTJjLjAwNC0uMDAyLjAwOS0uMDAyLjAxMy0uMDA1bDIuNTU0LTEuNDgyYS41OTcuNTk3IDAgMDAuMjk3LS41MTZWNi4zODNhLjU5Ni41OTYgMCAwMC0uMjk3LS41MTVsLTIuNTUyLTEuNDgzYS41ODcuNTg3IDAgMDAtLjU5MiAwbC0yLjU1MyAxLjQ4Mi0uMDExLjAwOGEuNjEuNjEgMCAwMC0uMTA4LjA4NGwtLjAxNC4wMTZhLjYzNy42MzcgMCAwMC0uMDc2LjFjLS4wMDMuMDA1LS4wMDguMDEtLjAxLjAxNmEuNTcuNTcgMCAwMC0uMDUyLjEyNGwtLjAwNy4wMjlhLjYxMi42MTIgMCAwMC0uMDE4LjE0djEuNDgyYzAgLjU3Mi0uMzA3IDEuMTA1LS44IDEuMzkzYTEuNTk3IDEuNTk3IDAgMDEtMS41OTkgMGwtMS4yNzYtLjc0MmEuNTg0LjU4NCAwIDAwLS4xMy0uMDUzbC0uMDI4LS4wMDhhLjYyLjYyIDAgMDAtLjEzMy0uMDE4aC0uMDJhLjU4Ny41ODcgMCAwMC0uMjY5LjA3NGwtLjAxMi4wMDRMOS4xNSAxMGEuNTk2LjU5NiAwIDAwLS4yOTYuNTE2djIuOTY2YzAgLjIxMi4xMTIuNDA5LjI5Ni41MTVsMi41NTQgMS40ODNzLjAwOC4wMDIuMDEyLjAwNWMuMDQuMDIyLjA4Mi4wNC4xMjYuMDUybC4wMi4wMDRhLjU3LjU3IDAgMDAuMTIzLjAxN2wuMDE0LjAwMmguMDA2Yy4wNTQgMCAuMTA4LS4wMS4xNi0uMDI1YS41ODcuNTg3IDAgMDAuMTMtLjA1NGwxLjI3Ny0uNzQxYTEuNTk3IDEuNTk3IDAgMDEyLjM5OCAxLjM5MnYxLjQ4MmMwIC4wNDkuMDA3LjA5NS4wMTkuMTRsLjAwNy4wMjhhLjYxOS42MTkgMCAwMC4wNTEuMTI1Yy4wMDQuMDA2LjAwOC4wMS4wMS4wMTZhLjYuNiAwIDAwLjA3Ni4xbC4wMTQuMDE1Yy4wMzMuMDMyLjA2OS4wNi4xMDguMDg0LjAwNC4wMDIuMDA2LjAwNi4wMTEuMDA4bDIuNTU0IDEuNDgzYS41OS41OSAwIDAwLjU5MyAwbDIuNTU0LTEuNDgzYS41OTcuNTk3IDAgMDAuMjk2LS41MTZ2LTIuOTY1YS41OTUuNTk1IDAgMDAtLjI5Ni0uNTE2bC0yLjU1NC0xLjQ4M3MtLjAwOC0uMDAyLS4wMTItLjAwNWEuNTQuNTQgMCAwMC0uMTI2LS4wNTFjLS4wMDctLjAwMy0uMDEzLS4wMDMtLjAyLS4wMDVhLjYzNS42MzUgMCAwMC0uMTI1LS4wMTdoLS4wMThhLjU1Ny41NTcgMCAwMC0uMTYuMDI2LjU4OC41ODggMCAwMC0uMTMuMDUzbC0xLjI3Ni43NDJhMS41OTUgMS41OTUgMCAwMS0xLjU5OCAwIDEuNjE1IDEuNjE1IDAgMDEwLTIuNzg1bC0uMDA1LS4wMDF6IiBmaWxsPSIjMjFDMTlBIj48L3BhdGg+PHBhdGggZD0iTTE0Ljg0OCAxOC4yNjVsLTIuNTU0LTEuNDgyLS4wMTItLjAwNWEuNTI2LjUyNiAwIDAwLS4xMjYtLjA1MmMtLjAwNy0uMDAyLS4wMTQtLjAwMi0uMDItLjAwNWEuNjQuNjQgMCAwMC0uMTI0LS4wMTdoLS4wMmEuNTYuNTYgMCAwMC0uMTYuMDI2LjU4OC41ODggMCAwMC0uMTMuMDUzbC0xLjI3Ni43NDJhMS41OTQgMS41OTQgMCAwMS0xLjU5OCAwYy0uNDkzLS4yODYtLjgtLjgyLS44LTEuMzkzVjE0LjY1YS41NjMuNTYzIDAgMDAtLjAxOC0uMTRsLS4wMDgtLjAyOGEuNjA0LjYwNCAwIDAwLS4wNTEtLjEyNGwtLjAxLS4wMTdhLjYwMy42MDMgMCAwMC0uMDc2LS4xbC0uMDE0LS4wMTVhLjU5Ni41OTYgMCAwMC0uMTA5LS4wODRjLS4wMDMtLjAwMi0uMDA1LS4wMDYtLjAxLS4wMDhMNS4xNzggMTIuNjVhLjU4Ny41ODcgMCAwMC0uNTkxIDBsLTIuNTU0IDEuNDgzYS41OTYuNTk2IDAgMDAtLjI5Ny41MTZ2Mi45NjVjMCAuMjEzLjExMy40MS4yOTcuNTE2bDIuNTU0IDEuNDgzLjAxMi4wMDRhLjYxOC42MTggMCAwMC4yNjcuMDc0bC4wMTYuMDAyaC4wMDdhLjU1LjU1IDAgMDAuMTYtLjAyNi41ODQuNTg0IDAgMDAuMTI5LS4wNTNsMS4yNzctLjc0MmExLjU5NyAxLjU5NyAwIDAxMi4zOTggMS4zOTN2MS40ODJjMCAuMDUuMDA3LjA5NS4wMTkuMTRsLjAwNy4wMjhjLjAxMy4wNDQuMDMuMDg1LjA1MS4xMjVsLjAxLjAxNmMuMDIyLjAzNi4wNDcuMDcuMDc2LjFsLjAxNC4wMTVjLjAzMi4wMzIuMDY5LjA2LjEwOS4wODRsLjAxLjAwOCAyLjU1NCAxLjQ4M2EuNTg3LjU4NyAwIDAwLjU5MyAwbDIuNTU0LTEuNDgzYS41OTYuNTk2IDAgMDAuMjk2LS41MTV2LTIuOTY2YS41OTYuNTk2IDAgMDAtLjI5Ni0uNTE2aC0uMDAyeiIgZmlsbD0iIzAyOTRERSI+PC9wYXRoPjwvc3ZnPg==",
@@ -3775,12 +3891,24 @@ document.getElementById("btnGlobalTargets").onclick = async function(){
     const names = confirmed.map(globalProviderLabel);
     const okGo = await showConfirm(L("対象の変更"), L("配る対象を「{targets}」に変更します。よろしいですか。", {targets:names.join(L("・"))}), L("変更する"), L("やめる"));
     if(!okGo){ return; }
-    await api("/api/global-targets-set","POST",{targets:confirmed, confirm:true});
+    const tr = await api("/api/global-targets-set","POST",{targets:confirmed, confirm:true});
     // The successful POST is newer than every status GET already in flight.
     globalTargetsAppliedSeq = ++globalStatusRequestSeq;
     globalSavedTargets = confirmed.slice();
     globalTargetsDirty = globalTargetsDirtyNow();
-    setMsg("msgGlobalTargets", L("対象を保存しました。"), true);
+    const gh0 = (tr && tr.github) ? tr.github : null;
+    let ghNote = "";
+    let ghHardFail = false;
+    if(gh0){
+      if(gh0.ok){
+        const added = [];
+        (gh0.files || []).forEach(function(f){ (f.added || []).forEach(function(t){ added.push(t); }); });
+        ghNote = added.length ? L("GitHub: 対象を追記しました（{targets}）。", {targets: added.join(L("・"))}) : L("GitHub: 追記は不要でした。");
+      }
+      else if(gh0.skipped){ ghNote = L("GitHub: {reason}", {reason: gh0.error || L("連携が未設定です。")}); }
+      else { ghHardFail = true; ghNote = L("GitHubへの追記に失敗しました：{reason}", {reason: gh0.error || ""}); }
+    }
+    setMsg("msgGlobalTargets", L("対象を保存しました。") + (ghNote ? " " + ghNote : ""), !ghHardFail);
     renderGlobalTargetsUI();
     await refreshGlobal();
   }catch(e){ setMsg("msgGlobalTargets", e.message, false); }
@@ -3903,6 +4031,150 @@ async function loadGlobalBackups(){
 document.getElementById("btnGlobalBackups").onclick = function(){ loadGlobalBackups(); };
 initLanguage();
 showHash();refresh();refreshGlobal();
+/* --- GitHub integration (topbar dialog) --------------------------------- */
+const ghState = {open:false, busy:false, restore:null};
+function ghEl(id){ return document.getElementById(id); }
+function ghSetStatus(msg, kind){
+  const s = ghEl("ghStatus");
+  if(!s) return;
+  s.textContent = msg || "";
+  s.className = "ghstatus" + (kind ? " " + kind : "");
+}
+function ghFolderFromUI(){
+  const r = document.querySelector('input[name="ghFolder"]:checked');
+  if(!r) return "rules";
+  if(r.value === "__custom") return (ghEl("ghFolderCustom").value || "").trim();
+  return r.value;
+}
+function ghRenderPreview(){
+  const p = ghFolderFromUI();
+  const base = (!p || p === ".") ? "" : (p.replace(/\\/g, "/").replace(/^\/+|\/+$/g, "") + "/");
+  ghEl("ghPreview").textContent = base + "global.md" + "\n" + base + "project.md";
+}
+function ghApplyFolder(path){
+  const v = String(path || "rules").replace(/\\/g, "/").replace(/\/+$/g, "");
+  const custom = ghEl("ghFolderCustom");
+  let hit = null;
+  document.querySelectorAll('input[name="ghFolder"]').forEach(function(x){ if(x.value === v) hit = x; });
+  if(hit){
+    hit.checked = true;
+    custom.hidden = true;
+    custom.value = "";
+  } else {
+    document.querySelector('input[name="ghFolder"][value="__custom"]').checked = true;
+    custom.hidden = false;
+    custom.value = (v === ".") ? "" : v;
+  }
+  ghRenderPreview();
+}
+function ghStatusHint(tokenSource){
+  let base;
+  if(tokenSource === "saved") base = L("保存済みのトークンを使用します。");
+  else if(tokenSource === "gh") base = L("gh CLI のトークンを使用します。");
+  else base = L("トークンが未設定です。");
+  ghEl("ghTokenHint").textContent = base + " " + L("Contents: Read and write 権限が必要です。空欄なら保存済みのトークンを使います。");
+}
+async function ghOpen(){
+  if(ghState.open) return;
+  ghState.open = true;
+  ghState.restore = document.activeElement;
+  ghEl("ghToken").value = "";
+  ghEl("ghToken").type = "password";
+  ghEl("ghEye").setAttribute("aria-pressed", "false");
+  ghEl("ghEye").setAttribute("aria-label", L("トークンを表示"));
+  ghEl("ghRepo").value = "";
+  ghEl("ghBranch").value = "main";
+  ghApplyFolder("rules");
+  ghSetStatus("");
+  ghStatusHint("");
+  ghEl("ghOvl").hidden = false;
+  try{
+    const g = await api("/api/github-settings", "GET", null, 15000);
+    ghEl("ghRepo").value = g.repo || "";
+    ghEl("ghBranch").value = g.branch || "main";
+    ghApplyFolder(g.rulesPath || "rules");
+    ghStatusHint(g.tokenSource || "");
+  }catch(e){ ghSetStatus(e.message, "err"); }
+  try{ ghEl("ghRepo").focus(); }catch(e){}
+}
+function ghClose(){
+  if(!ghState.open) return;
+  ghState.open = false;
+  ghEl("ghOvl").hidden = true;
+  const r = ghState.restore;
+  ghState.restore = null;
+  try{ if(r && r.focus) r.focus(); }catch(e){}
+}
+async function ghTest(){
+  if(ghState.busy) return;
+  const repo = ghEl("ghRepo").value.trim();
+  const branch = ghEl("ghBranch").value.trim();
+  if(!repo){ ghSetStatus(L("リポジトリを入力してください。"), "err"); return; }
+  if(!branch){ ghSetStatus(L("ブランチを入力してください。"), "err"); return; }
+  ghState.busy = true;
+  ghEl("ghTest").disabled = true;
+  ghEl("ghSave").disabled = true;
+  ghSetStatus(L("接続を確認しています…"));
+  try{
+    const r = await api("/api/github-test", "POST", {repo:repo, branch:branch, token:ghEl("ghToken").value.trim()}, 25000);
+    const sha = String(r.sha || "").slice(0, 7);
+    ghSetStatus(L("接続できました。") + " " + String(r.repo || repo) + "@" + String(r.branch || branch) + (sha ? " (" + sha + ")" : ""), "ok");
+  }catch(e){ ghSetStatus(e.message, "err"); }
+  finally{
+    ghState.busy = false;
+    ghEl("ghTest").disabled = false;
+    ghEl("ghSave").disabled = false;
+  }
+}
+async function ghSave(ev){
+  if(ev && ev.preventDefault) ev.preventDefault();
+  if(ghState.busy) return;
+  const repo = ghEl("ghRepo").value.trim();
+  const branch = ghEl("ghBranch").value.trim();
+  const folder = ghFolderFromUI();
+  if(!repo){ ghSetStatus(L("リポジトリを入力してください。"), "err"); return; }
+  if(!branch){ ghSetStatus(L("ブランチを入力してください。"), "err"); return; }
+  ghState.busy = true;
+  ghEl("ghTest").disabled = true;
+  ghEl("ghSave").disabled = true;
+  ghSetStatus(L("保存しています…"));
+  try{
+    const r = await api("/api/github-settings", "POST", {repo:repo, branch:branch, rulesPath:folder, token:ghEl("ghToken").value.trim()}, 30000);
+    ghEl("ghToken").value = "";
+    ghSetStatus(L("保存しました。") + " " + String(r.repo || repo) + "@" + String(r.branch || branch), "ok");
+    ghStatusHint(r.tokenSource || "");
+    try{ if(typeof refreshGlobal === "function") await refreshGlobal(); }catch(e2){}
+  }catch(e){ ghSetStatus(e.message, "err"); }
+  finally{
+    ghState.busy = false;
+    ghEl("ghTest").disabled = false;
+    ghEl("ghSave").disabled = false;
+  }
+}
+document.getElementById("btnGitHub").onclick = function(){ ghOpen(); };
+document.getElementById("ghClose").onclick = function(){ ghClose(); };
+document.getElementById("ghTest").onclick = function(){ ghTest(); };
+document.getElementById("ghForm").onsubmit = function(ev){ ghSave(ev); };
+document.getElementById("ghEye").onclick = function(){
+  const t = ghEl("ghToken");
+  const show = t.type === "password";
+  t.type = show ? "text" : "password";
+  this.setAttribute("aria-pressed", show ? "true" : "false");
+  this.setAttribute("aria-label", L(show ? "トークンを隠す" : "トークンを表示"));
+};
+document.querySelectorAll('input[name="ghFolder"]').forEach(function(x){
+  x.onchange = function(){
+    ghEl("ghFolderCustom").hidden = (x.value !== "__custom");
+    ghRenderPreview();
+  };
+});
+document.getElementById("ghFolderCustom").oninput = function(){ ghRenderPreview(); };
+document.getElementById("ghOvl").onclick = function(ev){ if(ev.target === this) ghClose(); };
+document.addEventListener("keydown", function(ev){
+  if(!ghState.open) return;
+  if(ev.key === "Escape"){ ev.preventDefault(); ghClose(); }
+});
+ghRenderPreview();
 </script>
 </body>
 </html>
@@ -4075,6 +4347,16 @@ function Start-Dashboard {
           $availGet = @()
           foreach ($ceG in @(Get-GlobalProviderCatalog)) { $availGet += @{ id = [string]$ceG.id; label = [string]$ceG.label } }
           Send-Json $ctx 200 @{ schemaVersion = [int]$gsGet.schemaVersion; targets = @($gsGet.targets); available = $availGet }
+        }
+        catch { Send-Json $ctx 500 @{ error = $_.Exception.Message } }
+        continue
+      }
+      if ($path -eq '/api/github-settings' -and $method -eq 'GET') {
+        if ($req.Headers['X-Dashboard-Token'] -cne $Token) { Send-Json $ctx 403 @{ error = 'token 不正のため拒否しました。' }; continue }
+        try {
+          $gsGH = Get-GitHubSettings $AutoDir
+          $srcGH = Get-GitHubTokenSource $AutoDir
+          Send-Json $ctx 200 @{ ok = $true; repo = [string]$gsGH.repo; branch = [string]$gsGH.branch; rulesPath = [string]$gsGH.rulesPath; hasToken = ($srcGH -ne ''); tokenSource = $srcGH; updatedAt = [string]$gsGH.updatedAt }
         }
         catch { Send-Json $ctx 500 @{ error = $_.Exception.Message } }
         continue
@@ -4766,9 +5048,55 @@ function Start-Dashboard {
           }
           try {
             $tr0 = Set-GlobalTargets $AutoDir $tgNew
+            # Keep the source repo's rule frontmatter in step with the selection.
+            # Add-only, and a GitHub failure never rolls back the local save.
+            $gh0 = $null
+            try { $gh0 = Update-GitHubRuleTargets $AutoDir $tgNew }
+            catch { $gh0 = @{ ok = $false; files = @(); error = $_.Exception.Message } }
+            $tr0['github'] = $gh0
             Send-Json $ctx 200 $tr0
           } catch { Send-Json $ctx 400 @{ error = $_.Exception.Message }
           } finally { if ($tlock) { try { $tlock.Close() } catch {} } }
+          continue
+        }
+        if ($path -eq '/api/github-test') {
+          $rGT = ''
+          $bGT = ''
+          $tGT = ''
+          try { $rGT = [string]$body.repo } catch {}
+          try { $bGT = [string]$body.branch } catch {}
+          try { $tGT = [string]$body.token } catch {}
+          try {
+            $gt0 = Test-GitHubConnection $AutoDir $rGT $bGT $tGT
+            if ($gt0.ok) { Send-Json $ctx 200 @{ ok = $true; repo = [string]$gt0.repo; branch = [string]$gt0.branch; sha = [string]$gt0.sha } }
+            else { Send-Json $ctx 400 @{ ok = $false; error = [string]$gt0.error } }
+          } catch { Send-Json $ctx 500 @{ ok = $false; error = $_.Exception.Message } }
+          continue
+        }
+        if ($path -eq '/api/github-settings') {
+          $rGS = ''
+          $bGS = ''
+          $pGS = ''
+          $tGS = ''
+          $clearGS = $false
+          try { $rGS = [string]$body.repo } catch {}
+          try { $bGS = [string]$body.branch } catch {}
+          try { $pGS = [string]$body.rulesPath } catch {}
+          try { $tGS = [string]$body.token } catch {}
+          try { $clearGS = ($body.clearToken -eq $true) } catch {}
+          $newTokGH = $tGS.Trim()
+          if (($newTokGH -ne '') -and (-not (Test-GitHubTokenFormat $newTokGH))) { Send-Json $ctx 400 @{ error = 'トークンの形式が正しくありません（ghp_ または github_pat_ で始まる文字列）。' }; continue }
+          # Verify first: a wrong repo/branch/token must never replace working settings.
+          $chkGH = $null
+          try { $chkGH = Test-GitHubConnection $AutoDir $rGS $bGS $newTokGH } catch { $chkGH = @{ ok = $false; error = $_.Exception.Message } }
+          if (-not $chkGH.ok) { Send-Json $ctx 400 @{ error = [string]$chkGH.error }; continue }
+          try {
+            if ($clearGS) { Remove-GitHubToken $AutoDir }
+            elseif ($newTokGH -ne '') { Save-GitHubToken $AutoDir $newTokGH | Out-Null }
+            $svGH = Save-GitHubSettings $AutoDir $rGS $bGS $pGS
+            $srcGS = Get-GitHubTokenSource $AutoDir
+            Send-Json $ctx 200 @{ ok = $true; repo = [string]$svGH.repo; branch = [string]$svGH.branch; rulesPath = [string]$svGH.rulesPath; updatedAt = [string]$svGH.updatedAt; hasToken = ($srcGS -ne ''); tokenSource = $srcGS; sha = [string]$chkGH.sha }
+          } catch { Send-Json $ctx 400 @{ error = $_.Exception.Message } }
           continue
         }
         if ($path -eq '/api/global-interval-set') {

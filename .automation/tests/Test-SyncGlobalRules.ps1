@@ -412,6 +412,25 @@ exit /b 0
   Assert (-not ((Get-Logs).Contains('dummy-gh-token-BBB'))) 'T18 no GH leak in logs'
   Assert ((Get-Logs).Contains('***')) 'T18 GH redacted to ***'
 
+  # T19: check exits 0 but rulesync wrote nothing for a selected target
+  # (no root rule for it in the source). A run-level exit 0 must not mark
+  # that target success: the missing output is recorded per target.
+  $env:GITHUB_TOKEN = $null
+  $env:GH_TOKEN = 'dummy-gh-token-BBB'
+  Remove-Item Env:DUMMY_EXPECT_TOKEN -ErrorAction SilentlyContinue
+  $gem = Join-Path $script:fakeHome '.gemini\GEMINI.md'
+  if (Test-Path -LiteralPath $gem) { Remove-Item -LiteralPath $gem -Force }
+  Reset-Case @(0, 0)
+  $code = Invoke-GlobalSync -TargetNames @('codexcli', 'opencode', 'antigravity-cli')
+  Assert ($code -eq 0) 'T19 no-change still exits 0'
+  $st19 = Get-Content -LiteralPath (Join-Path $script:auto 'global-status.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+  Assert ([string]$st19.providers.codexcli.result -ceq 'success') 'T19 covered target stays success'
+  Assert ([string]$st19.providers.opencode.result -ceq 'success') 'T19 second covered target stays success'
+  Assert ([string]$st19.providers.'antigravity-cli'.result -ceq 'failed') 'T19 uncovered target recorded failed'
+  Assert ($null -eq $st19.providers.'antigravity-cli'.lastSuccessAt) 'T19 uncovered target gets no success stamp'
+  Assert (-not [string]::IsNullOrWhiteSpace([string]$st19.providers.'antigravity-cli'.error)) 'T19 uncovered target carries a reason'
+  Assert ((Get-Logs).Contains('antigravity-cli')) 'T19 log names the uncovered target'
+
   Assert (((Get-Location).Path) -eq $initCwd) 'T15 cwd restored at end'
   Assert ($env:HOME_DIR -eq $fakeHome) 'T15 HOME_DIR kept for harness restore'
   Assert (Test-Path -LiteralPath $scratch) 'T15 scratch exists before cleanup'

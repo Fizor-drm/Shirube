@@ -300,13 +300,13 @@ test('Global settings styles are scoped, scroll-bounded, responsive and reduced-
   }
 });
 
-test('logo map is fixed, self-contained and never embeds the invalid CommandCode asset', () => {
+test('logo map is fixed, self-contained and covers the supplied CommandCode asset', () => {
   const map = logos();
   const expected = ['codexcli', 'opencode', 'claudecode', 'cline', 'copilotcli', 'antigravity-cli',
-    'roo', 'goose', 'devin', 'zed', 'codebuddy', 'kimi-code', 'qoder', 'pi'].sort();
+    'commandcode', 'roo', 'goose', 'devin', 'zed', 'codebuddy', 'kimi-code', 'qoder', 'pi'].sort();
   const keys = Object.keys(map).sort();
   must(keys.join('|') === expected.join('|'), 'exact canonical logo keys: ' + keys.join(','));
-  must(!Object.prototype.hasOwnProperty.call(map, 'commandcode'), 'CommandCode invalid asset excluded');
+  must(Object.prototype.hasOwnProperty.call(map, 'commandcode'), 'CommandCode logo is embedded');
   must(!Object.prototype.hasOwnProperty.call(map, 'continue'), 'missing logo is not fabricated');
   must(!Object.prototype.hasOwnProperty.call(map, 'crush'), 'missing logo is not fabricated');
   must(!Object.prototype.hasOwnProperty.call(map, 'vibe'), 'missing logo is not fabricated');
@@ -343,7 +343,9 @@ test('card renderer keeps canonical IDs, decorative logos and deterministic init
   must(codex.children[0].children[0].alt === '', 'logo img is decorative alt=""');
   must(/^data:image\/svg\+xml;base64,/.test(codex.children[0].children[0].src), 'logo uses data URL only');
   must(codex.children[0].getAttribute('aria-hidden') === 'true', 'logo tile is aria-hidden');
-  for (const [id, initials] of [['continue', 'CO'], ['crush', 'CR'], ['vibe', 'VI'], ['commandcode', 'CO']]) {
+  const cc = h.checkFor('commandcode').parentNode.children[1];
+  must(cc.children[0].children[0] && cc.children[0].children[0].tagName === 'IMG', 'commandcode logo uses img');
+  for (const [id, initials] of [['continue', 'CO'], ['crush', 'CR'], ['vibe', 'VI']]) {
     const card = h.checkFor(id).parentNode.children[1];
     must(card.children[0].children.length === 0, id + ' has no fabricated image');
     must(card.children[0].textContent === initials, id + ' initials fallback');

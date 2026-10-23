@@ -12,6 +12,9 @@ param([switch]$DryRun, [switch]$ReportSkip, [string[]]$ProjectNames = @(), [swit
 # (scratch 配備) でも既定値で動くよう、その場合だけ既定値スタブを置く。
 $shirubeSettingsScript = Join-Path $PSScriptRoot 'Settings.ps1'
 if (Test-Path -LiteralPath $shirubeSettingsScript -PathType Leaf) { . $shirubeSettingsScript }
+# GitHub integration (optional: single-file copies keep the gh fallback below).
+$ghMgmtScript = Join-Path $PSScriptRoot 'GitHub-Management.ps1'
+if (Test-Path -LiteralPath $ghMgmtScript -PathType Leaf) { . $ghMgmtScript }
 if (-not (Get-Command Get-ShirubeSetting -ErrorAction SilentlyContinue)) { function Get-ShirubeSetting { param([string]$Name = '', $Default = $null) return $Default } }
 
 function Invoke-ProjectSync {
@@ -751,14 +754,21 @@ function Invoke-ProjectSync {
       if ($env:GITHUB_TOKEN) { $Secrets += $env:GITHUB_TOKEN }
       if ($env:GH_TOKEN) { $Secrets += $env:GH_TOKEN }
       if ((-not $env:GITHUB_TOKEN) -and (-not $env:GH_TOKEN)) {
-        $prevEapGh = $ErrorActionPreference
-        $ErrorActionPreference = 'SilentlyContinue'
-        try {
-          $tok = (& $gh auth token 2>$null | Out-String).Trim()
-          $tokCode = $LASTEXITCODE
+        # Stored GitHub-integration token wins; gh stays the fallback.
+        $tok = ''
+        if (Get-Command Get-GitHubSyncToken -ErrorAction SilentlyContinue) {
+          try { $tok = [string](Get-GitHubSyncToken $AutoDir) } catch { $tok = '' }
         }
-        finally { $ErrorActionPreference = $prevEapGh }
-        if (($null -eq $tokCode) -or ($tokCode -ne 0)) { throw 'GitHub auth failed (gh auth token).' }
+        if (-not $tok) {
+          $prevEapGh = $ErrorActionPreference
+          $ErrorActionPreference = 'SilentlyContinue'
+          try {
+            $tok = (& $gh auth token 2>$null | Out-String).Trim()
+            $tokCode = $LASTEXITCODE
+          }
+          finally { $ErrorActionPreference = $prevEapGh }
+          if (($null -eq $tokCode) -or ($tokCode -ne 0)) { throw 'GitHub auth failed (gh auth token).' }
+        }
         if (-not $tok) { throw 'GitHub auth returned empty token.' }
         $env:GITHUB_TOKEN = $tok
         $Secrets += $tok

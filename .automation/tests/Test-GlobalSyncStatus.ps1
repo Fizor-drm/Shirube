@@ -349,6 +349,9 @@ exit /b 0
   Assert (($null -eq $k12a) -or ([string]$k12a.result -cne 'success')) 'S12 unselected Kimi is not marked success'
   Reset-Case @(0, 0)
   Set-Content -LiteralPath (Join-Path $auto 'global-settings.json') '{"schemaVersion":1,"targets":["kimi-code"]}' -Encoding Ascii
+  # A run-level exit 0 only counts as success for a target that left output.
+  New-Item -ItemType Directory -Force -Path (Join-Path $fakeHome '.kimi-code') | Out-Null
+  Set-Content -LiteralPath (Join-Path $fakeHome '.kimi-code\AGENTS.md') 'fake-kimi-agents' -Encoding Ascii
   $env:KIMI_CODE_HOME = '   '
   $code12b = Invoke-GlobalSync
   $st12b = Read-Status
