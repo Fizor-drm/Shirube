@@ -178,7 +178,7 @@ function Invoke-GlobalSync {
     $prevEap = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
-      $out = & $Exe @Argv 2>&1 | Out-String
+      $out = & $Exe @Argv 2>&1 | ForEach-Object { [string]$_ } | Out-String
       $code = $LASTEXITCODE
     }
     finally { $ErrorActionPreference = $prevEap }

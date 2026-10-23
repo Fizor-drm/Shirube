@@ -309,6 +309,7 @@ exit /b 0
   $code = Invoke-ProjectSync
   Assert ($code -eq 0) 'T7 stderr-success exits 0'
   Assert ((Get-Logs).Contains('warn-check-stderr-T7')) 'T7 stderr captured in log'
+  Assert (-not ((Get-Logs).Contains('NativeCommandError'))) 'T7 stderr does not log NativeCommandError'
   Assert (((Get-Location).Path) -eq $c0) 'T7 cwd restored'
 
   # T8: token leaking via npx stdout is redacted.
@@ -436,6 +437,34 @@ exit /b 0
   $code = Invoke-ProjectSync
   Assert ($code -eq 0) 'T10j real-shape exits 0'
   Assert ((Get-Calls).Count -eq 3) 'T10j install+2 checks only'
+
+  # T10k: targets appended by Update-GitHubRuleTargets (extra provider) still pass.
+  Reset-Case @(0, 0, 0)
+  Set-Content -LiteralPath (Join-Path $preview '.rulesync\rules\.curated\project.md') "---`nroot: true`ntargets: [`"codexcli`", `"opencode`", `"antigravity-cli`"]`n---`n`nshared-body" -Encoding Ascii
+  $code = Invoke-ProjectSync
+  Assert ($code -eq 0) 'T10k extra-target exits 0'
+  Assert ((Get-Calls).Count -eq 3) 'T10k install+2 checks only'
+
+  # T10l: targets missing opencode -> full stop after install.
+  Reset-Case @(0)
+  Set-Content -LiteralPath (Join-Path $preview '.rulesync\rules\.curated\project.md') "---`nroot: true`ntargets: [`"codexcli`"]`n---`n`nshared-body" -Encoding Ascii
+  $code = Invoke-ProjectSync
+  Assert ($code -eq 1) 'T10l missing-opencode exits 1'
+  Assert ((Get-Calls).Count -eq 1) 'T10l only install ran'
+
+  # T10m: duplicate targets -> full stop after install.
+  Reset-Case @(0)
+  Set-Content -LiteralPath (Join-Path $preview '.rulesync\rules\.curated\project.md') "---`nroot: true`ntargets: [`"codexcli`", `"opencode`", `"codexcli`"]`n---`n`nshared-body" -Encoding Ascii
+  $code = Invoke-ProjectSync
+  Assert ($code -eq 1) 'T10m duplicate-target exits 1'
+  Assert ((Get-Calls).Count -eq 1) 'T10m only install ran'
+
+  # T10n: uppercase targets -> full stop after install (case-sensitive targets check).
+  Reset-Case @(0)
+  Set-Content -LiteralPath (Join-Path $preview '.rulesync\rules\.curated\project.md') "---`nroot: true`ntargets: [`"codexcli`", `"opencode`", `"ANTIGRAVITY-CLI`", `"ANTIGRAVITY-CLI`"]`n---`n`nshared-body" -Encoding Ascii
+  $code = Invoke-ProjectSync
+  Assert ($code -eq 1) 'T10n uppercase-target exits 1'
+  Assert ((Get-Calls).Count -eq 1) 'T10n only install ran'
 
   # T11a: registry name traversal -> project refused, backup cannot escape root.
   $origReg = Get-Content -LiteralPath (Join-Path $auto 'projects.json') -Raw

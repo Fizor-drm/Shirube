@@ -165,7 +165,12 @@ function Test-FrontmatterFlag([string]$Text, [string]$Key) {
     if ($ln -match ':\s*[|>]\s*(#.*)?$') { return $false }
     if ($ln -match ('^' + $Key + '\s*:\s*true\s*(#.*)?$')) { $hits++; continue }
     elseif ($ln -match ('^' + $Key + '\s*:')) { return $false }
-    if ($ln -match '^targets\s*:\s*\[\s*"codexcli"\s*,\s*"opencode"\s*\]\s*(#.*)?$') { $seenTargets++; if ($seenTargets -gt 1) { return $false }; continue }
+    if ($ln -cmatch '^targets\s*:\s*\[(\s*"[a-z0-9][a-z0-9-]*"(?:\s*,\s*"[a-z0-9][a-z0-9-]*")*\s*)\]\s*(#.*)?$') {
+      $tItems = @([regex]::Matches($Matches[1], '"([a-z0-9][a-z0-9-]*)"') | ForEach-Object { $_.Groups[1].Value })
+      if (($tItems -cnotcontains 'codexcli') -or ($tItems -cnotcontains 'opencode')) { return $false }
+      if ((@($tItems | Select-Object -Unique)).Count -ne $tItems.Count) { return $false }
+      $seenTargets++; if ($seenTargets -gt 1) { return $false }; continue
+    }
     elseif ($ln -match '^targets\s*:') { return $false }
     if ($ln -match '^description\s*:\s*".*"\s*(#.*)?$') { $seenDesc++; if ($seenDesc -gt 1) { return $false }; continue }
     elseif ($ln -match '^description\s*:') { return $false }
