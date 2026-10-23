@@ -191,6 +191,12 @@ try {
   # An unescaped inner quote passes a greedy ".*" but is invalid YAML.
   Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + 'description: "say "hello" to everyone"' + $nl + '---' + $nl) 'project')) 'T6b unescaped quote in description rejected'
   Assert (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + 'description: "say \"hello\" to everyone"' + $nl + '---' + $nl) 'project') 'T6b escaped quote in description accepted'
+  # Only YAML 1.2 escapes pass; anything else would fail the real parser at sync time.
+  Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + 'description: "bad \q escape"' + $nl + '---' + $nl) 'project')) 'T6b invalid \q escape rejected'
+  Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + 'description: "path C:\Users\test"' + $nl + '---' + $nl) 'project')) 'T6b bare backslash path rejected'
+  Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + 'description: "bad \xGG"' + $nl + '---' + $nl) 'project')) 'T6b invalid \xGG escape rejected'
+  Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + 'description: "bad \E escape"' + $nl + '---' + $nl) 'project')) 'T6b invalid uppercase \E escape rejected'
+  Assert (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + 'description: "quote \" slash \\ tab \t nl \n u \u3042 x \x20"' + $nl + '---' + $nl) 'project') 'T6b valid YAML 1.2 escapes accepted'
   Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + '---' + $nl) 'project')) 'T6b duplicate root rejected'
   Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'localRoot: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + '---' + $nl) 'project')) 'T6b root/localRoot mix rejected'
   Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'foo: bar' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + '---' + $nl) 'project')) 'T6b unknown frontmatter key rejected'

@@ -457,7 +457,9 @@ function Test-GitHubRuleFrontmatter([string]$Text, [string]$Kind) {
     }
     if ($ln -match '^targets\s*:') { return $false }
     # No unescaped quote inside: `"say "hi""` is invalid YAML and would break the next sync.
-    if ($ln -match '^description\s*:\s*"([^"\\]|\\.)*"\s*(#.*)?$') { $seenDesc++; if ($seenDesc -gt 1) { return $false }; continue }
+    # Only YAML 1.2 escapes: \0 \a \b \t \n \v \f \r \e \  \" \/ \\ \N \_ \L \P,
+    # plus \xNN, \uNNNN, \UNNNNNNNN. A bare "\q" or "C:\Users" is refused.
+    if ($ln -cmatch '^description\s*:\s*"([^"\\]|\\[0abtnvfre " /\\N_LP]|\\x[0-9a-fA-F]{2}|\\u[0-9a-fA-F]{4}|\\U[0-9a-fA-F]{8})*"\s*(#.*)?$') { $seenDesc++; if ($seenDesc -gt 1) { return $false }; continue }
     if ($ln -match '^description\s*:') { return $false }
     return $false
   }
