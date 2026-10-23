@@ -462,4 +462,48 @@ await test('provider choices come from the catalog and preserve unsaved selectio
   assert.equal(pi.checked,false); assert.equal(codex.checked,true);
   assert.deepEqual(Array.from(t.c.globalSelectedTargets()),['codexcli']);
 });
+await test('refresh starts status, projects and project-status together', async()=>{
+  const t = setup();
+  const started = [];
+  let release;
+  const gate = new Promise(r => { release = r; });
+  t.c.api = async (ep) => {
+    started.push(ep);
+    await gate;
+    if(ep === '/api/status') return {syncId:'P0',syncState:'success',count:2,logName:'l',tail:'t'};
+    if(ep === '/api/projects') return {projects:[]};
+    if(ep === '/api/project-status') return {projects:[]};
+    throw Error('unexpected ' + ep);
+  };
+  const p = t.c.refresh();
+  assert.deepEqual(started, ['/api/status','/api/projects','/api/project-status']);
+  release();
+  await p;
+});
+
+await test('status polling cadence is 120 tries at 500ms', async()=>{
+  const t = setup();
+  const waits = [];
+  t.c.setTimeout = (cb, ms) => { waits.push(ms); cb(); };
+  await t.c.pollUntilDone('P1', 2, 500, t.c.Date.now() + 60000);
+  assert.deepEqual(waits, [500]);
+  await t.c.pollGlobalUntilDone('G1', 2, 500, t.c.Date.now() + 60000);
+  assert.deepEqual(waits, [500, 500]);
+});
+
+await test('plan polling waits 150ms first, then 400ms', ()=>{
+  assert.equal((src.match(/let planWait = 150;/g) || []).length, 2);
+  assert.equal((src.match(/planWait = 400;/g) || []).length, 2);
+  assert.ok(!src.includes('setTimeout(rs, 2000)'));
+  assert.equal((src.match(/, 120, 500, /g) || []).length, 5);
+});
+
+await test('Global status reads the scheduled task once per response', ()=>{
+  const start = src.indexOf('function Get-GlobalStatusResponse');
+  const end = src.indexOf('function Clear-OldRequestFiles', start);
+  assert.ok(start >= 0 && end > start);
+  const body = src.slice(start, end);
+  assert.equal((body.match(/Get-GlobalScheduledTask/g) || []).length, 1);
+  assert.ok(!/Get-GlobalInterval|Get-GlobalTaskEnabled/.test(body));
+});
 console.log('ALL UNIFIED SYNC CHECKS PASSED');

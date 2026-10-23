@@ -1,4 +1,4 @@
-# Test-VerifyDashboardWait.ps1 - regression tests for Verify-Dashboard.ps1 Wait branch.
+﻿# Test-VerifyDashboardWait.ps1 - regression tests for Verify-Dashboard.ps1 Wait branch.
 $ErrorActionPreference = 'Stop'
 $failures = @()
 function Assert([bool]$Cond, [string]$Name) {
@@ -48,6 +48,31 @@ function Invoke-WebRequest { param($Uri, [int]$TimeoutSec, [switch]$UseBasicPars
 function Test-VerifyOnce { return 0 }
 $rcD = Wait-Verify -AutoDir 'C:\dummy\auto' -Port 18799 -WaitSec 1 -PollMs 250
 Assert ($rcD -eq 0) 'Wait success in time: exit 0'
+
+# Scenario E: launch defaults, health-before-netstat and the single-call launcher.
+$vTxt = Get-Content -LiteralPath $vfyPath -Raw -Encoding UTF8
+Assert (($vTxt.Contains('[switch]$EnsureRunning')) -and ($vTxt.Contains('[string]$ServerScript'))) 'EnsureRunning and ServerScript parameters exist'
+Assert ($vTxt.Contains('[int]$PollMs = 80')) 'default poll interval is 80ms'
+$fnStart = $vTxt.IndexOf('function Test-VerifyOnce')
+$fnEnd = $vTxt.IndexOf('function Wait-Verify')
+Assert (($fnStart -ge 0) -and ($fnEnd -gt $fnStart)) 'VerifyOnce slice located'
+$fnTxt = $vTxt.Substring($fnStart, $fnEnd - $fnStart)
+Assert (($fnTxt.IndexOf('/health') -ge 0) -and ($fnTxt.IndexOf('/health') -lt $fnTxt.IndexOf('netstat.exe'))) 'health is checked before netstat'
+$emptyThrew = $false
+try { Start-DashboardServer '' } catch { $emptyThrew = $true }
+Assert $emptyThrew 'Start-DashboardServer refuses an empty path'
+$missingThrew = $false
+try { Start-DashboardServer (Join-Path $devAuto 'no-such-launcher.vbs') } catch { $missingThrew = $true }
+Assert $missingThrew 'Start-DashboardServer refuses a missing script'
+$devRoot = Split-Path -Parent $devAuto
+foreach ($bn in @('Shirube-Manager.bat', ([string][char]0x7BA1 + [char]0x7406 + '.bat'))) {
+  $bp = Join-Path $devRoot $bn
+  Assert (Test-Path -LiteralPath $bp -PathType Leaf) ('launcher exists: ' + $bn)
+  $bt = Get-Content -LiteralPath $bp -Raw -Encoding UTF8
+  Assert (([regex]::Matches($bt, '"%PS%"')).Count -eq 1) ('one PowerShell startup: ' + $bn)
+  Assert (($bt.Contains('-EnsureRunning')) -and ($bt.Contains('-ServerScript')) -and ($bt.Contains('-WaitSec 20'))) ('launcher delegates start and wait: ' + $bn)
+  Assert ((-not $bt.Contains(':checkhealth')) -and (-not $bt.Contains(':start'))) ('old multi-step launch removed: ' + $bn)
+}
 
 if ($failures.Count -gt 0) {
   Write-Host ("FAILURES: " + ($failures -join ', '))

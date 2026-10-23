@@ -863,10 +863,19 @@ function Get-GlobalStatusResponse([string]$AutoDir, [string]$Token, [string]$Run
     }
   }
   $sync = Get-GlobalSyncState $AutoDir $Token $RunId
+  # One scheduled-task read serves both interval and enabled state.
   $iv = $null
-  try { $iv = Get-GlobalInterval } catch {}
   $en = $null
-  try { $en = Get-GlobalTaskEnabled } catch {}
+  try {
+    $t0 = (Get-GlobalScheduledTask).task
+    $en = ([string]$t0.State -cne 'Disabled')
+    foreach ($tr in @($t0.Triggers)) {
+      if ($tr.CimClass.CimClassName -ceq 'MSFT_TaskTimeTrigger') {
+        $v = Global-ParseInterval ([string]$tr.Repetition.Interval)
+        if ($v) { $iv = $v; break }
+      }
+    }
+  } catch {}
   $ghOk = $false
   try {
     $ghCfg = Get-GitHubSettings $AutoDir
@@ -2670,7 +2679,7 @@ async function afterSyncNotify(r){
   if(r && r.sync === "started"){
     const dl = Date.now() + 60000;
     await refresh(dl);
-    st = await pollUntilDone(r.syncId, 30, 2000, dl);
+    st = await pollUntilDone(r.syncId, 120, 500, dl);
     if(Date.now() < dl) await refresh(dl);
     if(st === "success") await showNotify(L("同期が成功しました"), L("同期が成功しました。ログを確認してください。"));
     else if(st === "failed") await showNotify(L("同期が失敗しました"), L("同期が失敗しました。ログを確認してください。"));
@@ -2686,20 +2695,18 @@ async function refresh(deadline){
   try{
     let t = 8000;
     if(typeof deadline === "number"){ t = Math.min(8000, deadline - Date.now()); if(t <= 0) return; }
-    const s = await api("/api/status", "GET", null, t);
+    const [s, p, st] = await Promise.all([
+      api("/api/status", "GET", null, t),
+      api("/api/projects", "GET", null, t),
+      api("/api/project-status", "GET", null, t).catch(function(){ return null; })
+    ]);
     updateSyncUI(s);
-    let t2 = 8000;
-    if(typeof deadline === "number"){ t2 = Math.min(8000, deadline - Date.now()); if(t2 <= 0) return; }
-    const p = await api("/api/projects", "GET", null, t2);
     let enMap = {};
     let stList = [];
-    try{
-      let t3 = 8000;
-      if(typeof deadline === "number"){ t3 = Math.min(8000, deadline - Date.now()); if(t3 <= 0) return; }
-      const st = await api("/api/project-status", "GET", null, t3);
+    if(st){
       stList = st.projects || [];
       stList.forEach(function(r){ enMap[r.name] = r.enabled; });
-    }catch(e){}
+    }
     const tb = document.getElementById("rows");
     let selected = new Set(), selectedStatus = new Set();
     try{ selected = selectedNamesIn("#rows input.selbox"); selectedStatus = selectedNamesIn("#statusRows input.selbox"); }catch(e){}
@@ -2933,7 +2940,7 @@ async function doPreview(pathVal){
           document.getElementById("inpPath").value = ""; lastPreview = null; const _ck = document.getElementById("ckForceReplace"); if(_ck) _ck.checked = false;
           const dl = Date.now() + 60000;
           await refresh(dl);
-          const st = await pollUntilDone(r.syncId, 30, 2000, dl);
+          const st = await pollUntilDone(r.syncId, 120, 500, dl);
           if(st === "success"){ setMsgHtml("msgReg",true,L("登録しました。同期が成功しました。ログを確認してください。")); await showNotify(L("同期が成功しました"), L("登録しました。同期が成功しました。ログを確認してください。")); }
           else if(st === "failed"){ setMsgHtml("msgReg",false,L("登録しましたが同期が失敗しました。ログを確認してください。")); await showNotify(L("同期が失敗しました"), L("登録しましたが同期が失敗しました。ログを確認してください。")); }
           else if(st === "skipped"){ setMsgHtml("msgReg",false,L("登録しましたが同期は見送られました(別の同期が実行中)。しばらくして今すぐ同期でやり直してください。")); await showNotify(L("同期は見送りです"), L("登録しましたが同期は見送られました(別の同期が実行中)。しばらくして今すぐ同期でやり直してください。")); }
@@ -3041,7 +3048,7 @@ document.getElementById("btnSync").onclick = async function(){
      unifiedGlobalRunId = gr.syncId;
     const gdl = Date.now() + 60000;
     await refreshGlobal(gdl);
-    const gst = await pollGlobalUntilDone(gr.syncId, 30, 2000, gdl);
+    const gst = await pollGlobalUntilDone(gr.syncId, 120, 500, gdl);
     if(Date.now() < gdl) await refreshGlobal(gdl);
     const globalState = gst || "unconfirmed";
     finalGlobalState = globalState;
@@ -3061,7 +3068,7 @@ document.getElementById("btnSync").onclick = async function(){
     unifiedProjectRunId = pr.syncId;
     const pdl = Date.now() + 60000;
     await refresh(pdl);
-    const pst = await pollUntilDone(pr.syncId, 30, 2000, pdl);
+    const pst = await pollUntilDone(pr.syncId, 120, 500, pdl);
     if(Date.now() < pdl) await refresh(pdl);
     const projectState = pst || "unconfirmed";
     finalProjectState = projectState;
@@ -3334,8 +3341,10 @@ document.getElementById("btnPlanSel").onclick = async function(){
     const r = await api("/api/plan-start","POST",{projectNames:names});
     const dl = Date.now() + 90000;
     let plan = null;
+    let planWait = 150;
     while(true){
-      await new Promise(function(rs){ setTimeout(rs, 2000); });
+      await new Promise(function(rs){ setTimeout(rs, planWait); });
+      planWait = 400;
       if(Date.now() >= dl) break;
       const to = Math.min(8000, dl - Date.now());
       if(to <= 0) break;
@@ -4034,7 +4043,7 @@ async function afterGlobalSyncNotify(r){
   if(r && r.sync === "started"){
     const dl = Date.now() + 60000;
     await refreshGlobal(dl);
-    st = await pollGlobalUntilDone(r.syncId, 30, 2000, dl);
+    st = await pollGlobalUntilDone(r.syncId, 120, 500, dl);
     if(Date.now() < dl) await refreshGlobal(dl);
     if(st === "success") await showNotify(L("Global同期が成功しました"), L("Global同期が成功しました。ログを確認してください。"));
     else if(st === "failed") await showNotify(L("Global同期が失敗しました"), L("Global同期が失敗しました。ログを確認してください。"));
@@ -4144,8 +4153,10 @@ document.getElementById("btnGlobalPreview").onclick = async function(){
     const r = await api("/api/global-preview-start","POST",{targetNames:sel});
     const dl = Date.now() + 90000;
     let plan = null;
+    let planWait = 150;
     while(true){
-      await new Promise(function(rs){ setTimeout(rs, 2000); });
+      await new Promise(function(rs){ setTimeout(rs, planWait); });
+      planWait = 400;
       if(Date.now() >= dl) break;
       const to = Math.min(8000, dl - Date.now());
       if(to <= 0) break;

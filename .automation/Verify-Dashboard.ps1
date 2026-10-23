@@ -1,11 +1,13 @@
-# Verify-Dashboard.ps1 - bat helper: prove 127.0.0.1:PORT owner is our AutoDir dashboard before token use.
+﻿# Verify-Dashboard.ps1 - bat helper: prove 127.0.0.1:PORT owner is our AutoDir dashboard before token use.
 # No new deps: PS5.1 + netstat + Invoke-WebRequest only. Exit 0=verified, 1=mismatch.
 # r4: HttpListener uses HTTP.sys, so LISTENING owner is PID 4 (System), not the server PID.
 # Do not compare every netstat line (client ESTABLISHED lines are foreign PIDs by design).
 # Instead: LISTENING must exist with PID 4 or our PID; health instance nonce (unpredictable
 # GUID in state) must match. Session token is never sent here.
 # Optional cold-start wait: -WaitSec > 0 polls in-process (no repeated PS startup).
-param([string]$AutoDir = '', [int]$Port = 18721, [int]$WaitSec = 0, [int]$PollMs = 250)
+# -EnsureRunning: with -ServerScript, start the dashboard when verification fails
+# and wait for it, so the launcher needs one PowerShell startup instead of three.
+param([string]$AutoDir = '', [int]$Port = 18721, [int]$WaitSec = 0, [int]$PollMs = 80, [switch]$EnsureRunning, [string]$ServerScript = '')
 $ErrorActionPreference = 'Stop'
 
 # Existing installs keep the pre-rename tree; fresh installs use Shirube.
@@ -36,6 +38,12 @@ function Test-VerifyOnce {
     $pst = ''
     try { $pst = $proc.StartTime.ToString('yyyy-MM-dd HH:mm:ss') } catch { Write-Host 'NG: starttime'; return 1 }
     if ($pst -cne [string]$st.startTime) { Write-Host 'NG: pid reused (starttime mismatch)'; return 1 }
+    # Health first: a live, identity-matching server answers without netstat I/O.
+    $h = $null
+    try { $h = Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 ("http://127.0.0.1:" + $Port + "/health") } catch { Write-Host 'NG: health unreachable'; return 1 }
+    if ($h.StatusCode -ne 200) { Write-Host 'NG: health not 200'; return 1 }
+    $hj = $h.Content | ConvertFrom-Json
+    if (($hj.instance -cne [string]$st.instance) -or ([int]$hj.port -ne [int]$Port) -or ([int]$hj.pid -ne $spid)) { Write-Host 'NG: health identity mismatch'; return 1 }
     $netstat = Join-Path $env:SystemRoot 'System32\netstat.exe'
     if (-not (Test-Path -LiteralPath $netstat)) { Write-Host 'NG: netstat absolute missing'; return 1 }
     $ns = & $netstat -ano -p TCP 2>$null | Out-String
@@ -52,20 +60,15 @@ function Test-VerifyOnce {
     }
     if ($foreignListen) { Write-Host 'NG: foreign listener on port'; return 1 }
     if (-not $foundListen) { Write-Host 'NG: tcp listener missing'; return 1 }
-    $h = $null
-    try { $h = Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 ("http://127.0.0.1:" + $Port + "/health") } catch { Write-Host 'NG: health unreachable'; return 1 }
-    if ($h.StatusCode -ne 200) { Write-Host 'NG: health not 200'; return 1 }
-    $hj = $h.Content | ConvertFrom-Json
-    if (($hj.instance -cne [string]$st.instance) -or ([int]$hj.port -ne [int]$Port) -or ([int]$hj.pid -ne $spid)) { Write-Host 'NG: health identity mismatch'; return 1 }
     Write-Host 'OK: verified'
     return 0
   } catch { Write-Host ('NG: ' + $_.Exception.Message); return 1 }
 }
 
 function Wait-Verify {
-  param([string]$AutoDir = '', [int]$Port = 18721, [int]$WaitSec = 0, [int]$PollMs = 250)
+  param([string]$AutoDir = '', [int]$Port = 18721, [int]$WaitSec = 0, [int]$PollMs = 80)
   if ($WaitSec -le 0) { return (Test-VerifyOnce) }
-  if ($PollMs -le 0) { $PollMs = 250 }
+  if ($PollMs -le 0) { $PollMs = 80 }
   $deadline = (Get-Date).AddSeconds($WaitSec)
   $ad = if ($AutoDir) { $AutoDir } else { Get-DefaultAutoDir }
   # expose to Test-VerifyOnce (which reads script/caller scope)
@@ -106,15 +109,36 @@ function Wait-Verify {
   return 1
 }
 
+# Starts the dashboard through the fixed Windows Script Host path, matching the
+# launcher. Only the explicit -ServerScript value is used; no CWD lookup.
+function Start-DashboardServer([string]$Script) {
+  if ($Script -eq '') { throw 'ServerScript が未指定です。' }
+  if (-not (Test-Path -LiteralPath $Script -PathType Leaf)) { throw ('起動スクリプトが見つかりません: ' + $Script) }
+  $ws = Join-Path $env:SystemRoot 'System32\wscript.exe'
+  if (-not (Test-Path -LiteralPath $ws)) { throw 'wscript.exe が見つかりません。' }
+  $p = Start-Process -FilePath $ws -ArgumentList @('//B', '//Nologo', $Script) -WindowStyle Hidden -PassThru
+  try { [void]$p } catch {}
+}
+
 # aliases for test convenience
 Set-Alias -Name Invoke-VerifyWait -Value Wait-Verify -Scope Script
 Set-Alias -Name Test-VerifyWait -Value Wait-Verify -Scope Script
 
 if ($MyInvocation.InvocationName -ne '.') {
-  if ($WaitSec -le 0) {
+  $rc = 1
+  if ($EnsureRunning) {
     $rc = Test-VerifyOnce
-    exit $rc
+    if ($rc -ne 0) {
+      try { Start-DashboardServer $ServerScript }
+      catch { Write-Host ('NG: ' + $_.Exception.Message); exit 1 }
+      $wait = 20
+      if ($WaitSec -gt 0) { $wait = $WaitSec }
+      $rc = Wait-Verify -AutoDir $AutoDir -Port $Port -WaitSec $wait -PollMs $PollMs
+    }
+  } elseif ($WaitSec -le 0) {
+    $rc = Test-VerifyOnce
+  } else {
+    $rc = Wait-Verify -AutoDir $AutoDir -Port $Port -WaitSec $WaitSec -PollMs $PollMs
   }
-  $rc = Wait-Verify -AutoDir $AutoDir -Port $Port -WaitSec $WaitSec -PollMs $PollMs
   exit $rc
 }

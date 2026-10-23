@@ -147,14 +147,20 @@ function Remove-GitHubToken([string]$AutoDir) {
 # DPAPI (CurrentUser): only this Windows account can decrypt the stored blob.
 function Get-GitHubToken([string]$AutoDir) {
   $f = Get-GitHubTokenPath $AutoDir
-  if (-not (Test-Path -LiteralPath $f -PathType Leaf)) { return '' }
+  if (-not (Test-Path -LiteralPath $f -PathType Leaf)) { $script:GitHubSavedTokenCache = $null; return '' }
+  $stamp = ''
+  try { $stamp = [string](Get-Item -LiteralPath $f).LastWriteTimeUtc.Ticks } catch { $stamp = '' }
+  $c = $script:GitHubSavedTokenCache
+  if ($c -and ($stamp -ne '') -and ($c.path -ceq $f) -and ($c.stamp -ceq $stamp)) { return [string]$c.value }
   try {
     $enc = (Get-Content -LiteralPath $f -Raw -Encoding UTF8).Trim()
     if ($enc -eq '') { return '' }
     $sec = ConvertTo-SecureString -String $enc
     $b = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec)
-    try { return [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($b) }
+    try { $v = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($b) }
     finally { [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($b) }
+    if ($stamp -ne '') { $script:GitHubSavedTokenCache = @{ path = $f; stamp = $stamp; value = $v } }
+    return $v
   }
   catch { return '' }
 }
@@ -162,17 +168,28 @@ function Get-GitHubToken([string]$AutoDir) {
 function Get-GitHubSyncToken([string]$AutoDir) {
   $t = Get-GitHubToken $AutoDir
   if ($t -ne '') { return $t }
+  # Status polls hit this per request; spawning gh each time dominates latency.
+  $c = $script:GitHubCliTokenCache
+  if ($c) {
+    $ttl = 300
+    if ($c.value -eq '') { $ttl = 30 }
+    if (((Get-Date) - $c.at).TotalSeconds -lt $ttl) { return [string]$c.value }
+  }
   $g = Get-Command 'gh' -ErrorAction SilentlyContinue
-  if (-not $g) { return '' }
+  if (-not $g) { $script:GitHubCliTokenCache = @{ at = (Get-Date); value = '' }; return '' }
   $prev = $ErrorActionPreference
   $ErrorActionPreference = 'SilentlyContinue'
   try {
     $out = (& $g.Source auth token 2>$null | Out-String).Trim()
     $code = $LASTEXITCODE
-    if (($code -eq 0) -and ($out -ne '')) { return $out }
+    if (($code -eq 0) -and ($out -ne '')) {
+      $script:GitHubCliTokenCache = @{ at = (Get-Date); value = $out }
+      return $out
+    }
   }
   catch {}
   finally { $ErrorActionPreference = $prev }
+  $script:GitHubCliTokenCache = @{ at = (Get-Date); value = '' }
   return ''
 }
 function Get-GitHubTokenSource([string]$AutoDir) {

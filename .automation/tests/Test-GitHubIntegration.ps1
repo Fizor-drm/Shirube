@@ -15,6 +15,8 @@ $auto = Join-Path $base '.automation'
 $gPrev = Join-Path $base 'global-preview'
 $pPrev = Join-Path $base 'project-common-preview'
 New-Item -ItemType Directory -Force -Path $auto, $gPrev, $pPrev | Out-Null
+$bareDir = Join-Path $base 'bare-rules'
+New-Item -ItemType Directory -Force -Path $bareDir | Out-Null
 
 # Fake configs shaped like the deployed preview dirs.
 $cfgHead = '{' + "`n" + '  "$schema": "https://github.com/dyoshikawa/rulesync/releases/latest/download/config-schema.json",' + "`n" + '  "targets": ["codexcli", "opencode"],' + "`n" + '  "features": ["rules"],' + "`n" + '  "outputRoots": ["output"],' + "`n" + '  "delete": false,' + "`n" + '  "global": false,' + "`n" + '  "sources": [' + "`n"
@@ -113,6 +115,13 @@ try {
   Assert (-not $raw.Contains($tok)) 'T4 token file holds no plain text'
   Assert ((Get-GitHubToken $auto) -ceq $tok) 'T4 token round-trip'
   Assert ((Get-GitHubTokenSource $auto) -ceq 'saved') 'T4 source reports saved token'
+  $tok2 = 'ghp_' + ('B' * 36)
+  Save-GitHubToken $auto $tok2 | Out-Null
+  Assert ((Get-GitHubToken $auto) -ceq $tok2) 'T4b cached saved token follows a rewritten token file'
+  Save-GitHubToken $auto $tok | Out-Null
+  $script:GitHubCliTokenCache = @{ at = (Get-Date); value = 'cli-cached-value' }
+  Assert ((Get-GitHubSyncToken $bareDir) -ceq 'cli-cached-value') 'T4b fresh CLI token cache avoids spawning gh again'
+  $script:GitHubCliTokenCache = $null
 
   # T5: frontmatter targets edit (one-line array only).
   $r1 = Update-GitHubTargetsText $ruleGlobal @('codexcli', 'antigravity-cli')
@@ -166,8 +175,6 @@ try {
   Assert (-not (Test-GitHubRuleFrontmatter ('body' + $nl + '---' + $nl + 'root: true' + $nl + 'targets: ["pi"]' + $nl + '---' + $nl) 'global')) 'T6b leading text rejected'
 
   # T6c: read and write one rule file through the shared helpers.
-  $bareDir = Join-Path $base 'bare-rules'
-  New-Item -ItemType Directory -Force -Path $bareDir | Out-Null
   Save-GitHubSettings $auto 'Fizor-drm/ai-agent-rules' 'dev' 'rules' | Out-Null
   $script:GhFiles = @{}
   $script:GhFiles['https://api.github.com/repos/Fizor-drm/ai-agent-rules/contents/rules/global.md'] = @{ sha = 'sha-global'; content = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($ruleGlobal)) }
@@ -223,6 +230,8 @@ try {
   Assert ($server.Contains('Read-Body $req 262144')) 'T9 rule editor accepts the 256KB body'
   Assert ($server.Contains("Open-GlobalSyncLock `$AutoDir") -and $server.Contains("'Sync-ProjectRules.lock'")) 'T9 rule save honors both sync locks'
   Assert ($server.Contains('id="rulesGate"') -and $server.Contains('id="ruleText"') -and $server.Contains('class="rules-grid"')) 'T9 rule editor screen exists'
+  $ghm = Get-Content -LiteralPath (Join-Path $devAuto 'GitHub-Management.ps1') -Raw -Encoding UTF8
+  Assert (($ghm.Contains('GitHubCliTokenCache')) -and ($ghm.Contains('GitHubSavedTokenCache'))) 'T9 token lookups are cached'
   Assert ($server.Contains('Update-GitHubRuleTargets $AutoDir $tgNew')) 'T9 target save hooks the GitHub update'
   Assert ($server.Contains('id="btnGitHub"') -and $server.Contains('id="ghOvl"') -and $server.Contains('id="ghToken"')) 'T9 topbar button and dialog exist'
   Assert ($server.Contains('href="https://github.com/settings/personal-access-tokens/new"')) 'T9 token creation link exists'
