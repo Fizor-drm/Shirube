@@ -862,12 +862,19 @@ function Get-GlobalStatusResponse([string]$AutoDir, [string]$Token, [string]$Run
   try { $iv = Get-GlobalInterval } catch {}
   $en = $null
   try { $en = Get-GlobalTaskEnabled } catch {}
+  $ghOk = $false
+  try {
+    $ghCfg = Get-GitHubSettings $AutoDir
+    if (([string]$ghCfg.repo -ne '') -and ([string]$ghCfg.branch -ne '')) {
+      $ghOk = ((Get-GitHubTokenSource $AutoDir) -ne '')
+    }
+  } catch { $ghOk = $false }
   return @{
     homeBase = $homeBase; targets = $tg; providers = $rows; available = $available
     running = $sync.running; syncState = $sync.syncState; syncAt = $sync.syncAt; syncId = $sync.syncId
     logName = $sync.logName; logMtime = $sync.logMtime; finalLine = $sync.finalLine; tail = $sync.tail
     resultExit = $sync.resultExit; resultAt = $sync.resultAt
-    intervalMinutes = $iv; taskEnabled = $en
+    intervalMinutes = $iv; taskEnabled = $en; githubConfigured = [bool]$ghOk
     instance = $script:InstanceId; port = (Get-DashboardPort)
   }
 }
@@ -1108,6 +1115,10 @@ input[type=number]{width:120px;background:#0a0a0a;border:1px solid #2c2c2c;color
 #gsettings .gs-switch[aria-checked=true]{background:var(--gs-accent);border-color:var(--gs-accent)}
 #gsettings .gs-switch[aria-checked=true]::after{transform:translateX(20px);background:var(--gs-on-accent)}
 #gsettings .gs-switch:disabled{cursor:not-allowed}
+#gsettings .gs-ghost:disabled{opacity:.45;cursor:not-allowed;background:none}
+#gsettings .gs-provider input:disabled{cursor:not-allowed}
+#gsettings .gs-provider input:disabled + .gs-card{opacity:.5;cursor:not-allowed}
+#gsettings .gs-provider:hover input:disabled + .gs-card{background:var(--gs-card)}
 #gsettings .gs-interval{display:flex;align-items:center;gap:8px;margin-top:16px;flex-wrap:wrap}
 #gsettings .gs-interval label{color:var(--gs-muted);font-size:13px}
 #gsettings .gs-interval input{width:72px}
@@ -1221,8 +1232,8 @@ input[type=number]{width:120px;background:#0a0a0a;border:1px solid #2c2c2c;color
 <p class="muted" data-i18n="配る対象の選択・自動同期の間隔と有効/無効を変えます。更新前バックアップと復元は「バックアップ」画面で行います。">配る対象の選択・自動同期の間隔と有効/無効を変えます。更新前バックアップと復元は「バックアップ」画面で行います。</p>
 <div class="gs-toolbar">
 <span id="globalTargetsCount" class="gs-count" aria-live="polite"></span>
-<button id="btnGlobalTargetsAll" class="gs-ghost" data-i18n="すべて選択">すべて選択</button>
-<button id="btnGlobalTargetsNone" class="gs-ghost" data-i18n="すべて解除">すべて解除</button>
+<button id="btnGlobalTargetsAll" class="gs-ghost" disabled data-i18n="すべて選択">すべて選択</button>
+<button id="btnGlobalTargetsNone" class="gs-ghost" disabled data-i18n="すべて解除">すべて解除</button>
 </div>
 <div id="globalTargetsList" class="gs-grid" role="group" aria-label="配る対象" data-i18n-aria="配る対象"></div>
 <div class="gs-saverow">
@@ -1794,6 +1805,7 @@ const I18N = {
     "未確認です。今回の実行結果がまだありません。": "Unconfirmed. This run has no result yet.",
     "未実行": "Not run",
     "未保存の変更があります": "You have unsaved changes.",
+    "GitHubと連携すると対象を選択できます": "Connect to GitHub to select targets",
     "未設定": "Not set",
     "無効": "Disabled",
     "無効にしました（次回同期は対象外）。": "Disabled (excluded from the next sync).",
@@ -2221,6 +2233,7 @@ const I18N = {
     "未確認です。今回の実行結果がまだありません。": "未确认。本次执行尚无结果。",
     "未実行": "未执行",
     "未保存の変更があります": "有未保存的更改",
+    "GitHubと連携すると対象を選択できます": "连接 GitHub 后即可选择目标",
     "未設定": "未设置",
     "無効": "禁用",
     "無効にしました（次回同期は対象外）。": "已禁用（下次同步不在范围内）。",
@@ -3787,18 +3800,36 @@ function globalTargetCheckboxes(){
 function globalTargetsDirtyNow(){
   return globalSelectedTargets().slice().sort().join("|") !== globalSavedTargets.slice().sort().join("|");
 }
+function globalTargetsLockedByGitHub(){
+  return !(currentGlobalStatus && currentGlobalStatus.githubConfigured === true);
+}
 function renderGlobalTargetsUI(){
   const total = (GLOBAL_CATALOG || []).length;
   const selected = globalSelectedTargets().length;
+  const ghLocked = globalTargetsLockedByGitHub();
   try{ document.getElementById("globalTargetsCount").textContent = L("{selected} / {total} 件を選択中", {selected:selected, total:total}); }catch(e1){}
   try{
+    const cs = globalTargetCheckboxes();
+    for(let i=0;i<cs.length;i++) cs[i].disabled = ghLocked;
+  }catch(e0){}
+  try{
+    document.getElementById("btnGlobalTargetsAll").disabled = ghLocked;
+    document.getElementById("btnGlobalTargetsNone").disabled = ghLocked;
+  }catch(e4){}
+  try{
     const d = document.getElementById("globalTargetsDirty");
-    d.textContent = globalTargetsDirty ? L("未保存の変更があります") : "";
-    if(globalTargetsDirty) d.classList.add("on"); else d.classList.remove("on");
+    if(ghLocked){
+      d.textContent = L("GitHubと連携すると対象を選択できます");
+      d.classList.remove("on");
+    } else {
+      d.textContent = globalTargetsDirty ? L("未保存の変更があります") : "";
+      if(globalTargetsDirty) d.classList.add("on"); else d.classList.remove("on");
+    }
   }catch(e2){}
-  try{ document.getElementById("btnGlobalTargets").disabled = !globalTargetsDirty || selected === 0 || globalTargetsSaving; }catch(e3){}
+  try{ document.getElementById("btnGlobalTargets").disabled = ghLocked || !globalTargetsDirty || selected === 0 || globalTargetsSaving; }catch(e3){}
 }
 function globalTargetsSetAll(on){
+  if(globalTargetsLockedByGitHub()) return;
   const cs = globalTargetCheckboxes();
   for(let i=0;i<cs.length;i++) cs[i].checked = !!on;
   markGlobalTargetsDirty();
@@ -3832,6 +3863,10 @@ try{
   if(box) box.addEventListener("change", function(ev){
     const t = ev && ev.target;
     if(!t || t.type !== "checkbox") return;
+    if(globalTargetsLockedByGitHub()){
+      t.checked = globalSavedTargets.indexOf(t.value) >= 0;
+      return;
+    }
     markGlobalTargetsDirty();
   });
 }catch(eT1){}
@@ -4045,6 +4080,7 @@ document.getElementById("btnGlobalTargetsNone").onclick = function(){ globalTarg
 document.getElementById("btnGlobalTargets").onclick = async function(){
   const b = document.getElementById("btnGlobalTargets");
   if(globalTargetsSaving) return;
+  if(globalTargetsLockedByGitHub()) return;
   const tg = globalSelectedTargets();
   if(tg.length === 0){ setMsg("msgGlobalTargets", L("対象は一覧から1つ以上選んでください。"), false); return; }
   if(!globalTargetsDirty) return;
@@ -4053,7 +4089,8 @@ document.getElementById("btnGlobalTargets").onclick = async function(){
   try{
     const names = confirmed.map(globalProviderLabel);
     const okGo = await showConfirm(L("対象の変更"), L("配る対象を「{targets}」に変更します。よろしいですか。", {targets:names.join(L("・"))}), L("変更する"), L("やめる"));
-    if(!okGo){ return; }
+    // A status poll can close the GitHub lock while the dialog is open.
+    if(!okGo || globalTargetsLockedByGitHub()){ return; }
     const tr = await api("/api/global-targets-set","POST",{targets:confirmed, confirm:true});
     // The successful POST is newer than every status GET already in flight.
     globalTargetsAppliedSeq = ++globalStatusRequestSeq;
@@ -4410,6 +4447,7 @@ async function ghSave(ev){
     ghEl("ghToken").value = "";
     ghState.tokenSource = r.tokenSource || "";
     ghSetStatus(L("保存しました。") + " " + String(r.repo || repo) + "@" + String(r.branch || branch), "ok");
+    try{ if(currentGlobalStatus && r && r.repo && r.hasToken){ currentGlobalStatus.githubConfigured = true; renderGlobalTargetsUI(); } }catch(e1){}
     try{ if(typeof refreshGlobal === "function") await refreshGlobal(); }catch(e2){}
   }catch(e){ ghSetStatus(e.message, "err"); }
   finally{

@@ -124,7 +124,7 @@ function makeElement(tag) {
   return el;
 }
 
-function harness() {
+function harness(opts) {
   const elements = new Map();
   function byId(id) {
     if (!elements.has(id)) elements.set(id, makeElement('div'));
@@ -156,7 +156,7 @@ function harness() {
     statusGetGate: null, statusGetError: null, statusSnapshotAtStart: false,
     enabledGet: { enabled: true }, enabledGetError: null, enabledSetError: null,
     intervalSetError: null,
-    globalStatus: { providers: [], targets: ['codexcli', 'opencode'], syncState: 'idle', intervalMinutes: 15, taskEnabled: true },
+    globalStatus: { providers: [], targets: ['codexcli', 'opencode'], syncState: 'idle', intervalMinutes: 15, taskEnabled: true, githubConfigured: true },
     lastTargetsBody: null
   };
   const context = vm.createContext({
@@ -240,6 +240,10 @@ function harness() {
     'globalTargetsSaving:globalTargetsSaving,globalEnabledInflight:globalEnabledInflight,' +
     'lastGlobalPlan:lastGlobalPlan};';
   vm.runInContext(code, context);
+  if (!(opts && opts.uninitializedStatus)) {
+    context.currentGlobalStatus = JSON.parse(JSON.stringify(model.globalStatus));
+    context.__gs.renderGlobalTargetsUI();
+  }
   const checks = () => {
     const out = [];
     const visit = n => {
@@ -265,8 +269,8 @@ test('Global settings markup exposes the card list, toolbar, save state and swit
   const html = sectionHtml();
   must(/<div id="globalTargetsList" class="gs-grid" role="group"/.test(html), 'card grid with group role');
   must(/id="globalTargetsCount"[^>]*aria-live="polite"/.test(html), 'translated live count');
-  must(/id="btnGlobalTargetsAll"[^>]*data-i18n="すべて選択"/.test(html), 'select all');
-  must(/id="btnGlobalTargetsNone"[^>]*data-i18n="すべて解除"/.test(html), 'clear all');
+  must(/id="btnGlobalTargetsAll"[^>]*disabled[^>]*data-i18n="すべて選択"/.test(html), 'select all starts disabled');
+  must(/id="btnGlobalTargetsNone"[^>]*disabled[^>]*data-i18n="すべて解除"/.test(html), 'clear all starts disabled');
   must(/id="btnGlobalTargets"[^>]*disabled/.test(html), 'save starts disabled');
   must(/id="globalTargetsDirty"[^>]*role="status"/.test(html), 'dirty status');
   must(/id="btnGlobalEnabled"[^>]*role="switch"[^>]*aria-checked="false"/.test(html), 'real accessible switch');
@@ -396,7 +400,7 @@ test('dirty selection survives status polls and locale rerenders; clean polls ad
   h.checkFor('pi').checked = true;
   h.gs.markGlobalTargetsDirty();
   must(h.state().dirty === true, 'unsaved pi selection is dirty');
-  h.gs.updateGlobalUI({ providers: [], targets: ['codexcli', 'opencode'], syncState: 'idle', intervalMinutes: 15, taskEnabled: true });
+  h.gs.updateGlobalUI({ providers: [], targets: ['codexcli', 'opencode'], syncState: 'idle', intervalMinutes: 15, taskEnabled: true, githubConfigured: true });
   must(h.state().selected.join('|') === 'pi', 'poll does not clobber unsaved selection');
   must(h.state().saved.join('|') === 'codexcli|opencode', 'poll does not move the saved baseline while dirty');
   must(h.checkFor('pi').checked === true, 'pi stays checked after poll');
@@ -414,7 +418,7 @@ test('dirty selection survives status polls and locale rerenders; clean polls ad
   h.checkFor('pi').checked = false;
   h.gs.markGlobalTargetsDirty();
   must(h.state().dirty === false, 'revert after locale change clears dirty');
-  h.gs.updateGlobalUI({ providers: [], targets: ['pi'], syncState: 'idle', intervalMinutes: 15, taskEnabled: true });
+  h.gs.updateGlobalUI({ providers: [], targets: ['pi'], syncState: 'idle', intervalMinutes: 15, taskEnabled: true, githubConfigured: true });
   must(h.state().saved.join('|') === 'pi', 'clean poll adopts server saved selection');
   must(h.checkFor('pi').checked === true && h.checkFor('codexcli').checked === false, 'clean poll updates selection');
   must(h.state().dirty === false && h.byId('btnGlobalTargets').disabled === true, 'clean poll keeps save disabled');
@@ -447,7 +451,7 @@ await testAsync('explicit reload adopts the saved selection only after a success
   h.checkFor('claudecode').checked = false;
   h.checkFor('qoder').checked = true;
   h.gs.markGlobalTargetsDirty();
-  h.gs.updateGlobalUI({ providers: [], targets: ['codexcli'], syncState: 'idle', intervalMinutes: 15, taskEnabled: true });
+  h.gs.updateGlobalUI({ providers: [], targets: ['codexcli'], syncState: 'idle', intervalMinutes: 15, taskEnabled: true, githubConfigured: true });
   must(h.state().selected.join('|') === 'qoder|pi', 'normal poll keeps editing after a reload');
   h.gs.renderGlobalTargetsUI();
   must(h.checkFor('qoder').checked === true && h.checkFor('claudecode').checked === false, 'locale rerender keeps editing after a reload');
@@ -497,7 +501,7 @@ await testAsync('an interval edit made while reload is pending survives while ta
   must(h.state().saved.join('|') === 'claudecode|pi', 'untouched targets adopt the response');
   must(h.state().selected.join('|') === 'claudecode|pi', 'untouched checkboxes follow the response');
   must(h.state().dirty === false, 'adopted targets clear dirty');
-  h.gs.updateGlobalUI({ providers: [], targets: ['claudecode', 'pi'], syncState: 'idle', intervalMinutes: 30, taskEnabled: true });
+  h.gs.updateGlobalUI({ providers: [], targets: ['claudecode', 'pi'], syncState: 'idle', intervalMinutes: 30, taskEnabled: true, githubConfigured: true });
   must(String(input.value) === '45', 'a later poll keeps the unsaved interval');
 });
 
@@ -829,7 +833,7 @@ await testAsync('background status during an in-flight save never overwrites a r
   h.checkFor('opencode').checked = true;
   h.gs.markGlobalTargetsDirty();
   must(h.state().dirty === false, 'revert to the saved selection looks clean');
-  h.gs.updateGlobalUI({ providers: [], targets: ['codexcli'], syncState: 'idle', intervalMinutes: 15, taskEnabled: true });
+  h.gs.updateGlobalUI({ providers: [], targets: ['codexcli'], syncState: 'idle', intervalMinutes: 15, taskEnabled: true, githubConfigured: true });
   must(h.state().selected.join('|') === 'codexcli|opencode', 'status poll does not overwrite the reverted selection');
   must(h.checkFor('opencode').checked === true, 'status poll does not uncheck the reverted provider');
   must(h.state().saved.join('|') === 'codexcli|opencode', 'status poll does not move the saved baseline while saving');
@@ -952,13 +956,13 @@ await testAsync('save cancel, deferred failure and repeated clicks preserve the 
 // --- automatic sync switch ----------------------------------------------
 await testAsync('switch reports known state, stays disabled when unknown and never fakes a toggle', async () => {
   const h = harness();
-  h.context.currentGlobalStatus = { providers: [], targets: ['codexcli', 'opencode'], syncState: 'idle', intervalMinutes: 15, taskEnabled: true };
+  h.context.currentGlobalStatus = { providers: [], targets: ['codexcli', 'opencode'], syncState: 'idle', intervalMinutes: 15, taskEnabled: true, githubConfigured: true };
   h.gs.renderGlobalStatus();
   const sw = h.byId('btnGlobalEnabled');
   must(sw.getAttribute('aria-checked') === 'true' && sw.disabled === false, 'enabled state reflected');
   must(/有効/.test(sw.getAttribute('aria-label')), 'switch name includes the current state');
   must(h.byId('globalSyncPill').className.indexOf('on') >= 0, 'enabled pill');
-  h.context.currentGlobalStatus = { providers: [], targets: ['codexcli', 'opencode'], syncState: 'idle', intervalMinutes: 15, taskEnabled: null };
+  h.context.currentGlobalStatus = { providers: [], targets: ['codexcli', 'opencode'], syncState: 'idle', intervalMinutes: 15, taskEnabled: null, githubConfigured: true };
   h.gs.renderGlobalStatus();
   must(sw.getAttribute('aria-checked') === 'false' && sw.disabled === true, 'unknown state is never shown as on');
   must(/状態不明/.test(sw.getAttribute('aria-label')), 'unknown state is named');
@@ -966,7 +970,7 @@ await testAsync('switch reports known state, stays disabled when unknown and nev
   const before = h.model.calls.length;
   sw.onclick();
   must(h.model.calls.length === before, 'unknown switch is not actionable');
-  h.context.currentGlobalStatus = { providers: [], targets: ['codexcli', 'opencode'], syncState: 'idle', intervalMinutes: 15, taskEnabled: false };
+  h.context.currentGlobalStatus = { providers: [], targets: ['codexcli', 'opencode'], syncState: 'idle', intervalMinutes: 15, taskEnabled: false, githubConfigured: true };
   h.gs.renderGlobalStatus();
   must(sw.getAttribute('aria-checked') === 'false' && sw.disabled === false, 'paused state reflected');
   must(/休止中/.test(h.byId('globalEnabledState').textContent), 'paused pill text');
@@ -974,7 +978,7 @@ await testAsync('switch reports known state, stays disabled when unknown and nev
 
 await testAsync('confirmed enable flow toggles only after success; cancel and errors keep the old state', async () => {
   const h = harness();
-  h.context.currentGlobalStatus = { providers: [], targets: ['codexcli', 'opencode'], syncState: 'idle', intervalMinutes: 15, taskEnabled: true };
+  h.context.currentGlobalStatus = { providers: [], targets: ['codexcli', 'opencode'], syncState: 'idle', intervalMinutes: 15, taskEnabled: true, githubConfigured: true };
   h.gs.renderGlobalStatus();
   const sw = h.byId('btnGlobalEnabled');
   h.model.confirm = false;
@@ -998,7 +1002,7 @@ await testAsync('confirmed enable flow toggles only after success; cancel and er
 
 await testAsync('switch shows in-flight lock and releases it on cancel', async () => {
   const h = harness();
-  h.context.currentGlobalStatus = { providers: [], targets: ['codexcli', 'opencode'], syncState: 'idle', intervalMinutes: 15, taskEnabled: true };
+  h.context.currentGlobalStatus = { providers: [], targets: ['codexcli', 'opencode'], syncState: 'idle', intervalMinutes: 15, taskEnabled: true, githubConfigured: true };
   h.gs.renderGlobalStatus();
   const sw = h.byId('btnGlobalEnabled');
   let resolveConfirm;
@@ -1034,6 +1038,64 @@ await testAsync('interval controls validate the real 5..1440 range and never app
   await btn.onclick();
   must(h.model.calls.filter(c => c.ep === '/api/global-interval-set').length === 2, '1440 minutes applied');
   must(h.model.calls.filter(c => c.ep === '/api/global-interval-set')[1].body.minutes === 1440, 'actual 1440-minute value sent');
+});
+
+// --- GitHub link gate -----------------------------------------------------
+await testAsync('GitHub未連携時は対象の選択と保存をロックし、連携後は解除する', async () => {
+  const assertLocked = (h, label) => {
+    const cs = h.checks();
+    must(cs.length === 18, label + ': 18 target checkboxes rendered, got ' + cs.length);
+    must(cs.every(c => c.disabled === true), label + ': all checkboxes disabled');
+    must(h.byId('btnGlobalTargetsAll').disabled === true, label + ': select-all disabled');
+    must(h.byId('btnGlobalTargetsNone').disabled === true, label + ': clear-all disabled');
+    must(h.byId('btnGlobalTargets').disabled === true, label + ': save disabled');
+    must(h.byId('globalTargetsDirty').textContent === 'GitHubと連携すると対象を選択できます', label + ': GitHub hint replaces the dirty text');
+    must(h.byId('globalTargetsDirty').className.indexOf('on') < 0, label + ': hint is not styled as a dirty change');
+  };
+  const assertClicksIgnored = async (h, label) => {
+    h.byId('btnGlobalTargetsAll').onclick();
+    h.byId('btnGlobalTargetsNone').onclick();
+    await h.byId('btnGlobalTargets').onclick();
+    must(h.state().selected.join('|') === 'codexcli|opencode', label + ': locked buttons never change the selection');
+    must(h.model.calls.filter(c => c.ep === '/api/global-targets-set').length === 0, label + ': locked save never posts');
+  };
+
+  // Fail closed before /api/global-status resolves: no status yet means locked.
+  const h0 = harness({ uninitializedStatus: true });
+  must(h0.context.currentGlobalStatus == null, 'status starts uninitialized');
+  assertLocked(h0, 'pre-status');
+  await assertClicksIgnored(h0, 'pre-status');
+  // A failed initial status GET must not open the lock either.
+  h0.model.statusGetError = new Error('initial status failed');
+  await h0.context.refreshGlobal();
+  must(h0.context.currentGlobalStatus == null, 'failed status keeps the lock closed');
+  assertLocked(h0, 'failed status');
+  await assertClicksIgnored(h0, 'failed status');
+
+  const h = harness();
+  h.gs.updateGlobalUI({ providers: [], targets: ['codexcli', 'opencode'], syncState: 'idle', intervalMinutes: 15, taskEnabled: true, githubConfigured: false });
+  const cs = h.checks();
+  assertLocked(h, 'github off');
+  await assertClicksIgnored(h, 'github off');
+
+  h.gs.updateGlobalUI({ providers: [], targets: ['codexcli', 'opencode'], syncState: 'idle', intervalMinutes: 15, taskEnabled: true, githubConfigured: true });
+  must(cs.every(c => c.disabled === false), 'checkboxes unlocked once GitHub is configured');
+  must(h.byId('btnGlobalTargetsAll').disabled === false, 'select-all unlocked');
+  must(h.byId('btnGlobalTargetsNone').disabled === false, 'clear-all unlocked');
+  h.byId('btnGlobalTargetsAll').onclick();
+  must(h.state().selected.length === 18, 'select-all works again: ' + h.state().selected.length);
+
+  // A status poll can close the GitHub lock while the confirm dialog is open.
+  let resolveConfirm;
+  h.context.showConfirm = () => new Promise(resolve => { resolveConfirm = resolve; });
+  const pendingSave = h.byId('btnGlobalTargets').onclick();
+  await new Promise(resolve => setTimeout(resolve, 0));
+  h.gs.updateGlobalUI({ providers: [], targets: ['codexcli', 'opencode'], syncState: 'idle', intervalMinutes: 15, taskEnabled: true, githubConfigured: false });
+  resolveConfirm(true);
+  await pendingSave;
+  must(h.model.calls.filter(c => c.ep === '/api/global-targets-set').length === 0, 'race: confirming after the lock closes never posts');
+  must(h.state().saving === false, 'race: saving released');
+  must(h.byId('btnGlobalTargets').disabled === true, 'race: save stays disabled');
 });
 
 console.log(failures.length ? 'FAILURES: ' + failures.join('; ') : 'ALL GLOBAL SETTINGS DESIGN CHECKS PASSED');
