@@ -190,6 +190,8 @@ try {
   Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + 'description: common' + $nl + '---' + $nl) 'project')) 'T6b unquoted description rejected'
   # YAML requires a space after a mapping colon; `description:"x"` breaks the real parser at sync time.
   Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + 'description:"common"' + $nl + '---' + $nl) 'project')) 'T6b description without space after colon rejected'
+  Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root:true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + '---' + $nl) 'project')) 'T6b root without space after colon rejected'
+  Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets:["codexcli", "opencode"]' + $nl + '---' + $nl) 'project')) 'T6b targets without space after colon rejected'
   # An unescaped inner quote passes a greedy ".*" but is invalid YAML.
   Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + 'description: "say "hello" to everyone"' + $nl + '---' + $nl) 'project')) 'T6b unescaped quote in description rejected'
   Assert (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + 'description: "say \"hello\" to everyone"' + $nl + '---' + $nl) 'project') 'T6b escaped quote in description accepted'
@@ -235,6 +237,17 @@ try {
   $invalid = Save-GitHubRuleContent $auto 'global' 'no frontmatter' 'sha-global'
   Assert (-not $invalid.ok) 'T6c invalid frontmatter refused before commit'
   Assert (@($script:GhCalls | Where-Object { $_.method -ne 'GET' }).Count -eq 0) 'T6c invalid frontmatter never commits'
+
+  # A missing space after the colon is invalid YAML and would break the next sync.
+  foreach ($case in @(
+    @{ name = 'root without space after the colon'; text = ('---' + $nl + 'root:true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + '---' + $nl) },
+    @{ name = 'targets without space after the colon'; text = ('---' + $nl + 'root: true' + $nl + 'targets:["codexcli", "opencode"]' + $nl + '---' + $nl) }
+  )) {
+    $script:GhCalls = @()
+    $noSpace = Save-GitHubRuleContent $auto 'project' ([string]$case.text) 'sha-project'
+    Assert (-not $noSpace.ok) ('T6c ' + $case.name + ' refused before commit')
+    Assert (@($script:GhCalls | Where-Object { $_.method -ne 'GET' }).Count -eq 0) ('T6c ' + $case.name + ' never commits')
+  }
 
   $ruleGlobalWild = ('---' + $nl + 'root: true' + $nl + 'targets: ["*"]' + $nl + '---' + $nl + '# global body' + $nl)
   foreach ($case in @(@{ name = 'without targets'; text = $ruleGlobalBare }, @{ name = 'with a wildcard target'; text = $ruleGlobalWild })) {

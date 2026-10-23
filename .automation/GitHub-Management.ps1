@@ -430,11 +430,11 @@ function Test-GitHubRuleFrontmatter([string]$Text, [string]$Kind) {
     if ($ln -match '^[ \t]*$') { continue }
     if ($ln -match '^[ \t]') { return $false }
     if ($ln -match ':\s*[|>]\s*(#.*)?$') { return $false }
-    if ($ln -match '^root\s*:\s*true\s*(#.*)?$') { $rootHits++; continue }
+    if ($ln -match '^root\s*:[ \t]+true\s*(#.*)?$') { $rootHits++; continue }
     if ($ln -match '^root\s*:') { return $false }
     if ($ln -match '^localRoot\s*:') { return $false }
     # Same contract as Sync-ProjectRules.ps1:126.
-    if ($ln -cmatch '^targets\s*:\s*\[(\s*"[a-z0-9][a-z0-9-]*"(?:\s*,\s*"[a-z0-9][a-z0-9-]*")*\s*)\]\s*(#.*)?$') {
+    if ($ln -cmatch '^targets\s*:[ \t]+\[(\s*"[a-z0-9][a-z0-9-]*"(?:\s*,\s*"[a-z0-9][a-z0-9-]*")*\s*)\]\s*(#.*)?$') {
       $seenTargets++
       if ($seenTargets -gt 1) { return $false }
       foreach ($tm in [regex]::Matches([string]$Matches[1], '"([a-z0-9][a-z0-9-]*)"')) {
@@ -448,7 +448,7 @@ function Test-GitHubRuleFrontmatter([string]$Text, [string]$Kind) {
       }
       continue
     }
-    if ($ln -cmatch '^targets\s*:\s*\[\s*"\*"\s*\]\s*(#.*)?$') {
+    if ($ln -cmatch '^targets\s*:[ \t]+\[\s*"\*"\s*\]\s*(#.*)?$') {
       $seenTargets++
       if ($seenTargets -gt 1) { return $false }
       if ($proj) { return $false }
