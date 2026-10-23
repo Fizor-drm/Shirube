@@ -407,6 +407,26 @@ function Set-GitHubFile([string]$AutoDir, [string]$RelPath, [string]$Text, [stri
   return @{ ok = $true; sha = $newSha; path = $rel }
 }
 
+# rulesync 32.0.0 ToolTarget enum (dist/index.d.ts). A target outside this list
+# (for example `claude-code`; the canonical slug is `claudecode`) makes the
+# pinned CLI reject the rule, so the editor refuses it before the PUT.
+# shortcut: pinned to 32.0.0; refresh when rulesyncVersion moves past 32.
+$script:GitHubRuleTargets = @(
+  'agentsmd', 'agentsskills', 'aiassistant', 'amp',
+  'antigravity-cli', 'antigravity-ide', 'antigravity-plugin',
+  'augmentcode', 'augmentcode-legacy', 'augmentcode-plugin', 'bob',
+  'claudecode', 'claudecode-legacy', 'claudecode-plugin', 'cline',
+  'codebuddy', 'codebuff', 'codewhale', 'codexcli', 'commandcode',
+  'continue', 'copilot', 'copilotcli', 'cortexcode', 'crush', 'cursor',
+  'deepagents', 'devin', 'devin-plugin', 'dsh', 'factorydroid',
+  'gitlabduo', 'goose', 'grokcli', 'hermesagent', 'junie', 'kilo',
+  'kimi-code', 'kimi-code-plugin', 'kiro', 'kiro-cli', 'kiro-ide',
+  'lettacode', 'mimocode', 'musecode', 'omp', 'openclaw', 'opencode',
+  'pi', 'pool', 'qoder', 'qwencode', 'reasonix', 'replit', 'roo',
+  'rovodev', 'tabnine', 'takt', 'trae', 'vibe', 'vibe-plugin', 'warp',
+  'warpcli', 'zcode', 'zcode-plugin', 'zed', 'zoocode'
+)
+
 # Rule editor frontmatter contract: the same strict line gate as
 # Sync-ProjectRules.ps1 Test-FrontmatterFlag. root: true exactly once, no
 # localRoot mix, one-line targets array with double-quoted lowercase slugs and
@@ -443,6 +463,7 @@ function Test-GitHubRuleFrontmatter([string]$Text, [string]$Kind) {
       foreach ($tm in [regex]::Matches([string]$Matches[1], '"([a-z0-9][a-z0-9-]*)"')) {
         $v = [string]$tm.Groups[1].Value
         if ($items -ccontains $v) { return $false }
+        if ($script:GitHubRuleTargets -cnotcontains $v) { return $false }
         $items += $v
       }
       if ($proj) {
@@ -491,7 +512,7 @@ function Save-GitHubRuleContent([string]$AutoDir, [string]$Kind, [string]$Text, 
   $k = [string]$Kind
   if (($k -cne 'project') -and ($k -cne 'global')) { return @{ ok = $false; error = '種別が不正です。' } }
   if (-not (Test-GitHubRuleFrontmatter ([string]$Text) $k)) {
-    return @{ ok = $false; error = 'frontmatter が不正です（root: true、1行の targets 配列（global は省略可）、小文字スラッグ、重複なしが必要です）。' }
+    return @{ ok = $false; error = 'frontmatter が不正です（root: true、1行の targets 配列（global は省略可）、rulesync が対応するターゲット、重複なしが必要です）。' }
   }
   $originConflict = @{ ok = $false; conflict = $true; error = 'GitHub連携設定（リポジトリ／ブランチ／パス）が変更されたため保存できません。再取得してください。' }
   if (-not (Test-GitHubRuleSaveOrigin $AutoDir $k $ExpectedRepo $ExpectedBranch $ExpectedPath)) { return $originConflict }
