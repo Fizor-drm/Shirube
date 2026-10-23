@@ -1127,8 +1127,8 @@ function rulesHarness() {
   byId('selRuleKind').value = 'project';
   const model = {
     calls: [], confirm: true, onConfirm: null, loadError: null, saveError: null, getGate: null,
-    get: { ok: true, kind: 'project', path: 'rules/project.md', sha: 'sha-1', text: 'text-1', redacted: false },
-    saveR: { ok: true, sha: 'sha-2', path: 'rules/project.md', kind: 'project' }
+    get: { ok: true, kind: 'project', path: 'rules/project.md', repo: 'Fizor-drm/Shirube', branch: 'main', sha: 'sha-1', text: 'text-1', redacted: false },
+    saveR: { ok: true, sha: 'sha-2', path: 'rules/project.md', repo: 'Fizor-drm/Shirube', branch: 'main', kind: 'project' }
   };
   const context = vm.createContext({
     document: { getElementById: byId, querySelectorAll() { return []; }, querySelector() { return null; } },
@@ -1143,7 +1143,7 @@ function rulesHarness() {
       d.textContent = msg;
       d.okFlag = !!okFlag;
     },
-    showConfirm: async () => { if (model.onConfirm) model.onConfirm(); return model.confirm; },
+    showConfirm: async () => { if (model.onConfirm) await model.onConfirm(); return model.confirm; },
     api: async (ep, method, body) => {
       model.calls.push({ ep, method, body });
       if (ep === '/api/github-rule-get') {
@@ -1189,13 +1189,26 @@ await testAsync('rule load stores the sha and save posts the edited text with it
   must(h.byId('ruleText').value === 'text-1', 'fetched text rendered');
   must(h.byId('btnRuleSave').disabled === false, 'save enabled after load');
   must(/sha-1/.test(h.byId('ruleMeta').textContent), 'meta shows the loaded sha');
+  must(/Fizor-drm\/Shirube@main/.test(h.byId('ruleMeta').textContent), 'meta shows the loaded repo and branch');
+  must(h.r.state().repo === 'Fizor-drm/Shirube' && h.r.state().branch === 'main' && h.r.state().path === 'rules/project.md', 'load pins the origin');
 
   h.byId('ruleText').value = 'edited';
   await h.r.ruleSave();
   const post = h.model.calls[1];
   must(post.ep === '/api/github-rule-save' && post.body.text === 'edited' && post.body.sha === 'sha-1', 'save posts text and read sha');
+  must(post.body.repo === 'Fizor-drm/Shirube' && post.body.branch === 'main' && post.body.path === 'rules/project.md', 'save posts the pinned origin');
   must(h.r.state().sha === 'sha-2', 'new sha adopted');
   must(/sha-2/.test(h.byId('ruleMeta').textContent), 'meta refreshed after save');
+});
+
+await testAsync('a reload that moves the rule origin during confirmation aborts the save', async () => {
+  const h = rulesHarness();
+  h.context.currentGlobalStatus = { githubConfigured: true };
+  await h.r.ruleLoad();
+  h.model.get = { ok: true, kind: 'project', path: 'other/project.md', repo: 'other/repo', branch: 'dev', sha: 'sha-1', text: 'text-1', redacted: false };
+  h.model.onConfirm = async () => { await h.r.ruleLoad(); };
+  await h.r.ruleSave();
+  must(h.model.calls.filter(c => c.ep === '/api/github-rule-save').length === 0, 'origin change during confirm never saves');
 });
 
 await testAsync('changing the kind invalidates the loaded rule before saving', async () => {

@@ -345,6 +345,17 @@ function Get-GitHubRuleRelPath([string]$RulesPath, [string]$Name) {
   return ($p + '/' + $Name + '.md')
 }
 
+# Binds a save to the origin the editor loaded from, so changing the GitHub
+# settings mid-edit can never commit into another repository, branch, or path.
+function Test-GitHubRuleSaveOrigin([string]$AutoDir, [string]$Kind, [string]$Repo, [string]$Branch, [string]$Path) {
+  $s = Get-GitHubSettings $AutoDir
+  $rel = Get-GitHubRuleRelPath ([string]$s.rulesPath) $Kind
+  if (([string]$Repo -ne '') -and ([string]$s.repo -cne [string]$Repo)) { return $false }
+  if (([string]$Branch -ne '') -and ([string]$s.branch -cne [string]$Branch)) { return $false }
+  if (([string]$Path -ne '') -and ($rel -cne [string]$Path)) { return $false }
+  return $true
+}
+
 # Reads one file from the configured branch. Fails closed when the integration
 # or token is missing, so callers never reach the API unconfigured.
 function Get-GitHubFile([string]$AutoDir, [string]$RelPath) {
@@ -393,57 +404,65 @@ function Set-GitHubFile([string]$AutoDir, [string]$RelPath, [string]$Text, [stri
   return @{ ok = $true; sha = $newSha; path = $rel }
 }
 
-# Rule editor frontmatter contract: root: true, one-line targets array,
-# lowercase slugs, no duplicates. project.md must keep both base targets;
-# global.md may omit targets (all targets) or use the ["*"] wildcard.
+# Rule editor frontmatter contract: the same strict line gate as
+# Sync-ProjectRules.ps1 Test-FrontmatterFlag. root: true exactly once, no
+# localRoot mix, one-line targets array with double-quoted lowercase slugs and
+# no duplicates, at most one double-quoted description, no unknown keys.
+# project.md must keep both base targets; global.md may omit targets (all
+# targets) or use the ["*"] wildcard.
 function Test-GitHubRuleFrontmatter([string]$Text, [string]$Kind) {
   $src = [string]$Text
   if ($src.Length -eq 0) { return $false }
   if ([System.Text.Encoding]::UTF8.GetByteCount($src) -gt 262144) { return $false }
   if ($src[0] -eq [char]0xFEFF) { $src = $src.Substring(1) }
-  $lines = @($src -split "`r?`n")
-  if (($lines.Count -lt 3) -or ($lines[0].Trim() -ne '---')) { return $false }
-  $close = -1
-  for ($i = 1; $i -lt $lines.Count; $i++) {
-    if ($lines[$i].Trim() -eq '---') { $close = $i; break }
-  }
-  if ($close -lt 0) { return $false }
-  $rootOk = $false
-  $targetsSeen = 0
-  $wildcard = $false
+  $norm = $src -replace "`r`n", "`n"
+  $norm = $norm -replace "`r", "`n"
+  if ($norm -notmatch '\A---[ \t]*\n') { return $false }
+  $m = [regex]::Match($norm, '\A---[ \t]*\n(.*?)\n---[ \t]*(?:\n|\Z)', [System.Text.RegularExpressions.RegexOptions]::Singleline)
+  if (-not $m.Success) { return $false }
+  $proj = ([string]$Kind -ceq 'project')
+  $rootHits = 0
+  $seenTargets = 0
+  $seenDesc = 0
   $items = @()
-  for ($i = 1; $i -lt $close; $i++) {
-    $ln = $lines[$i]
-    if ($ln -match '^\s*root\s*:\s*(.+?)\s*$') {
-      if ($Matches[1] -ceq 'true') { $rootOk = $true }
+  $wildcard = $false
+  foreach ($ln in ($m.Groups[1].Value -split "`n")) {
+    if ($ln -match '^[ \t]*$') { continue }
+    if ($ln -match '^[ \t]') { return $false }
+    if ($ln -match ':\s*[|>]\s*(#.*)?$') { return $false }
+    if ($ln -match '^root\s*:\s*true\s*(#.*)?$') { $rootHits++; continue }
+    if ($ln -match '^root\s*:') { return $false }
+    if ($ln -match '^localRoot\s*:') { return $false }
+    # Same contract as Sync-ProjectRules.ps1:126.
+    if ($ln -cmatch '^targets\s*:\s*\[(\s*"[a-z0-9][a-z0-9-]*"(?:\s*,\s*"[a-z0-9][a-z0-9-]*")*\s*)\]\s*(#.*)?$') {
+      $seenTargets++
+      if ($seenTargets -gt 1) { return $false }
+      foreach ($tm in [regex]::Matches([string]$Matches[1], '"([a-z0-9][a-z0-9-]*)"')) {
+        $v = [string]$tm.Groups[1].Value
+        if ($items -ccontains $v) { return $false }
+        $items += $v
+      }
+      if ($proj) {
+        if (-not ($items -ccontains 'codexcli')) { return $false }
+        if (-not ($items -ccontains 'opencode')) { return $false }
+      }
       continue
     }
-    if ($ln -match '^\s*targets\s*:') {
-      $targetsSeen++
-      if ($targetsSeen -gt 1) { return $false }
-      # Same contract as Sync-ProjectRules.ps1: double-quoted lowercase slugs.
-      if ($ln -cmatch '^targets\s*:\s*\[(\s*"[a-z0-9][a-z0-9-]*"(?:\s*,\s*"[a-z0-9][a-z0-9-]*")*\s*)\]\s*(#.*)?$') {
-        foreach ($m in [regex]::Matches([string]$Matches[1], '"([a-z0-9][a-z0-9-]*)"')) {
-          $v = [string]$m.Groups[1].Value
-          if ($items -ccontains $v) { return $false }
-          $items += $v
-        }
-      } elseif ($ln -cmatch '^targets\s*:\s*\[\s*"\*"\s*\]\s*(#.*)?$') {
-        $wildcard = $true
-      } else { return $false }
+    if ($ln -cmatch '^targets\s*:\s*\[\s*"\*"\s*\]\s*(#.*)?$') {
+      $seenTargets++
+      if ($seenTargets -gt 1) { return $false }
+      if ($proj) { return $false }
+      $wildcard = $true
+      continue
     }
+    if ($ln -match '^targets\s*:') { return $false }
+    if ($ln -match '^description\s*:\s*".*"\s*(#.*)?$') { $seenDesc++; if ($seenDesc -gt 1) { return $false }; continue }
+    if ($ln -match '^description\s*:') { return $false }
+    return $false
   }
-  if (-not $rootOk) { return $false }
-  if ([string]$Kind -ceq 'project') {
-    if (($targetsSeen -ne 1) -or $wildcard) { return $false }
-    if (-not ($items -ccontains 'codexcli')) { return $false }
-    if (-not ($items -ccontains 'opencode')) { return $false }
-    return $true
-  }
-  # global.md: no targets line means every target; otherwise a wildcard or slugs.
-  if ($targetsSeen -eq 0) { return $true }
-  if ($wildcard) { return $true }
-  return ($items.Count -gt 0)
+  if ($rootHits -ne 1) { return $false }
+  if ($proj -and (($seenTargets -ne 1) -or $wildcard)) { return $false }
+  return $true
 }
 
 function Get-GitHubRuleContent([string]$AutoDir, [string]$Kind) {
@@ -457,25 +476,32 @@ function Get-GitHubRuleContent([string]$AutoDir, [string]$Kind) {
   $r = Get-GitHubFile $AutoDir $rel
   if (-not $r.ok) { return $r }
   $r['kind'] = $k
+  $r['repo'] = [string]$s.repo
+  $r['branch'] = [string]$s.branch
   return $r
 }
 
-function Save-GitHubRuleContent([string]$AutoDir, [string]$Kind, [string]$Text, [string]$ExpectedSha) {
+function Save-GitHubRuleContent([string]$AutoDir, [string]$Kind, [string]$Text, [string]$ExpectedSha, [string]$ExpectedRepo = '', [string]$ExpectedBranch = '', [string]$ExpectedPath = '') {
   $k = [string]$Kind
   if (($k -cne 'project') -and ($k -cne 'global')) { return @{ ok = $false; error = '種別が不正です。' } }
   if (-not (Test-GitHubRuleFrontmatter ([string]$Text) $k)) {
     return @{ ok = $false; error = 'frontmatter が不正です（root: true、1行の targets 配列（global は省略可）、小文字スラッグ、重複なしが必要です）。' }
   }
+  $originConflict = @{ ok = $false; conflict = $true; error = 'GitHub連携設定（リポジトリ／ブランチ／パス）が変更されたため保存できません。再取得してください。' }
+  if (-not (Test-GitHubRuleSaveOrigin $AutoDir $k $ExpectedRepo $ExpectedBranch $ExpectedPath)) { return $originConflict }
   $cur = Get-GitHubRuleContent $AutoDir $k
   if (-not $cur.ok) { return $cur }
   if ([string]$cur.sha -cne [string]$ExpectedSha) {
     return @{ ok = $false; conflict = $true; sha = [string]$cur.sha; error = '他の変更と競合しました（409）。再取得してください。' }
   }
+  # Re-check after the fetch: a settings change during the request must not
+  # retarget the commit that Set-GitHubFile resolves from the current settings.
+  if (-not (Test-GitHubRuleSaveOrigin $AutoDir $k $ExpectedRepo $ExpectedBranch $ExpectedPath)) { return $originConflict }
   $s = Get-GitHubSettings $AutoDir
   $rel = Get-GitHubRuleRelPath ([string]$s.rulesPath) $k
   $put = Set-GitHubFile $AutoDir $rel ([string]$Text) ([string]$ExpectedSha) ('chore: update ' + $k + ' rule')
   if (-not $put.ok) { return $put }
-  return @{ ok = $true; sha = [string]$put.sha; path = $rel; kind = $k }
+  return @{ ok = $true; sha = [string]$put.sha; path = $rel; kind = $k; repo = [string]$s.repo; branch = [string]$s.branch }
 }
 
 # Adds the selected targets to global.md and project.md in the source repo and

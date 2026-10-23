@@ -55,7 +55,7 @@ try {
   . (Join-Path $devAuto 'GitHub-Management.ps1')
 
   $nl = "`n"
-  $ruleGlobal = ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli"]' + $nl + 'description: global' + $nl + '---' + $nl + '# global body' + $nl)
+  $ruleGlobal = ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli"]' + $nl + 'description: "global"' + $nl + '---' + $nl + '# global body' + $nl)
   $ruleProject = ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "antigravity-cli"]' + $nl + '---' + $nl + '# project body' + $nl)
 
   # T1: validation and normalization.
@@ -175,7 +175,7 @@ try {
   Assert (-not (Test-GitHubRuleFrontmatter ('body' + $nl + '---' + $nl + 'root: true' + $nl + 'targets: ["pi"]' + $nl + '---' + $nl) 'global')) 'T6b leading text rejected'
   # README standard: global.md may omit targets (all targets implied by root: true)
   # or use the ["*"] wildcard.
-  $ruleGlobalBare = ('---' + $nl + 'root: true' + $nl + 'description: global' + $nl + '---' + $nl + '# global body' + $nl)
+  $ruleGlobalBare = ('---' + $nl + 'root: true' + $nl + 'description: "global"' + $nl + '---' + $nl + '# global body' + $nl)
   Assert (Test-GitHubRuleFrontmatter $ruleGlobalBare 'global') 'T6b global without targets accepted'
   Assert (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["*"]' + $nl + '---' + $nl) 'global') 'T6b global wildcard target accepted'
   Assert (-not (Test-GitHubRuleFrontmatter $ruleGlobalBare 'project')) 'T6b project still requires targets'
@@ -186,6 +186,11 @@ try {
   Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codex_cli", "opencode"]' + $nl + '---' + $nl) 'global')) 'T6b underscore slug rejected'
   Assert (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode"] # base' + $nl + '---' + $nl) 'project') 'T6b trailing comment accepted'
   Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + '  targets: ["pi"]' + $nl + '---' + $nl) 'global')) 'T6b indented targets rejected'
+  Assert (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + 'description: "common"' + $nl + '---' + $nl) 'project') 'T6b quoted description accepted'
+  Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + 'description: common' + $nl + '---' + $nl) 'project')) 'T6b unquoted description rejected'
+  Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + '---' + $nl) 'project')) 'T6b duplicate root rejected'
+  Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'localRoot: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + '---' + $nl) 'project')) 'T6b root/localRoot mix rejected'
+  Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'foo: bar' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + '---' + $nl) 'project')) 'T6b unknown frontmatter key rejected'
 
   # T6c: read and write one rule file through the shared helpers.
   Save-GitHubSettings $auto 'Fizor-drm/ai-agent-rules' 'dev' 'rules' | Out-Null
@@ -194,6 +199,7 @@ try {
   $script:GhFiles['https://api.github.com/repos/Fizor-drm/ai-agent-rules/contents/rules/project.md'] = @{ sha = 'sha-project'; content = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($ruleProject)) }
   $got = Get-GitHubRuleContent $auto 'global'
   Assert ($got.ok -and ($got.sha -ceq 'sha-global') -and ($got.path -ceq 'rules/global.md')) 'T6c get returns sha and path'
+  Assert (($got.repo -ceq 'Fizor-drm/ai-agent-rules') -and ($got.branch -ceq 'dev')) 'T6c get returns the fetched origin'
   Assert ($got.text.Contains('# global body')) 'T6c get returns raw text'
   $missingKind = Get-GitHubRuleContent $auto 'other'
   Assert (-not $missingKind.ok) 'T6c unknown kind refused'
@@ -230,6 +236,21 @@ try {
     Assert ($gSent -ceq [string]$case.text) ('T6c saved global rule ' + $case.name + ' keeps its text')
   }
 
+  # T6d: a save is bound to the origin it was loaded from.
+  foreach ($bad in @(
+    @{ name = 'repository'; repo = 'other/repo'; branch = 'dev'; path = 'rules/global.md' },
+    @{ name = 'branch'; repo = 'Fizor-drm/ai-agent-rules'; branch = 'other'; path = 'rules/global.md' },
+    @{ name = 'path'; repo = 'Fizor-drm/ai-agent-rules'; branch = 'dev'; path = 'other/global.md' }
+  )) {
+    $script:GhCalls = @()
+    $badSave = Save-GitHubRuleContent $auto 'global' $ruleGlobal 'sha-global' ([string]$bad.repo) ([string]$bad.branch) ([string]$bad.path)
+    Assert ((-not $badSave.ok) -and $badSave.conflict) ('T6d save into another ' + $bad.name + ' is refused')
+    Assert (@($script:GhCalls).Count -eq 0) ('T6d refused ' + $bad.name + ' change never touches GitHub')
+  }
+  $script:GhCalls = @()
+  $pinned = Save-GitHubRuleContent $auto 'global' $ruleGlobal 'sha-global' 'Fizor-drm/ai-agent-rules' 'dev' 'rules/global.md'
+  Assert ($pinned.ok -and ($pinned.repo -ceq 'Fizor-drm/ai-agent-rules') -and ($pinned.branch -ceq 'dev')) 'T6d matching origin saves'
+
   # T7: a write failure is reported, does not throw, and leaks no token.
   $script:GhFailWrites = $true
   $script:GhCalls = @()
@@ -257,6 +278,7 @@ try {
   $ghm = Get-Content -LiteralPath (Join-Path $devAuto 'GitHub-Management.ps1') -Raw -Encoding UTF8
   Assert (($ghm.Contains('GitHubCliTokenCache')) -and ($ghm.Contains('GitHubSavedTokenCache'))) 'T9 token lookups are cached'
   Assert ($server.Contains('Update-GitHubRuleTargets $AutoDir $tgNew')) 'T9 target save hooks the GitHub update'
+  Assert ($server.Contains('Save-GitHubRuleContent $AutoDir $gk ([string]$body.text) ([string]$body.sha) $expRepo $expBranch $expPath')) 'T9 rule save forwards the loaded origin'
   Assert ($server.Contains('id="btnGitHub"') -and $server.Contains('id="ghOvl"') -and $server.Contains('id="ghToken"')) 'T9 topbar button and dialog exist'
   Assert ($server.Contains('href="https://github.com/settings/personal-access-tokens/new"')) 'T9 token creation link exists'
   Assert ($server.Contains('class="ghsecret"') -and $server.Contains('id="ghEyeOn"') -and $server.Contains('id="ghEyeOff"')) 'T9 inside-field token visibility toggle exists'
@@ -273,8 +295,44 @@ try {
   $sp = Get-Content -LiteralPath (Join-Path $devAuto 'Sync-ProjectRules.ps1') -Raw -Encoding UTF8
   Assert ($sg.Contains('Get-GitHubSyncToken') -and $sp.Contains('Get-GitHubSyncToken')) 'T9 both syncs prefer the stored token'
 
+  # T9b: the save endpoint answers 409 when the origin changed after loading.
+  $origPort = $env:DASHBOARD_PORT
+  $origAutoDirEnv = $env:DASHBOARD_AUTODIR
+  $env:DASHBOARD_PORT = '18801'
+  $env:DASHBOARD_AUTODIR = $auto
+  $srv = $null
+  try {
+    $srv = Start-Process -FilePath 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe' -ArgumentList '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $devAuto 'Dashboard-Server.ps1') -WindowStyle Hidden -PassThru
+    $up2 = $false
+    for ($i = 0; $i -lt 40; $i++) {
+      Start-Sleep -Milliseconds 250
+      try { if ((Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 'http://127.0.0.1:18801/health').StatusCode -eq 200) { $up2 = $true; break } } catch {}
+      if ($srv.HasExited) { break }
+    }
+    Assert ($up2) 'T9b scratch dashboard responds'
+    if ($up2) {
+      $dtok = (Get-Content -LiteralPath (Join-Path $auto 'dashboard.token') -Raw -Encoding UTF8).Trim()
+      $hdr = @{ 'X-Dashboard-Token' = $dtok }
+      foreach ($badOrigin in @(
+        @{ name = 'repository'; repo = 'other/repo'; branch = 'dev'; path = 'rules/global.md' },
+        @{ name = 'branch'; repo = 'Fizor-drm/ai-agent-rules'; branch = 'other'; path = 'rules/global.md' },
+        @{ name = 'path'; repo = 'Fizor-drm/ai-agent-rules'; branch = 'dev'; path = 'other/global.md' }
+      )) {
+        $code = 0
+        try {
+          Invoke-WebRequest -UseBasicParsing -TimeoutSec 5 -Method POST -Headers $hdr -ContentType 'application/json' -Body (@{ kind = 'global'; text = $ruleGlobal; sha = 'sha-global'; repo = [string]$badOrigin.repo; branch = [string]$badOrigin.branch; path = [string]$badOrigin.path } | ConvertTo-Json -Compress) -Uri 'http://127.0.0.1:18801/api/github-rule-save' | Out-Null
+        } catch { $code = $_.Exception.Response.StatusCode.value__ }
+        Assert ($code -eq 409) ('T9b save with a changed ' + $badOrigin.name + ' is a 409')
+      }
+    }
+  } finally {
+    if ($srv -and (-not $srv.HasExited)) { try { Stop-Process -Id $srv.Id -Force } catch {} }
+    $env:DASHBOARD_PORT = $origPort
+    $env:DASHBOARD_AUTODIR = $origAutoDirEnv
+  }
+
   # T10: no leftover plaintext token or settings in the test tree.
-  $leak = @(Get-ChildItem -LiteralPath $base -Recurse -File | Where-Object { (Get-Content -LiteralPath $_.FullName -Raw -Encoding UTF8).Contains($tok) })
+  $leak = @(Get-ChildItem -LiteralPath $base -Recurse -File | Where-Object { $c = Get-Content -LiteralPath $_.FullName -Raw -Encoding UTF8; ($null -ne $c) -and ([string]$c).Contains($tok) })
   Assert ($leak.Count -eq 0) 'T10 no token written outside the DPAPI file'
 }
 finally {

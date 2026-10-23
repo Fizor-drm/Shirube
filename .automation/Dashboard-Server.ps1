@@ -3982,7 +3982,8 @@ function ruleKind(){
 function renderRuleMeta(r){
   const p = document.getElementById("ruleMeta");
   if(!p) return;
-  p.textContent = L("取得元: {path}（SHA {sha}）", {path:(r && r.path ? r.path : ""), sha:(r && r.sha ? String(r.sha).slice(0,12) : "-")});
+  const origin = (r && r.repo) ? (" — " + String(r.repo) + "@" + String(r.branch || "")) : "";
+  p.textContent = L("取得元: {path}（SHA {sha}）", {path:(r && r.path ? r.path : ""), sha:(r && r.sha ? String(r.sha).slice(0,12) : "-")}) + origin;
 }
 async function ruleLoad(){
   if(ruleBusy) return;
@@ -3993,7 +3994,7 @@ async function ruleLoad(){
   try{
     const kind = ruleKind();
     const r = await api("/api/github-rule-get", "POST", {kind:kind}, 30000);
-    ruleLoaded = {kind:kind, sha:String(r.sha || "")};
+    ruleLoaded = {kind:kind, sha:String(r.sha || ""), repo:String(r.repo || ""), branch:String(r.branch || ""), path:String(r.path || "")};
     document.getElementById("ruleText").value = String(r.text || "");
     renderRuleMeta(r);
     if(r.redacted) setMsg("msgRule", L("伏字表示中の内容はそのまま保存できません。再取得しても伏字のままの場合、そのまま保存しないでください。"), false);
@@ -4007,13 +4008,16 @@ async function ruleSave(){
   if(!ruleLoaded){ setMsg("msgRule", L("先に取得してください。"), false); return; }
   const targetKind = ruleLoaded.kind;
   const targetSha = ruleLoaded.sha;
+  const targetRepo = ruleLoaded.repo;
+  const targetBranch = ruleLoaded.branch;
+  const targetPath = ruleLoaded.path;
   const targetText = document.getElementById("ruleText").value;
   if(ruleKind() !== targetKind){ ruleLoaded = null; renderRulesLock(); setMsg("msgRule", L("種別が変わりました。先に取得してください。"), false); return; }
   const okGo = await showConfirm(L("保存の確認"), L("{kind} をGitHubへ保存します。よろしいですか。", {kind:(targetKind === "global" ? "global.md" : "project.md")}), L("保存する"), L("やめる"));
   if(!okGo) return;
   if(ruleBusy){ renderRulesLock(); setMsg("msgRule", L("読込中です。完了してから保存してください。"), false); return; }
   if(rulesLockedByGitHub()){ renderRulesLock(); setMsg("msgRule", L("GitHub連携が未設定のため保存できません。"), false); return; }
-  if(!ruleLoaded || ruleLoaded.kind !== targetKind || ruleLoaded.sha !== targetSha){
+  if(!ruleLoaded || ruleLoaded.kind !== targetKind || ruleLoaded.sha !== targetSha || ruleLoaded.repo !== targetRepo || ruleLoaded.branch !== targetBranch || ruleLoaded.path !== targetPath){
     renderRulesLock();
     setMsg("msgRule", L("内容が更新されました。取得し直してから保存してください。"), false);
     return;
@@ -4022,8 +4026,8 @@ async function ruleSave(){
   renderRulesLock();
   setMsg("msgRule", L("保存しています…"), true);
   try{
-    const r = await api("/api/github-rule-save", "POST", {kind:targetKind, text:targetText, sha:targetSha}, 30000);
-    ruleLoaded = {kind:targetKind, sha:String(r.sha || "")};
+    const r = await api("/api/github-rule-save", "POST", {kind:targetKind, text:targetText, sha:targetSha, repo:targetRepo, branch:targetBranch, path:targetPath}, 30000);
+    ruleLoaded = {kind:targetKind, sha:String(r.sha || ""), repo:String(r.repo || targetRepo), branch:String(r.branch || targetBranch), path:String(r.path || targetPath)};
     renderRuleMeta(r);
     setMsg("msgRule", L("保存しました。"), true);
   }catch(e){ setMsg("msgRule", e.message, false); }
@@ -5415,6 +5419,13 @@ function Start-Dashboard {
             Send-Json $ctx 500 @{ error = $eg }; continue
           }
           try {
+            $expRepo = [string]$body.repo
+            $expBranch = [string]$body.branch
+            $expPath = [string]$body.path
+            if (-not (Test-GitHubRuleSaveOrigin $AutoDir $gk $expRepo $expBranch $expPath)) {
+              Send-Json $ctx 409 @{ ok = $false; conflict = $true; error = 'GitHub連携設定（リポジトリ／ブランチ／パス）が変更されたため保存できません。再取得してください。' }
+              continue
+            }
             $curG = Get-GitHubRuleContent $AutoDir $gk
             if (-not $curG.ok) { Send-Json $ctx 400 @{ error = [string]$curG.error }; continue }
             $curGT = [string]$curG.text
@@ -5423,7 +5434,7 @@ function Start-Dashboard {
               Send-Json $ctx 409 @{ error = '伏字表示中の内容はそのまま保存できません。原本が変化した可能性があります。再取得してください。' }
               continue
             }
-            $gs0 = Save-GitHubRuleContent $AutoDir $gk ([string]$body.text) ([string]$body.sha)
+            $gs0 = Save-GitHubRuleContent $AutoDir $gk ([string]$body.text) ([string]$body.sha) $expRepo $expBranch $expPath
             if (-not $gs0.ok) {
               if ($gs0.conflict) { Send-Json $ctx 409 $gs0 } else { Send-Json $ctx 400 $gs0 }
               continue
