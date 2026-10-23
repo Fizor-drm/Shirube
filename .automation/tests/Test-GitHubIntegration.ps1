@@ -211,6 +211,12 @@ try {
   Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + 'description: "common"#c' + $nl + '---' + $nl) 'project')) 'T6b description comment without whitespace rejected'
   # YAML keys are case-sensitive: `Root` is not `root`, so the required key would be missing.
   Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'Root: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + '---' + $nl) 'project')) 'T6b capitalized Root key rejected'
+  # Trailing whitespace is valid YAML and must not reject an otherwise clean rule.
+  Assert (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true  ' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + '---' + $nl) 'project') 'T6b root trailing whitespace accepted'
+  Assert (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode"]  ' + $nl + '---' + $nl) 'project') 'T6b targets trailing whitespace accepted'
+  Assert (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + 'description: "common"  ' + $nl + '---' + $nl) 'project') 'T6b description trailing whitespace accepted'
+  Assert (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["*"]  ' + $nl + '---' + $nl) 'global') 'T6b wildcard trailing whitespace accepted'
+  Assert (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true  # comment  ' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + '---' + $nl) 'project') 'T6b whitespace around a comment accepted'
 
   # T6c: read and write one rule file through the shared helpers.
   Save-GitHubSettings $auto 'Fizor-drm/ai-agent-rules' 'dev' 'rules' | Out-Null

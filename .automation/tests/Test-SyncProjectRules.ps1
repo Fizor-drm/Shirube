@@ -1,4 +1,4 @@
-# Self-check for Sync-ProjectRules.ps1. Uses dummy gh/npx shims + fake preview/projects.
+﻿# Self-check for Sync-ProjectRules.ps1. Uses dummy gh/npx shims + fake preview/projects.
 # Never touches real repos, real preview, or real CLI. Dummy secrets only.
 $ErrorActionPreference = 'Stop'
 
@@ -437,6 +437,21 @@ exit /b 0
   $code = Invoke-ProjectSync
   Assert ($code -eq 0) 'T10j real-shape exits 0'
   Assert ((Get-Calls).Count -eq 3) 'T10j install+2 checks only'
+
+  # T10j2: trailing whitespace on frontmatter values is valid YAML and must pass.
+  Reset-Case @(0, 0, 0)
+  Set-Content -LiteralPath (Join-Path $preview '.rulesync\rules\.curated\project.md') "---`nroot: true  `ntargets: [`"codexcli`", `"opencode`"]  `ndescription: `"shared-desc`"  `n---`n`nshared-body" -Encoding Ascii
+  Set-Content -LiteralPath (Join-Path $projA '.rulesync\rules\project-local.md') "---`nlocalRoot: true  `ntargets: [`"codexcli`", `"opencode`"]  `n---`n`nlocal-A" -Encoding Ascii
+  $code = Invoke-ProjectSync
+  Assert ($code -eq 0) 'T10j2 trailing-whitespace exits 0'
+  Assert ((Get-Calls).Count -eq 3) 'T10j2 install+2 checks only'
+
+  # T10j3: a comment still needs whitespace before `#`.
+  Reset-Case @(0)
+  Set-Content -LiteralPath (Join-Path $preview '.rulesync\rules\.curated\project.md') "---`nroot: true#comment`ntargets: [`"codexcli`", `"opencode`"]`n---`n`nshared-body" -Encoding Ascii
+  $code = Invoke-ProjectSync
+  Assert ($code -eq 1) 'T10j3 comment without whitespace exits 1'
+  Assert ((Get-Calls).Count -eq 1) 'T10j3 only install ran'
 
   # T10k: targets appended by Update-GitHubRuleTargets (extra provider) still pass.
   Reset-Case @(0, 0, 0)

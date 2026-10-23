@@ -121,9 +121,9 @@ function Invoke-ProjectSync {
       if ($ln -match '^[ \t]*$') { continue }
       if ($ln -match '^[ \t]') { return $false }
       if ($ln -match ':\s*[|>]\s*(#.*)?$') { return $false }
-      if ($ln -cmatch ('^' + $Key + '\s*:[ \t]+true([ \t]+#.*)?$')) { $hits++; continue }
+      if ($ln -cmatch ('^' + $Key + '\s*:[ \t]+true([ \t]+#.*)?[ \t]*$')) { $hits++; continue }
       elseif ($ln -cmatch ('^' + $Key + '\s*:')) { return $false }
-      if ($ln -cmatch '^targets\s*:[ \t]+\[(\s*"[a-z0-9][a-z0-9-]*"(?:\s*,\s*"[a-z0-9][a-z0-9-]*")*\s*)\]([ \t]+#.*)?$') {
+      if ($ln -cmatch '^targets\s*:[ \t]+\[(\s*"[a-z0-9][a-z0-9-]*"(?:\s*,\s*"[a-z0-9][a-z0-9-]*")*\s*)\]([ \t]+#.*)?[ \t]*$') {
         $tItems = @([regex]::Matches($Matches[1], '"([a-z0-9][a-z0-9-]*)"') | ForEach-Object { $_.Groups[1].Value })
         if (($tItems -cnotcontains 'codexcli') -or ($tItems -cnotcontains 'opencode')) { return $false }
         if ((@($tItems | Select-Object -Unique)).Count -ne $tItems.Count) { return $false }
@@ -132,7 +132,7 @@ function Invoke-ProjectSync {
       elseif ($ln -cmatch '^targets\s*:') { return $false }
       # Only YAML 1.2 escapes: \0 \a \b \t \n \v \f \r \e \  \" \/ \\ \N \_ \L \P,
       # plus \xNN, \uNNNN, \UNNNNNNNN. A bare "\q" or "C:\Users" is refused.
-      if ($ln -cmatch '^description\s*:[ \t]+"([^"\\]|\\[0abtnvfre " /\\N_LP]|\\x[0-9a-fA-F]{2}|\\u[0-9a-fA-F]{4}|\\U[0-9a-fA-F]{8})*"([ \t]+#.*)?$') { $seenDesc++; if ($seenDesc -gt 1) { return $false }; continue }
+      if ($ln -cmatch '^description\s*:[ \t]+"([^"\\]|\\[0abtnvfre " /\\N_LP]|\\x[0-9a-fA-F]{2}|\\u[0-9a-fA-F]{4}|\\U[0-9a-fA-F]{8})*"([ \t]+#.*)?[ \t]*$') { $seenDesc++; if ($seenDesc -gt 1) { return $false }; continue }
       elseif ($ln -cmatch '^description\s*:') { return $false }
       return $false
     }
