@@ -30,6 +30,7 @@ const names = ['stateJa', 'resultJa', 'updateSyncUI', 'updateCommonSyncState',
   'globalProviderEntry', 'globalProviderLabel', 'globalLogoInitials', 'globalProviderLogo',
   'globalReloadProtectsTargets', 'globalReloadProtectsInterval',
   'renderGlobalTargetChoices', 'renderGlobalTargetsUI', 'globalTargetsDirtyNow', 'globalTargetsSetAll',
+  'globalTargetsLockedByGitHub',
   'globalTargetCheckboxes', 'markGlobalTargetsDirty', 'globalSelectedTargets', 'globalPlanIdForSelection',
   'globalSyncApplyEnabled', 'updateGlobalSyncApplyButton', 'singleSyncTerminal',
   'beginSingleSyncScope', 'finishSingleSyncScope', 'selectedNames', 'selectedNamesIn', 'planIdForSelection'];

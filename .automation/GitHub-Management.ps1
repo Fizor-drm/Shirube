@@ -328,6 +328,130 @@ function Get-GitHubRuleRelPath([string]$RulesPath, [string]$Name) {
   return ($p + '/' + $Name + '.md')
 }
 
+# Reads one file from the configured branch. Fails closed when the integration
+# or token is missing, so callers never reach the API unconfigured.
+function Get-GitHubFile([string]$AutoDir, [string]$RelPath) {
+  $s = Get-GitHubSettings $AutoDir
+  if (([string]$s.repo -eq '') -or ([string]$s.branch -eq '')) {
+    return @{ ok = $false; error = 'GitHub連携が未設定です。' }
+  }
+  $tok = Get-GitHubSyncToken $AutoDir
+  if ($tok -eq '') { return @{ ok = $false; error = 'GitHubのトークンが未設定です。' } }
+  $rel = ([string]$RelPath).TrimStart('/')
+  if ($rel -eq '') { return @{ ok = $false; error = 'ファイルの場所が不正です。' } }
+  $get = Invoke-GitHubApi $tok 'GET' ('/repos/' + [string]$s.repo + '/contents/' + $rel + '?ref=' + [uri]::EscapeDataString([string]$s.branch))
+  if (-not $get.ok) { return $get }
+  $sha = ''
+  $b64 = ''
+  try {
+    $sha = [string]$get.data.sha
+    $b64 = ([string]$get.data.content -replace '\s', '')
+  } catch {}
+  if (($sha -eq '') -or ($b64 -eq '')) { return @{ ok = $false; error = 'ファイルの内容を取得できませんでした。' } }
+  try { $text = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($b64)) }
+  catch { return @{ ok = $false; error = '内容を復号できませんでした。' } }
+  return @{ ok = $true; sha = $sha; text = $text; path = $rel }
+}
+
+# Commits text to one file. The caller passes the sha it read, so an
+# out-of-date write is rejected by GitHub (409) instead of overwriting.
+function Set-GitHubFile([string]$AutoDir, [string]$RelPath, [string]$Text, [string]$Sha, [string]$Message) {
+  $s = Get-GitHubSettings $AutoDir
+  if (([string]$s.repo -eq '') -or ([string]$s.branch -eq '')) {
+    return @{ ok = $false; error = 'GitHub連携が未設定です。' }
+  }
+  $tok = Get-GitHubSyncToken $AutoDir
+  if ($tok -eq '') { return @{ ok = $false; error = 'GitHubのトークンが未設定です。' } }
+  $rel = ([string]$RelPath).TrimStart('/')
+  if ($rel -eq '') { return @{ ok = $false; error = 'ファイルの場所が不正です。' } }
+  $put = Invoke-GitHubApi $tok 'PUT' ('/repos/' + [string]$s.repo + '/contents/' + $rel) @{
+    message = [string]$Message
+    content = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes([string]$Text))
+    sha = [string]$Sha
+    branch = [string]$s.branch
+  }
+  if (-not $put.ok) { return $put }
+  $newSha = ''
+  try { $newSha = [string]$put.data.content.sha } catch {}
+  return @{ ok = $true; sha = $newSha; path = $rel }
+}
+
+# Rule editor frontmatter contract: one-line targets array, lowercase slugs,
+# no duplicates, and root: true. project.md must keep both base targets.
+function Test-GitHubRuleFrontmatter([string]$Text, [string]$Kind) {
+  $src = [string]$Text
+  if ($src.Length -eq 0) { return $false }
+  if ([System.Text.Encoding]::UTF8.GetByteCount($src) -gt 262144) { return $false }
+  if ($src[0] -eq [char]0xFEFF) { $src = $src.Substring(1) }
+  $lines = @($src -split "`r?`n")
+  if (($lines.Count -lt 3) -or ($lines[0].Trim() -ne '---')) { return $false }
+  $close = -1
+  for ($i = 1; $i -lt $lines.Count; $i++) {
+    if ($lines[$i].Trim() -eq '---') { $close = $i; break }
+  }
+  if ($close -lt 0) { return $false }
+  $rootOk = $false
+  $targetsOk = $false
+  $items = @()
+  for ($i = 1; $i -lt $close; $i++) {
+    $ln = $lines[$i]
+    if ($ln -match '^\s*root\s*:\s*(.+?)\s*$') {
+      if ($Matches[1] -ceq 'true') { $rootOk = $true }
+      continue
+    }
+    if ($ln -match '^\s*targets\s*:') {
+      if ($ln -notmatch '^\s*targets\s*:\s*\[(.*)\]\s*$') { return $false }
+      $inner = [string]$Matches[1]
+      foreach ($m in [regex]::Matches($inner, '"([^"]*)"|''([^'']*)''|([^,\s]+)')) {
+        $v = ($m.Groups[1].Value + $m.Groups[2].Value + $m.Groups[3].Value)
+        if ($v -eq '') { continue }
+        if ($v -cnotmatch '^[a-z][a-z0-9_-]*$') { return $false }
+        if ($items -ccontains $v) { return $false }
+        $items += $v
+      }
+      $targetsOk = $true
+    }
+  }
+  if ((-not $rootOk) -or (-not $targetsOk) -or ($items.Count -eq 0)) { return $false }
+  if ([string]$Kind -ceq 'project') {
+    if (-not ($items -ccontains 'codexcli')) { return $false }
+    if (-not ($items -ccontains 'opencode')) { return $false }
+  }
+  return $true
+}
+
+function Get-GitHubRuleContent([string]$AutoDir, [string]$Kind) {
+  $k = [string]$Kind
+  if (($k -cne 'project') -and ($k -cne 'global')) { return @{ ok = $false; error = '種別が不正です。' } }
+  $s = Get-GitHubSettings $AutoDir
+  if (([string]$s.repo -eq '') -or ([string]$s.branch -eq '')) {
+    return @{ ok = $false; error = 'GitHub連携が未設定です。' }
+  }
+  $rel = Get-GitHubRuleRelPath ([string]$s.rulesPath) $k
+  $r = Get-GitHubFile $AutoDir $rel
+  if (-not $r.ok) { return $r }
+  $r['kind'] = $k
+  return $r
+}
+
+function Save-GitHubRuleContent([string]$AutoDir, [string]$Kind, [string]$Text, [string]$ExpectedSha) {
+  $k = [string]$Kind
+  if (($k -cne 'project') -and ($k -cne 'global')) { return @{ ok = $false; error = '種別が不正です。' } }
+  if (-not (Test-GitHubRuleFrontmatter ([string]$Text) $k)) {
+    return @{ ok = $false; error = 'frontmatter が不正です（root: true、1行の targets 配列、小文字スラッグ、重複なしが必要です）。' }
+  }
+  $cur = Get-GitHubRuleContent $AutoDir $k
+  if (-not $cur.ok) { return $cur }
+  if ([string]$cur.sha -cne [string]$ExpectedSha) {
+    return @{ ok = $false; conflict = $true; sha = [string]$cur.sha; error = '他の変更と競合しました（409）。再取得してください。' }
+  }
+  $s = Get-GitHubSettings $AutoDir
+  $rel = Get-GitHubRuleRelPath ([string]$s.rulesPath) $k
+  $put = Set-GitHubFile $AutoDir $rel ([string]$Text) ([string]$ExpectedSha) ('chore: update ' + $k + ' rule')
+  if (-not $put.ok) { return $put }
+  return @{ ok = $true; sha = [string]$put.sha; path = $rel; kind = $k }
+}
+
 # Adds the selected targets to global.md and project.md in the source repo and
 # commits each changed file. Add-only: deselected targets are never removed.
 # Returns per-file results; callers decide whether to surface the failure.

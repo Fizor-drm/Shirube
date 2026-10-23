@@ -933,6 +933,7 @@ aside{width:232px;flex:none;background:#0a0a0a;border:1px solid #1f1f1f;border-r
 nav a{display:block;padding:8px 10px;border-radius:6px;text-decoration:none;color:#cfcfcf}
 nav a.active{background:#161616;color:#fff;border:1px solid #2a2a2a}
 nav a:hover{background:#141414}
+nav a svg,.topnav a svg{flex:none;vertical-align:-2px;margin-right:6px}
 .side-note{margin-top:24px;padding:10px;font-size:12px;color:#9a9a9a;border-top:1px solid #1d1d1d}
 main{flex:1;min-width:0;display:flex;flex-direction:column;background:#0a0a0a;border:1px solid #1f1f1f;border-radius:14px;height:calc(100vh - 24px);height:calc(100dvh - 24px);overflow:hidden;padding:0}
 .topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex:none;border-bottom:1px solid #1d1d1d;padding:16px 28px 14px}
@@ -960,7 +961,11 @@ h1{font-size:22px;margin:0 0 6px}
 .row2{display:grid;grid-template-columns:1.4fr 1fr;gap:14px}
 .cols2{display:grid;grid-template-columns:1.55fr 1fr;gap:14px;margin:0 0 14px}
 .cols2>section{margin:0;min-width:0}
-@media(max-width:1000px){.row2,.cols2{grid-template-columns:1fr}aside{display:none}.mainscroll{padding:20px 16px 32px}.summarybar{padding:8px 16px 6px}}
+.rules-grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:14px;margin-top:12px}
+#ruleText{width:100%;min-height:340px;background:#0a0a0a;border:1px solid #2c2c2c;color:#fff;border-radius:6px;padding:10px 12px;font-family:ui-monospace,Consolas,"Courier New",monospace;font-size:12px;line-height:1.6;resize:vertical}
+#ruleText:disabled{opacity:.5;cursor:not-allowed}
+#ruleText:focus{outline:2px solid #f5f5f5;outline-offset:1px}
+@media(max-width:1000px){.row2,.cols2,.rules-grid{grid-template-columns:1fr}aside{display:none}.mainscroll{padding:20px 16px 32px}.summarybar{padding:8px 16px 6px}}
 @media(max-width:480px){.summarybar{padding:8px 12px 6px}.summarybar .grid3{gap:6px}.summarybar .card{padding:8px 10px}.summarybar .btnrow button{padding:2px 5px;font-size:10px}}
 @media(max-height:520px){.topbar{padding:3px 10px 2px}.topnav{padding:2px 8px!important}.topnav a{padding:2px 5px!important;font-size:11px!important}.summarybar{padding:2px 10px 1px}.summarybar .card{padding:2px 6px}.summarybar .card h2{margin:0 0 2px;font-size:11px}.summarybar .grid3{gap:3px}.summarybar .big{font-size:13px}.summarybar .muted{font-size:10px;-webkit-line-clamp:1}.summarybar .btnrow{margin-top:2px}.summarybar .btnrow button{padding:2px 5px;font-size:10px}.helper{display:none!important}.mainscroll{padding:6px 10px 10px}}
 [hidden]{display:none!important}
@@ -1136,26 +1141,28 @@ input[type=number]{width:120px;background:#0a0a0a;border:1px solid #2c2c2c;color
 <aside>
 <div class="brand">Shirube Console</div>
 <nav>
-<a href="#top" class="active" aria-current="page" data-i18n="概要">概要</a>
-<a href="#projects" data-i18n="プロジェクト">プロジェクト</a>
-<a href="#global" data-i18n="Global同期">Global同期</a>
-<a href="#backups" data-i18n="バックアップ">バックアップ</a>
-<a href="#local" data-i18n="ローカル編集">ローカル編集</a>
-<a href="#logs" data-i18n="同期ログ">同期ログ</a>
-<a href="#settings" data-i18n="設定・ヘルプ">設定・ヘルプ</a>
+<a href="#top" class="active" aria-current="page"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg><span data-i18n="概要">概要</span></a>
+<a href="#projects"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg><span data-i18n="プロジェクト">プロジェクト</span></a>
+<a href="#global"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg><span data-i18n="Global同期">Global同期</span></a>
+<a href="#rules"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M15 12h-5"/><path d="M15 8h-5"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3"/></svg><span data-i18n="ルール">ルール</span></a>
+<a href="#backups"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg><span data-i18n="バックアップ">バックアップ</span></a>
+<a href="#local"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg><span data-i18n="ローカル編集">ローカル編集</span></a>
+<a href="#logs"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg><span data-i18n="同期ログ">同期ログ</span></a>
+<a href="#settings"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg><span data-i18n="設定・ヘルプ">設定・ヘルプ</span></a>
 </nav>
 <div class="side-note"><span data-i18n="このPC専用。外部送信なし。">このPC専用。外部送信なし。</span><br><span data-i18n="AGENTS.md は直接編集しません。">AGENTS.md は直接編集しません。</span></div>
 </aside>
 <main>
 <div class="topbar"><div><strong data-i18n="Shirube 管理">Shirube 管理</strong> <span class="sub" data-i18n="プロジェクト同期ダッシュボード">プロジェクト同期ダッシュボード</span></div><div class="topbar-right"><button type="button" id="btnGitHub" class="ghbtn" aria-label="GitHub連携" data-i18n-aria="GitHub連携" title="GitHub連携"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></button><select id="selLang" class="lang" aria-label="表示言語" data-i18n-aria="表示言語"><option value="ja">日本語</option><option value="en">English</option><option value="zh-CN">简体中文</option></select></div></div>
 <nav class="topnav" aria-label="画面切替" data-i18n-aria="画面切替">
-<a href="#top" class="active" aria-current="page" data-i18n="概要">概要</a>
-<a href="#projects" data-i18n="プロジェクト">プロジェクト</a>
-<a href="#global" data-i18n="Global同期">Global同期</a>
-<a href="#backups" data-i18n="バックアップ">バックアップ</a>
-<a href="#local" data-i18n="ローカル編集">ローカル編集</a>
-<a href="#logs" data-i18n="同期ログ">同期ログ</a>
-<a href="#settings" data-i18n="設定・ヘルプ">設定・ヘルプ</a>
+<a href="#top" class="active" aria-current="page"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg><span data-i18n="概要">概要</span></a>
+<a href="#projects"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg><span data-i18n="プロジェクト">プロジェクト</span></a>
+<a href="#global"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg><span data-i18n="Global同期">Global同期</span></a>
+<a href="#rules"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M15 12h-5"/><path d="M15 8h-5"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3"/></svg><span data-i18n="ルール">ルール</span></a>
+<a href="#backups"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg><span data-i18n="バックアップ">バックアップ</span></a>
+<a href="#local"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg><span data-i18n="ローカル編集">ローカル編集</span></a>
+<a href="#logs"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg><span data-i18n="同期ログ">同期ログ</span></a>
+<a href="#settings"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg><span data-i18n="設定・ヘルプ">設定・ヘルプ</span></a>
 </nav>
 <div class="summarybar">
 <section aria-label="summary">
@@ -1264,6 +1271,22 @@ input[type=number]{width:120px;background:#0a0a0a;border:1px solid #2c2c2c;color
 </div>
 </section>
 </div>
+</div>
+<div id="rules" hidden>
+<section>
+<div class="card"><h2 data-i18n="共通ルール編集">共通ルール編集</h2>
+<p class="muted" data-i18n="GitHub上の global.md / project.md を取得して編集・保存します。保存にはGitHub連携とトークンが必要です。取得時のSHAと一致した場合のみ更新します。">GitHub上の global.md / project.md を取得して編集・保存します。保存にはGitHub連携とトークンが必要です。取得時のSHAと一致した場合のみ更新します。</p>
+<p class="muted warn" id="rulesGate" hidden data-i18n="GitHub連携が未設定のため編集できません。上部のGitHubボタンから設定してください。">GitHub連携が未設定のため編集できません。上部のGitHubボタンから設定してください。</p>
+<div class="btnrow"><select id="selRuleKind" aria-label="ルール種別" data-i18n-aria="ルール種別"><option value="project">project.md</option><option value="global">global.md</option></select><button id="btnRuleLoad" data-i18n="取得">取得</button><button id="btnRuleSave" class="primary" data-i18n="保存">保存</button></div>
+<div class="rules-grid">
+<textarea id="ruleText" spellcheck="false" aria-label="ルール本文" data-i18n-aria="ルール本文"></textarea>
+<div>
+<p class="muted" id="ruleMeta"></p>
+<div id="msgRule" role="status"></div>
+</div>
+</div>
+</div>
+</section>
 </div>
 <div id="backups" hidden>
 <section>
@@ -1428,7 +1451,7 @@ const TOKEN = "__TOKEN__";
 const GLOBAL_CATALOG = (typeof __GLOBAL_CATALOG__ !== "undefined") ? __GLOBAL_CATALOG__ : [];
 const GLOBAL_DEFAULT_TARGETS = ["codexcli", "opencode"];
 const H = {"Content-Type":"application/json","X-Dashboard-Token":TOKEN};
-const SCREENS=["top","projects","global","backups","local","logs","settings"];
+const SCREENS=["top","projects","global","rules","backups","local","logs","settings"];
 const LEGACY=Object.assign(Object.create(null),{"register":"projects","status":"projects","gsettings":"global","help":"settings"});
 function rawHash(){var h="";try{h=(location.hash||"").split("?")[0];}catch(e){}if(h.charAt(0)==="#")h=h.slice(1);return h;}
 function targetId(){var h=rawHash();if(SCREENS.indexOf(h)>=0)return h;if(LEGACY[h])return LEGACY[h];return "top";}
@@ -1887,7 +1910,19 @@ const I18N = {
     "← ここに保存されます": "<- saved here",
     "ルール名.yml": "rule-name.yml",
     "キャンセル": "Cancel",
-    "入力内容を確認してください。": "Please check the highlighted fields."
+    "入力内容を確認してください。": "Please check the highlighted fields.",
+    "取得元: {path}（SHA {sha}）": "Source: {path} (SHA {sha})",
+    "GitHub連携が未設定のため編集できません。": "Editing is unavailable because GitHub integration is not configured.",
+    "伏字表示中の内容はそのまま保存できません。再取得しても伏字のままの場合、そのまま保存しないでください。": "Masked content cannot be saved as-is. If it stays masked after reloading, do not save it.",
+    "取得しました。": "Loaded.",
+    "GitHub連携が未設定のため保存できません。": "Cannot save because GitHub integration is not configured.",
+    "先に取得してください。": "Load it first.",
+    "種別が変わりました。先に取得してください。": "The type changed. Load it again first.",
+    "保存の確認": "Confirm save",
+    "{kind} をGitHubへ保存します。よろしいですか。": "Save {kind} to GitHub?",
+    "保存する": "Save",
+    "ルール種別": "Rule type",
+    "ルール本文": "Rule body"
   },
   "zh-CN": {
     " 既存 AGENTS.md はバックアップ後に同期で再生成されます（固有内容は自動転記されません）。": " 现有 AGENTS.md 会在备份后由同步重新生成（其中专有内容不会自动转写）。",
@@ -2315,7 +2350,19 @@ const I18N = {
     "← ここに保存されます": "← 保存在这里",
     "ルール名.yml": "规则名.yml",
     "キャンセル": "取消",
-    "入力内容を確認してください。": "请检查输入内容。"
+    "入力内容を確認してください。": "请检查输入内容。",
+    "取得元: {path}（SHA {sha}）": "来源：{path}（SHA {sha}）",
+    "GitHub連携が未設定のため編集できません。": "GitHub 集成未配置，无法编辑。",
+    "伏字表示中の内容はそのまま保存できません。再取得しても伏字のままの場合、そのまま保存しないでください。": "掩码显示的内容无法原样保存。重新获取后仍为掩码时，请不要直接保存。",
+    "取得しました。": "已获取。",
+    "GitHub連携が未設定のため保存できません。": "GitHub 集成未配置，无法保存。",
+    "先に取得してください。": "请先获取。",
+    "種別が変わりました。先に取得してください。": "类型已更改。请先重新获取。",
+    "保存の確認": "确认保存",
+    "{kind} をGitHubへ保存します。よろしいですか。": "将 {kind} 保存到 GitHub？",
+    "保存する": "保存",
+    "ルール種別": "规则类型",
+    "ルール本文": "规则正文"
   }
 };
 let currentLang = "ja";
@@ -2423,6 +2470,7 @@ function applyLanguage(lang, reload){
   try{ if(typeof renderGlobalContent === "function") renderGlobalContent(); }catch(e){}
   try{ if(typeof renderGlobalStatus === "function") renderGlobalStatus(); }catch(e){}
   try{ if(typeof renderGlobalTargetsUI === "function") renderGlobalTargetsUI(); }catch(e){}
+  try{ if(typeof renderRulesLock === "function") renderRulesLock(); }catch(e){}
   try{ if(typeof ghRenderPreview === "function") ghRenderPreview(); }catch(e){}
   try{ if(lastBackupDiff) renderBackupDiff(document.getElementById("backupDiffArea"), lastBackupDiff); }catch(e){}
   try{ if(lastGlobalBackupDiff) renderGlobalBackupDiff(lastGlobalBackupDiff.data); }catch(e){}
@@ -3615,6 +3663,7 @@ function updateGlobalUI(g){
   const targetsStale = !!(adoptGuard && adoptGuard.seq !== undefined && adoptGuard.seq < globalTargetsAppliedSeq);
   const intervalStale = !!(adoptGuard && adoptGuard.seq !== undefined && adoptGuard.seq < globalIntervalAppliedSeq);
   currentGlobalStatus = g;
+  try{ if(typeof renderRulesLock === "function") renderRulesLock(); }catch(eR){}
   updateCommonSyncState("global", g);
   renderGlobalTable(g.providers || []);
   try{ applySearchFilter(); }catch(e){}
@@ -3893,6 +3942,71 @@ async function refreshGlobal(deadline, forceAdopt){
     }
   }
 }
+function rulesLockedByGitHub(){
+  return !(currentGlobalStatus && currentGlobalStatus.githubConfigured === true);
+}
+let ruleLoaded = null;
+function renderRulesLock(){
+  const locked = rulesLockedByGitHub();
+  try{ const g = document.getElementById("rulesGate"); if(g) g.hidden = !locked; }catch(e0){}
+  try{ const t = document.getElementById("ruleText"); if(t) t.disabled = locked; }catch(e1){}
+  try{ document.getElementById("selRuleKind").disabled = locked; }catch(e2){}
+  try{ document.getElementById("btnRuleLoad").disabled = locked; }catch(e3){}
+  try{ document.getElementById("btnRuleSave").disabled = locked || !ruleLoaded; }catch(e4){}
+}
+function ruleKind(){
+  try{ return document.getElementById("selRuleKind").value === "global" ? "global" : "project"; }catch(e){ return "project"; }
+}
+function renderRuleMeta(r){
+  const p = document.getElementById("ruleMeta");
+  if(!p) return;
+  p.textContent = L("取得元: {path}（SHA {sha}）", {path:(r && r.path ? r.path : ""), sha:(r && r.sha ? String(r.sha).slice(0,12) : "-")});
+}
+async function ruleLoad(){
+  if(rulesLockedByGitHub()){ renderRulesLock(); setMsg("msgRule", L("GitHub連携が未設定のため編集できません。"), false); return; }
+  const b = document.getElementById("btnRuleLoad"); b.disabled = true;
+  setMsg("msgRule", L("読込中"), true);
+  try{
+    const kind = ruleKind();
+    const r = await api("/api/github-rule-get", "POST", {kind:kind}, 30000);
+    ruleLoaded = {kind:kind, sha:String(r.sha || "")};
+    document.getElementById("ruleText").value = String(r.text || "");
+    renderRuleMeta(r);
+    if(r.redacted) setMsg("msgRule", L("伏字表示中の内容はそのまま保存できません。再取得しても伏字のままの場合、そのまま保存しないでください。"), false);
+    else setMsg("msgRule", L("取得しました。"), true);
+  }catch(e){ ruleLoaded = null; setMsg("msgRule", e.message, false); }
+  finally{ renderRulesLock(); try{ b.disabled = rulesLockedByGitHub(); }catch(e2){} }
+}
+async function ruleSave(){
+  if(rulesLockedByGitHub()){ renderRulesLock(); setMsg("msgRule", L("GitHub連携が未設定のため保存できません。"), false); return; }
+  if(!ruleLoaded){ setMsg("msgRule", L("先に取得してください。"), false); return; }
+  const kind = ruleLoaded.kind;
+  if(ruleKind() !== kind){ ruleLoaded = null; renderRulesLock(); setMsg("msgRule", L("種別が変わりました。先に取得してください。"), false); return; }
+  const text = document.getElementById("ruleText").value;
+  const okGo = await showConfirm(L("保存の確認"), L("{kind} をGitHubへ保存します。よろしいですか。", {kind:(kind === "global" ? "global.md" : "project.md")}), L("保存する"), L("やめる"));
+  if(!okGo) return;
+  if(rulesLockedByGitHub()){ renderRulesLock(); setMsg("msgRule", L("GitHub連携が未設定のため保存できません。"), false); return; }
+  const b = document.getElementById("btnRuleSave"); b.disabled = true;
+  setMsg("msgRule", L("保存しています…"), true);
+  try{
+    const r = await api("/api/github-rule-save", "POST", {kind:kind, text:text, sha:ruleLoaded.sha}, 30000);
+    ruleLoaded = {kind:kind, sha:String(r.sha || "")};
+    renderRuleMeta(r);
+    setMsg("msgRule", L("保存しました。"), true);
+  }catch(e){ setMsg("msgRule", e.message, false); }
+  finally{ renderRulesLock(); }
+}
+try{ document.getElementById("btnRuleLoad").onclick = function(){ ruleLoad(); }; }catch(eL){}
+try{ document.getElementById("btnRuleSave").onclick = function(){ ruleSave(); }; }catch(eS){}
+try{
+  document.getElementById("selRuleKind").onchange = function(){
+    ruleLoaded = null;
+    document.getElementById("ruleText").value = "";
+    document.getElementById("ruleMeta").textContent = "";
+    renderRulesLock();
+  };
+}catch(eK){}
+renderRulesLock();
 async function pollGlobalUntilDone(syncId, tries, delayMs, deadline){
   const dl = deadline || (Date.now() + 60000);
   for(let i=0;i<tries;i++){
@@ -4756,7 +4870,7 @@ function Start-Dashboard {
         # Server-side only; HTTP body owner is never trusted.
         $earlyBrowseCap = $null
         if ($path -ceq '/api/browse/start') { try { $earlyBrowseCap = Get-BrowseOwnerCapture } catch {} }
-        try { $bodyText = Read-Body $req } catch { Send-Json $ctx 413 @{ error = '要求が大きすぎます。' }; continue }
+        try { $bodyText = Read-Body $req 262144 } catch { Send-Json $ctx 413 @{ error = '要求が大きすぎます。' }; continue }
         $body = @{}
         if ($bodyText.Trim() -ne '') {
           try { $body = $bodyText | ConvertFrom-Json } catch { Send-Json $ctx 400 @{ error = 'JSONを解釈できません。' }; continue }
@@ -5237,6 +5351,51 @@ function Start-Dashboard {
             elseif ($em6.Contains('見つかりません') -or $em6.Contains('ありません')) { Send-Json $ctx 404 @{ error = $em6 } }
             else { Send-Json $ctx 400 @{ error = $em6 } }
           } finally { if ($llock) { try { $llock.Close() } catch {} } }
+          continue
+        }
+        if ($path -eq '/api/github-rule-get') {
+          try {
+            $gr0 = Get-GitHubRuleContent $AutoDir ([string]$body.kind)
+            if (-not $gr0.ok) { Send-Json $ctx 400 @{ error = [string]$gr0.error }; continue }
+            $gr0.redacted = $false
+            try {
+              $grT = Redact-Text ([string]$gr0.text) $Token
+              $gr0.redacted = ($grT -cne [string]$gr0.text)
+              $gr0.text = $grT
+            } catch {}
+            Send-Json $ctx 200 $gr0
+          } catch { Send-Json $ctx 400 @{ error = $_.Exception.Message } }
+          continue
+        }
+        if ($path -eq '/api/github-rule-save') {
+          $gk = [string]$body.kind
+          if (($gk -cne 'project') -and ($gk -cne 'global')) { Send-Json $ctx 400 @{ error = '種別が不正です。' }; continue }
+          $glock = $null
+          try {
+            if ($gk -ceq 'global') { $glock = Open-GlobalSyncLock $AutoDir }
+            else { $glock = [System.IO.File]::Open((Join-Path $AutoDir 'Sync-ProjectRules.lock'), 'OpenOrCreate', 'ReadWrite', 'None') }
+          } catch {
+            $eg = $_.Exception.Message
+            if ($eg.Contains('busy')) { Send-Json $ctx 409 @{ error = $eg }; continue }
+            Send-Json $ctx 500 @{ error = $eg }; continue
+          }
+          try {
+            $curG = Get-GitHubRuleContent $AutoDir $gk
+            if (-not $curG.ok) { Send-Json $ctx 400 @{ error = [string]$curG.error }; continue }
+            $curGT = [string]$curG.text
+            # Same rule as localrule-save: masked text is never written back.
+            if (((Redact-Text $curGT $Token) -cne $curGT) -and ([string]$body.text -cne $curGT)) {
+              Send-Json $ctx 409 @{ error = '伏字表示中の内容はそのまま保存できません。原本が変化した可能性があります。再取得してください。' }
+              continue
+            }
+            $gs0 = Save-GitHubRuleContent $AutoDir $gk ([string]$body.text) ([string]$body.sha)
+            if (-not $gs0.ok) {
+              if ($gs0.conflict) { Send-Json $ctx 409 $gs0 } else { Send-Json $ctx 400 $gs0 }
+              continue
+            }
+            Send-Json $ctx 200 $gs0
+          } catch { Send-Json $ctx 400 @{ error = $_.Exception.Message }
+          } finally { if ($glock) { try { $glock.Close() } catch {} } }
           continue
         }
         if ($path -eq '/api/check') {

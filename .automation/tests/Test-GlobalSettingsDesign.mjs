@@ -1098,5 +1098,124 @@ await testAsync('GitHub未連携時は対象の選択と保存をロックし、
   must(h.byId('btnGlobalTargets').disabled === true, 'race: save stays disabled');
 });
 
+// --- shared rule editor (#rules) ------------------------------------------
+test('rule editor markup reuses the real screen grid and hides without .cols2', () => {
+  must(/<div id="rules" hidden>/.test(src), 'rules screen container exists');
+  const start = src.indexOf('<div id="rules" hidden>');
+  const end = src.indexOf('<div id="backups" hidden>', start);
+  must(start >= 0 && end > start, 'rules screen slice missing');
+  const html = src.slice(start, end);
+  must(/class="rules-grid"/.test(html), 'editor uses the dedicated grid');
+  must(!/class="cols2"/.test(html), 'editor does not reuse the projects columns');
+  must(/id="rulesGate"/.test(html) && /id="ruleText"/.test(html) && /id="selRuleKind"/.test(html), 'gate, textarea and kind select exist');
+  must(/const SCREENS=\["top","projects","global","rules"/.test(src), 'rules is a routed screen');
+});
+
+function rulesBlock() {
+  const start = src.indexOf('function rulesLockedByGitHub(){');
+  const end = src.indexOf('async function pollGlobalUntilDone', start);
+  must(start >= 0 && end > start, 'rules UI block missing');
+  return src.slice(start, end);
+}
+
+function rulesHarness() {
+  const elements = new Map();
+  function byId(id) {
+    if (!elements.has(id)) elements.set(id, makeElement('div'));
+    return elements.get(id);
+  }
+  byId('selRuleKind').value = 'project';
+  const model = {
+    calls: [], confirm: true, onConfirm: null, loadError: null, saveError: null,
+    get: { ok: true, kind: 'project', path: 'rules/project.md', sha: 'sha-1', text: 'text-1', redacted: false },
+    saveR: { ok: true, sha: 'sha-2', path: 'rules/project.md', kind: 'project' }
+  };
+  const context = vm.createContext({
+    document: { getElementById: byId, querySelectorAll() { return []; }, querySelector() { return null; } },
+    console, Promise, Date, setTimeout,
+    currentGlobalStatus: null,
+    L(key, vars) {
+      return String(key).replace(/\{([^{}]+)\}/g, (m, k) =>
+        vars && Object.prototype.hasOwnProperty.call(vars, k) ? String(vars[k]) : m);
+    },
+    setMsg(id, msg, okFlag) {
+      const d = byId(id);
+      d.textContent = msg;
+      d.okFlag = !!okFlag;
+    },
+    showConfirm: async () => { if (model.onConfirm) model.onConfirm(); return model.confirm; },
+    api: async (ep, method, body) => {
+      model.calls.push({ ep, method, body });
+      if (ep === '/api/github-rule-get') {
+        if (model.loadError) throw model.loadError;
+        return Object.assign({}, model.get);
+      }
+      if (ep === '/api/github-rule-save') {
+        if (model.saveError) throw model.saveError;
+        return Object.assign({}, model.saveR);
+      }
+      return {};
+    }
+  });
+  vm.runInContext(rulesBlock() +
+    ';globalThis.__r={rulesLockedByGitHub:rulesLockedByGitHub,renderRulesLock:renderRulesLock,' +
+    'ruleLoad:ruleLoad,ruleSave:ruleSave,ruleKind:ruleKind,renderRuleMeta:renderRuleMeta,' +
+    'state:function(){return ruleLoaded;}};', context);
+  return { context, model, byId, r: context.__r };
+}
+
+await testAsync('rule editor stays locked until GitHub is configured', async () => {
+  const h = rulesHarness();
+  h.r.renderRulesLock();
+  must(h.r.rulesLockedByGitHub() === true, 'no status means locked');
+  must(h.byId('ruleText').disabled === true, 'textarea disabled while locked');
+  must(h.byId('rulesGate').hidden === false, 'gate notice shown');
+  must(h.byId('btnRuleLoad').disabled === true && h.byId('btnRuleSave').disabled === true, 'buttons disabled');
+  await h.r.ruleLoad();
+  must(h.model.calls.length === 0, 'locked load sends no request');
+
+  h.context.currentGlobalStatus = { githubConfigured: true };
+  h.r.renderRulesLock();
+  must(h.byId('ruleText').disabled === false && h.byId('btnRuleLoad').disabled === false, 'unlocked after configuration');
+  must(h.byId('btnRuleSave').disabled === true, 'save waits for a successful load');
+});
+
+await testAsync('rule load stores the sha and save posts the edited text with it', async () => {
+  const h = rulesHarness();
+  h.context.currentGlobalStatus = { githubConfigured: true };
+  await h.r.ruleLoad();
+  must(h.model.calls[0].ep === '/api/github-rule-get' && h.model.calls[0].body.kind === 'project', 'loads the selected kind');
+  must(h.byId('ruleText').value === 'text-1', 'fetched text rendered');
+  must(h.byId('btnRuleSave').disabled === false, 'save enabled after load');
+  must(/sha-1/.test(h.byId('ruleMeta').textContent), 'meta shows the loaded sha');
+
+  h.byId('ruleText').value = 'edited';
+  await h.r.ruleSave();
+  const post = h.model.calls[1];
+  must(post.ep === '/api/github-rule-save' && post.body.text === 'edited' && post.body.sha === 'sha-1', 'save posts text and read sha');
+  must(h.r.state().sha === 'sha-2', 'new sha adopted');
+  must(/sha-2/.test(h.byId('ruleMeta').textContent), 'meta refreshed after save');
+});
+
+await testAsync('changing the kind invalidates the loaded rule before saving', async () => {
+  const h = rulesHarness();
+  h.context.currentGlobalStatus = { githubConfigured: true };
+  await h.r.ruleLoad();
+  h.byId('selRuleKind').value = 'global';
+  h.byId('selRuleKind').onchange();
+  must(h.r.state() === null, 'kind change clears the loaded state');
+  await h.r.ruleSave();
+  must(h.model.calls.filter(c => c.ep === '/api/github-rule-save').length === 0, 'stale kind never posts');
+});
+
+await testAsync('a status poll that closes GitHub while confirming aborts the save', async () => {
+  const h = rulesHarness();
+  h.context.currentGlobalStatus = { githubConfigured: true };
+  await h.r.ruleLoad();
+  h.model.onConfirm = () => { h.context.currentGlobalStatus = { githubConfigured: false }; };
+  await h.r.ruleSave();
+  must(h.model.calls.filter(c => c.ep === '/api/github-rule-save').length === 0, 'race: no save after the lock closes');
+});
+
 console.log(failures.length ? 'FAILURES: ' + failures.join('; ') : 'ALL GLOBAL SETTINGS DESIGN CHECKS PASSED');
 process.exitCode = failures.length ? 1 : 0;

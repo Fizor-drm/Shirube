@@ -1,4 +1,4 @@
-# Self-check for GitHub-Management.ps1 (GitHub integration).
+﻿# Self-check for GitHub-Management.ps1 (GitHub integration).
 # No network, no real token, no real home: Invoke-RestMethod is stubbed.
 # Never touches the deployed %LOCALAPPDATA%\Shirube tree.
 $ErrorActionPreference = 'Stop'
@@ -155,6 +155,50 @@ try {
   Assert ($sent.Contains('targets: ["codexcli", "antigravity-cli"]')) 'T6 committed content has the target'
   Assert (-not ([string]$putBody.content).Contains($tok)) 'T6 token never written into the commit'
 
+  # T6b: rule editor frontmatter contract.
+  Assert (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + '---' + $nl) 'project') 'T6b project frontmatter accepted'
+  Assert (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["pi"]' + $nl + '---' + $nl) 'global') 'T6b global frontmatter accepted'
+  Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + '---' + $nl) 'project')) 'T6b missing root rejected'
+  Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets:' + $nl + '  - pi' + $nl + '---' + $nl) 'global')) 'T6b block targets rejected'
+  Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["Pi"]' + $nl + '---' + $nl) 'global')) 'T6b uppercase slug rejected'
+  Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["pi", "pi"]' + $nl + '---' + $nl) 'global')) 'T6b duplicate targets rejected'
+  Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli"]' + $nl + '---' + $nl) 'project')) 'T6b project missing a base target rejected'
+  Assert (-not (Test-GitHubRuleFrontmatter ('body' + $nl + '---' + $nl + 'root: true' + $nl + 'targets: ["pi"]' + $nl + '---' + $nl) 'global')) 'T6b leading text rejected'
+
+  # T6c: read and write one rule file through the shared helpers.
+  $bareDir = Join-Path $base 'bare-rules'
+  New-Item -ItemType Directory -Force -Path $bareDir | Out-Null
+  Save-GitHubSettings $auto 'Fizor-drm/ai-agent-rules' 'dev' 'rules' | Out-Null
+  $script:GhFiles = @{}
+  $script:GhFiles['https://api.github.com/repos/Fizor-drm/ai-agent-rules/contents/rules/global.md'] = @{ sha = 'sha-global'; content = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($ruleGlobal)) }
+  $script:GhFiles['https://api.github.com/repos/Fizor-drm/ai-agent-rules/contents/rules/project.md'] = @{ sha = 'sha-project'; content = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($ruleProject)) }
+  $got = Get-GitHubRuleContent $auto 'global'
+  Assert ($got.ok -and ($got.sha -ceq 'sha-global') -and ($got.path -ceq 'rules/global.md')) 'T6c get returns sha and path'
+  Assert ($got.text.Contains('# global body')) 'T6c get returns raw text'
+  $missingKind = Get-GitHubRuleContent $auto 'other'
+  Assert (-not $missingKind.ok) 'T6c unknown kind refused'
+  $bare = Get-GitHubRuleContent $bareDir 'global'
+  Assert (-not $bare.ok) 'T6c unconfigured integration fails closed'
+
+  $script:GhCalls = @()
+  $conflict = Save-GitHubRuleContent $auto 'global' $ruleGlobal 'sha-stale'
+  Assert ((-not $conflict.ok) -and $conflict.conflict -and ($conflict.sha -ceq 'sha-global')) 'T6c stale sha reports the current sha'
+  Assert (@($script:GhCalls | Where-Object { $_.method -ne 'GET' }).Count -eq 0) 'T6c conflict never commits'
+
+  $script:GhCalls = @()
+  $saved = Save-GitHubRuleContent $auto 'global' $ruleGlobal 'sha-global'
+  Assert ($saved.ok -and ($saved.path -ceq 'rules/global.md')) 'T6c save reports ok and path'
+  $rulePut = @($script:GhCalls | Where-Object { $_.method -ne 'GET' })[0]
+  $rulePutBody = [string]$rulePut.body | ConvertFrom-Json
+  Assert ([string]$rulePutBody.sha -ceq 'sha-global') 'T6c save commits the read sha'
+  $ruleSent = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String([string]$rulePutBody.content))
+  Assert ($ruleSent -ceq $ruleGlobal) 'T6c save writes the edited text verbatim'
+
+  $script:GhCalls = @()
+  $invalid = Save-GitHubRuleContent $auto 'global' 'no frontmatter' 'sha-global'
+  Assert (-not $invalid.ok) 'T6c invalid frontmatter refused before commit'
+  Assert (@($script:GhCalls | Where-Object { $_.method -ne 'GET' }).Count -eq 0) 'T6c invalid frontmatter never commits'
+
   # T7: a write failure is reported, does not throw, and leaks no token.
   $script:GhFailWrites = $true
   $script:GhCalls = @()
@@ -175,6 +219,10 @@ try {
   # T9: dashboard and sync wiring exists (static contract).
   $server = Get-Content -LiteralPath (Join-Path $devAuto 'Dashboard-Server.ps1') -Raw -Encoding UTF8
   Assert ($server.Contains("'/api/github-settings'") -and $server.Contains("'/api/github-test'")) 'T9 endpoints registered'
+  Assert ($server.Contains("'/api/github-rule-get'") -and $server.Contains("'/api/github-rule-save'")) 'T9 rule editor endpoints registered'
+  Assert ($server.Contains('Read-Body $req 262144')) 'T9 rule editor accepts the 256KB body'
+  Assert ($server.Contains("Open-GlobalSyncLock `$AutoDir") -and $server.Contains("'Sync-ProjectRules.lock'")) 'T9 rule save honors both sync locks'
+  Assert ($server.Contains('id="rulesGate"') -and $server.Contains('id="ruleText"') -and $server.Contains('class="rules-grid"')) 'T9 rule editor screen exists'
   Assert ($server.Contains('Update-GitHubRuleTargets $AutoDir $tgNew')) 'T9 target save hooks the GitHub update'
   Assert ($server.Contains('id="btnGitHub"') -and $server.Contains('id="ghOvl"') -and $server.Contains('id="ghToken"')) 'T9 topbar button and dialog exist'
   Assert ($server.Contains('href="https://github.com/settings/personal-access-tokens/new"')) 'T9 token creation link exists'
