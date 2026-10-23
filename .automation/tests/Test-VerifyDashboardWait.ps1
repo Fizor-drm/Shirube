@@ -53,6 +53,11 @@ Assert ($rcD -eq 0) 'Wait success in time: exit 0'
 $vTxt = Get-Content -LiteralPath $vfyPath -Raw -Encoding UTF8
 Assert (($vTxt.Contains('[switch]$EnsureRunning')) -and ($vTxt.Contains('[string]$ServerScript'))) 'EnsureRunning and ServerScript parameters exist'
 Assert ($vTxt.Contains('[int]$PollMs = 80')) 'default poll interval is 80ms'
+$fnS = $vTxt.IndexOf('function Start-DashboardServer')
+$fnSEnd = $vTxt.IndexOf('Set-Alias -Name Invoke-VerifyWait')
+Assert (($fnS -ge 0) -and ($fnSEnd -gt $fnS)) 'Start-DashboardServer slice located'
+$startTxt = $vTxt.Substring($fnS, $fnSEnd - $fnS)
+Assert ($startTxt.Contains('"`"$Script`""')) 'server launch quotes a script path that contains spaces'
 $fnStart = $vTxt.IndexOf('function Test-VerifyOnce')
 $fnEnd = $vTxt.IndexOf('function Wait-Verify')
 Assert (($fnStart -ge 0) -and ($fnEnd -gt $fnStart)) 'VerifyOnce slice located'

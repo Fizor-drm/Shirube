@@ -1930,6 +1930,12 @@ const I18N = {
     "保存の確認": "Confirm save",
     "{kind} をGitHubへ保存します。よろしいですか。": "Save {kind} to GitHub?",
     "保存する": "Save",
+    "ルール": "Rules",
+    "共通ルール編集": "Edit common rules",
+    "GitHub上の global.md / project.md を取得して編集・保存します。保存にはGitHub連携とトークンが必要です。取得時のSHAと一致した場合のみ更新します。": "Fetch, edit, and save global.md / project.md on GitHub. Saving requires GitHub integration and a token. Updates are written only when the SHA matches the fetched version.",
+    "GitHub連携が未設定のため編集できません。上部のGitHubボタンから設定してください。": "Editing is unavailable because GitHub integration is not configured. Configure it with the GitHub button at the top.",
+    "読込中です。完了してから保存してください。": "Loading. Wait for it to finish before saving.",
+    "内容が更新されました。取得し直してから保存してください。": "The content changed. Load it again before saving.",
     "ルール種別": "Rule type",
     "ルール本文": "Rule body"
   },
@@ -2370,6 +2376,12 @@ const I18N = {
     "保存の確認": "确认保存",
     "{kind} をGitHubへ保存します。よろしいですか。": "将 {kind} 保存到 GitHub？",
     "保存する": "保存",
+    "ルール": "规则",
+    "共通ルール編集": "编辑共用规则",
+    "GitHub上の global.md / project.md を取得して編集・保存します。保存にはGitHub連携とトークンが必要です。取得時のSHAと一致した場合のみ更新します。": "获取并编辑、保存 GitHub 上的 global.md / project.md。保存需要 GitHub 集成与令牌。仅当 SHA 与获取时一致时才会更新。",
+    "GitHub連携が未設定のため編集できません。上部のGitHubボタンから設定してください。": "由于未设置 GitHub 集成，无法编辑。请通过顶部的 GitHub 按钮进行设置。",
+    "読込中です。完了してから保存してください。": "正在加载。请等待完成后再保存。",
+    "内容が更新されました。取得し直してから保存してください。": "内容已更新。请重新获取后再保存。",
     "ルール種別": "规则类型",
     "ルール本文": "规则正文"
   }
@@ -3955,13 +3967,14 @@ function rulesLockedByGitHub(){
   return !(currentGlobalStatus && currentGlobalStatus.githubConfigured === true);
 }
 let ruleLoaded = null;
+let ruleBusy = false;
 function renderRulesLock(){
   const locked = rulesLockedByGitHub();
   try{ const g = document.getElementById("rulesGate"); if(g) g.hidden = !locked; }catch(e0){}
   try{ const t = document.getElementById("ruleText"); if(t) t.disabled = locked; }catch(e1){}
-  try{ document.getElementById("selRuleKind").disabled = locked; }catch(e2){}
-  try{ document.getElementById("btnRuleLoad").disabled = locked; }catch(e3){}
-  try{ document.getElementById("btnRuleSave").disabled = locked || !ruleLoaded; }catch(e4){}
+  try{ document.getElementById("selRuleKind").disabled = locked || ruleBusy; }catch(e2){}
+  try{ document.getElementById("btnRuleLoad").disabled = locked || ruleBusy; }catch(e3){}
+  try{ document.getElementById("btnRuleSave").disabled = locked || ruleBusy || !ruleLoaded; }catch(e4){}
 }
 function ruleKind(){
   try{ return document.getElementById("selRuleKind").value === "global" ? "global" : "project"; }catch(e){ return "project"; }
@@ -3972,8 +3985,10 @@ function renderRuleMeta(r){
   p.textContent = L("取得元: {path}（SHA {sha}）", {path:(r && r.path ? r.path : ""), sha:(r && r.sha ? String(r.sha).slice(0,12) : "-")});
 }
 async function ruleLoad(){
+  if(ruleBusy) return;
   if(rulesLockedByGitHub()){ renderRulesLock(); setMsg("msgRule", L("GitHub連携が未設定のため編集できません。"), false); return; }
-  const b = document.getElementById("btnRuleLoad"); b.disabled = true;
+  ruleBusy = true;
+  renderRulesLock();
   setMsg("msgRule", L("読込中"), true);
   try{
     const kind = ruleKind();
@@ -3984,26 +3999,35 @@ async function ruleLoad(){
     if(r.redacted) setMsg("msgRule", L("伏字表示中の内容はそのまま保存できません。再取得しても伏字のままの場合、そのまま保存しないでください。"), false);
     else setMsg("msgRule", L("取得しました。"), true);
   }catch(e){ ruleLoaded = null; setMsg("msgRule", e.message, false); }
-  finally{ renderRulesLock(); try{ b.disabled = rulesLockedByGitHub(); }catch(e2){} }
+  finally{ ruleBusy = false; renderRulesLock(); }
 }
 async function ruleSave(){
+  if(ruleBusy) return;
   if(rulesLockedByGitHub()){ renderRulesLock(); setMsg("msgRule", L("GitHub連携が未設定のため保存できません。"), false); return; }
   if(!ruleLoaded){ setMsg("msgRule", L("先に取得してください。"), false); return; }
-  const kind = ruleLoaded.kind;
-  if(ruleKind() !== kind){ ruleLoaded = null; renderRulesLock(); setMsg("msgRule", L("種別が変わりました。先に取得してください。"), false); return; }
-  const text = document.getElementById("ruleText").value;
-  const okGo = await showConfirm(L("保存の確認"), L("{kind} をGitHubへ保存します。よろしいですか。", {kind:(kind === "global" ? "global.md" : "project.md")}), L("保存する"), L("やめる"));
+  const targetKind = ruleLoaded.kind;
+  const targetSha = ruleLoaded.sha;
+  const targetText = document.getElementById("ruleText").value;
+  if(ruleKind() !== targetKind){ ruleLoaded = null; renderRulesLock(); setMsg("msgRule", L("種別が変わりました。先に取得してください。"), false); return; }
+  const okGo = await showConfirm(L("保存の確認"), L("{kind} をGitHubへ保存します。よろしいですか。", {kind:(targetKind === "global" ? "global.md" : "project.md")}), L("保存する"), L("やめる"));
   if(!okGo) return;
+  if(ruleBusy){ renderRulesLock(); setMsg("msgRule", L("読込中です。完了してから保存してください。"), false); return; }
   if(rulesLockedByGitHub()){ renderRulesLock(); setMsg("msgRule", L("GitHub連携が未設定のため保存できません。"), false); return; }
-  const b = document.getElementById("btnRuleSave"); b.disabled = true;
+  if(!ruleLoaded || ruleLoaded.kind !== targetKind || ruleLoaded.sha !== targetSha){
+    renderRulesLock();
+    setMsg("msgRule", L("内容が更新されました。取得し直してから保存してください。"), false);
+    return;
+  }
+  ruleBusy = true;
+  renderRulesLock();
   setMsg("msgRule", L("保存しています…"), true);
   try{
-    const r = await api("/api/github-rule-save", "POST", {kind:kind, text:text, sha:ruleLoaded.sha}, 30000);
-    ruleLoaded = {kind:kind, sha:String(r.sha || "")};
+    const r = await api("/api/github-rule-save", "POST", {kind:targetKind, text:targetText, sha:targetSha}, 30000);
+    ruleLoaded = {kind:targetKind, sha:String(r.sha || "")};
     renderRuleMeta(r);
     setMsg("msgRule", L("保存しました。"), true);
   }catch(e){ setMsg("msgRule", e.message, false); }
-  finally{ renderRulesLock(); }
+  finally{ ruleBusy = false; renderRulesLock(); }
 }
 try{ document.getElementById("btnRuleLoad").onclick = function(){ ruleLoad(); }; }catch(eL){}
 try{ document.getElementById("btnRuleSave").onclick = function(){ ruleSave(); }; }catch(eS){}

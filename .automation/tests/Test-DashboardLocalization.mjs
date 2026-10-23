@@ -288,7 +288,8 @@ test('every used string key exists in English and Simplified Chinese', () => {
   const h = harness(undefined);
   const keys = new Set();
   for (const m of src.matchAll(/L\("((?:[^"\\]|\\.)*)"/g)) keys.add(m[1]);
-  for (const m of src.matchAll(/data-i18n(?:-placeholder|-title|-aria)="([^"]+)"/g)) keys.add(m[1]);
+  for (const m of src.matchAll(/data-i18n(?:-placeholder|-title|-aria)?="([^"]+)"/g)) keys.add(m[1]);
+  assert.ok(keys.has('共通ルール編集'), 'plain data-i18n attributes are collected');
   assert.ok(keys.size > 100, 'expected a broad string inventory, got ' + keys.size);
   for (const key of keys) {
     assert.ok(Object.prototype.hasOwnProperty.call(h.i18n.I18N.en, key), 'English missing: ' + key);
@@ -299,7 +300,8 @@ test('every used string key exists in English and Simplified Chinese', () => {
 test('rule editor strings exist and interpolate in every edition', () => {
   const h = harness(undefined);
   const keys = ['GitHub連携が未設定のため編集できません。', '取得しました。', '保存しました。',
-    '保存の確認', '取得元: {path}（SHA {sha}）', 'ルール種別', 'ルール本文'];
+    '保存の確認', '取得元: {path}（SHA {sha}）', 'ルール種別', 'ルール本文',
+    'ルール', '共通ルール編集', '内容が更新されました。取得し直してから保存してください。'];
   for (const key of keys) {
     assert.ok(Object.prototype.hasOwnProperty.call(h.i18n.I18N.en, key), 'English missing: ' + key);
     assert.ok(Object.prototype.hasOwnProperty.call(h.i18n.I18N['zh-CN'], key), 'Chinese missing: ' + key);
@@ -308,8 +310,10 @@ test('rule editor strings exist and interpolate in every edition', () => {
   assert.equal(h.i18n.L('取得元: {path}（SHA {sha}）', { path: 'rules/global.md', sha: 'abc123' }),
     'Source: rules/global.md (SHA abc123)');
   assert.equal(h.i18n.L('取得しました。'), 'Loaded.');
+  assert.equal(h.i18n.L('共通ルール編集'), 'Edit common rules');
   h.i18n.applyLanguage('zh-CN', false);
   assert.equal(h.i18n.L('取得しました。'), '已获取。');
+  assert.equal(h.i18n.L('共通ルール編集'), '编辑共用规则');
 });
 
 // --- real rendering functions keep user data verbatim ---------------------

@@ -173,6 +173,19 @@ try {
   Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["pi", "pi"]' + $nl + '---' + $nl) 'global')) 'T6b duplicate targets rejected'
   Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli"]' + $nl + '---' + $nl) 'project')) 'T6b project missing a base target rejected'
   Assert (-not (Test-GitHubRuleFrontmatter ('body' + $nl + '---' + $nl + 'root: true' + $nl + 'targets: ["pi"]' + $nl + '---' + $nl) 'global')) 'T6b leading text rejected'
+  # README standard: global.md may omit targets (all targets implied by root: true)
+  # or use the ["*"] wildcard.
+  $ruleGlobalBare = ('---' + $nl + 'root: true' + $nl + 'description: global' + $nl + '---' + $nl + '# global body' + $nl)
+  Assert (Test-GitHubRuleFrontmatter $ruleGlobalBare 'global') 'T6b global without targets accepted'
+  Assert (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["*"]' + $nl + '---' + $nl) 'global') 'T6b global wildcard target accepted'
+  Assert (-not (Test-GitHubRuleFrontmatter $ruleGlobalBare 'project')) 'T6b project still requires targets'
+  Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["*"]' + $nl + '---' + $nl) 'project')) 'T6b project wildcard rejected'
+  # Same quoting and slug contract as Sync-ProjectRules.ps1:126.
+  Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + "targets: ['codexcli', 'opencode']" + $nl + '---' + $nl) 'project')) 'T6b single-quoted project targets rejected'
+  Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: [codexcli, opencode]' + $nl + '---' + $nl) 'project')) 'T6b unquoted project targets rejected'
+  Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codex_cli", "opencode"]' + $nl + '---' + $nl) 'global')) 'T6b underscore slug rejected'
+  Assert (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode"] # base' + $nl + '---' + $nl) 'project') 'T6b trailing comment accepted'
+  Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + '  targets: ["pi"]' + $nl + '---' + $nl) 'global')) 'T6b indented targets rejected'
 
   # T6c: read and write one rule file through the shared helpers.
   Save-GitHubSettings $auto 'Fizor-drm/ai-agent-rules' 'dev' 'rules' | Out-Null
@@ -205,6 +218,17 @@ try {
   $invalid = Save-GitHubRuleContent $auto 'global' 'no frontmatter' 'sha-global'
   Assert (-not $invalid.ok) 'T6c invalid frontmatter refused before commit'
   Assert (@($script:GhCalls | Where-Object { $_.method -ne 'GET' }).Count -eq 0) 'T6c invalid frontmatter never commits'
+
+  $ruleGlobalWild = ('---' + $nl + 'root: true' + $nl + 'targets: ["*"]' + $nl + '---' + $nl + '# global body' + $nl)
+  foreach ($case in @(@{ name = 'without targets'; text = $ruleGlobalBare }, @{ name = 'with a wildcard target'; text = $ruleGlobalWild })) {
+    $script:GhCalls = @()
+    $savedGlobal = Save-GitHubRuleContent $auto 'global' ([string]$case.text) 'sha-global'
+    Assert ($savedGlobal.ok -and ($savedGlobal.kind -ceq 'global')) ('T6c global rule ' + $case.name + ' saves')
+    $gPut = @($script:GhCalls | Where-Object { $_.method -ne 'GET' })[0]
+    $gBody = [string]$gPut.body | ConvertFrom-Json
+    $gSent = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String([string]$gBody.content))
+    Assert ($gSent -ceq [string]$case.text) ('T6c saved global rule ' + $case.name + ' keeps its text')
+  }
 
   # T7: a write failure is reported, does not throw, and leaks no token.
   $script:GhFailWrites = $true

@@ -393,8 +393,9 @@ function Set-GitHubFile([string]$AutoDir, [string]$RelPath, [string]$Text, [stri
   return @{ ok = $true; sha = $newSha; path = $rel }
 }
 
-# Rule editor frontmatter contract: one-line targets array, lowercase slugs,
-# no duplicates, and root: true. project.md must keep both base targets.
+# Rule editor frontmatter contract: root: true, one-line targets array,
+# lowercase slugs, no duplicates. project.md must keep both base targets;
+# global.md may omit targets (all targets) or use the ["*"] wildcard.
 function Test-GitHubRuleFrontmatter([string]$Text, [string]$Kind) {
   $src = [string]$Text
   if ($src.Length -eq 0) { return $false }
@@ -408,7 +409,8 @@ function Test-GitHubRuleFrontmatter([string]$Text, [string]$Kind) {
   }
   if ($close -lt 0) { return $false }
   $rootOk = $false
-  $targetsOk = $false
+  $targetsSeen = 0
+  $wildcard = $false
   $items = @()
   for ($i = 1; $i -lt $close; $i++) {
     $ln = $lines[$i]
@@ -417,24 +419,31 @@ function Test-GitHubRuleFrontmatter([string]$Text, [string]$Kind) {
       continue
     }
     if ($ln -match '^\s*targets\s*:') {
-      if ($ln -notmatch '^\s*targets\s*:\s*\[(.*)\]\s*$') { return $false }
-      $inner = [string]$Matches[1]
-      foreach ($m in [regex]::Matches($inner, '"([^"]*)"|''([^'']*)''|([^,\s]+)')) {
-        $v = ($m.Groups[1].Value + $m.Groups[2].Value + $m.Groups[3].Value)
-        if ($v -eq '') { continue }
-        if ($v -cnotmatch '^[a-z][a-z0-9_-]*$') { return $false }
-        if ($items -ccontains $v) { return $false }
-        $items += $v
-      }
-      $targetsOk = $true
+      $targetsSeen++
+      if ($targetsSeen -gt 1) { return $false }
+      # Same contract as Sync-ProjectRules.ps1: double-quoted lowercase slugs.
+      if ($ln -cmatch '^targets\s*:\s*\[(\s*"[a-z0-9][a-z0-9-]*"(?:\s*,\s*"[a-z0-9][a-z0-9-]*")*\s*)\]\s*(#.*)?$') {
+        foreach ($m in [regex]::Matches([string]$Matches[1], '"([a-z0-9][a-z0-9-]*)"')) {
+          $v = [string]$m.Groups[1].Value
+          if ($items -ccontains $v) { return $false }
+          $items += $v
+        }
+      } elseif ($ln -cmatch '^targets\s*:\s*\[\s*"\*"\s*\]\s*(#.*)?$') {
+        $wildcard = $true
+      } else { return $false }
     }
   }
-  if ((-not $rootOk) -or (-not $targetsOk) -or ($items.Count -eq 0)) { return $false }
+  if (-not $rootOk) { return $false }
   if ([string]$Kind -ceq 'project') {
+    if (($targetsSeen -ne 1) -or $wildcard) { return $false }
     if (-not ($items -ccontains 'codexcli')) { return $false }
     if (-not ($items -ccontains 'opencode')) { return $false }
+    return $true
   }
-  return $true
+  # global.md: no targets line means every target; otherwise a wildcard or slugs.
+  if ($targetsSeen -eq 0) { return $true }
+  if ($wildcard) { return $true }
+  return ($items.Count -gt 0)
 }
 
 function Get-GitHubRuleContent([string]$AutoDir, [string]$Kind) {
@@ -455,7 +464,7 @@ function Save-GitHubRuleContent([string]$AutoDir, [string]$Kind, [string]$Text, 
   $k = [string]$Kind
   if (($k -cne 'project') -and ($k -cne 'global')) { return @{ ok = $false; error = '種別が不正です。' } }
   if (-not (Test-GitHubRuleFrontmatter ([string]$Text) $k)) {
-    return @{ ok = $false; error = 'frontmatter が不正です（root: true、1行の targets 配列、小文字スラッグ、重複なしが必要です）。' }
+    return @{ ok = $false; error = 'frontmatter が不正です（root: true、1行の targets 配列（global は省略可）、小文字スラッグ、重複なしが必要です）。' }
   }
   $cur = Get-GitHubRuleContent $AutoDir $k
   if (-not $cur.ok) { return $cur }

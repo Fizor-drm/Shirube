@@ -116,7 +116,9 @@ function Start-DashboardServer([string]$Script) {
   if (-not (Test-Path -LiteralPath $Script -PathType Leaf)) { throw ('起動スクリプトが見つかりません: ' + $Script) }
   $ws = Join-Path $env:SystemRoot 'System32\wscript.exe'
   if (-not (Test-Path -LiteralPath $ws)) { throw 'wscript.exe が見つかりません。' }
-  $p = Start-Process -FilePath $ws -ArgumentList @('//B', '//Nologo', $Script) -WindowStyle Hidden -PassThru
+  # Quote the script path: wscript.exe receives an unquoted argument list and
+  # would split a path such as "C:\Users\First Last\...".
+  $p = Start-Process -FilePath $ws -ArgumentList @('//B', '//Nologo', "`"$Script`"") -WindowStyle Hidden -PassThru
   try { [void]$p } catch {}
 }
 

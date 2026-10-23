@@ -1126,7 +1126,7 @@ function rulesHarness() {
   }
   byId('selRuleKind').value = 'project';
   const model = {
-    calls: [], confirm: true, onConfirm: null, loadError: null, saveError: null,
+    calls: [], confirm: true, onConfirm: null, loadError: null, saveError: null, getGate: null,
     get: { ok: true, kind: 'project', path: 'rules/project.md', sha: 'sha-1', text: 'text-1', redacted: false },
     saveR: { ok: true, sha: 'sha-2', path: 'rules/project.md', kind: 'project' }
   };
@@ -1148,6 +1148,7 @@ function rulesHarness() {
       model.calls.push({ ep, method, body });
       if (ep === '/api/github-rule-get') {
         if (model.loadError) throw model.loadError;
+        if (model.getGate) await model.getGate;
         return Object.assign({}, model.get);
       }
       if (ep === '/api/github-rule-save') {
@@ -1160,7 +1161,7 @@ function rulesHarness() {
   vm.runInContext(rulesBlock() +
     ';globalThis.__r={rulesLockedByGitHub:rulesLockedByGitHub,renderRulesLock:renderRulesLock,' +
     'ruleLoad:ruleLoad,ruleSave:ruleSave,ruleKind:ruleKind,renderRuleMeta:renderRuleMeta,' +
-    'state:function(){return ruleLoaded;}};', context);
+    'state:function(){return ruleLoaded;},busy:function(){return ruleBusy;}};', context);
   return { context, model, byId, r: context.__r };
 }
 
@@ -1215,6 +1216,40 @@ await testAsync('a status poll that closes GitHub while confirming aborts the sa
   h.model.onConfirm = () => { h.context.currentGlobalStatus = { githubConfigured: false }; };
   await h.r.ruleSave();
   must(h.model.calls.filter(c => c.ep === '/api/github-rule-save').length === 0, 'race: no save after the lock closes');
+});
+
+await testAsync('a load in flight blocks another load and the save', async () => {
+  const h = rulesHarness();
+  h.context.currentGlobalStatus = { githubConfigured: true };
+  let openGate;
+  h.model.getGate = new Promise(resolve => { openGate = resolve; });
+  const pendingLoad = h.r.ruleLoad();
+  await new Promise(resolve => setTimeout(resolve, 0));
+  must(h.r.busy() === true, 'load marks the editor busy');
+  must(h.byId('btnRuleLoad').disabled === true && h.byId('btnRuleSave').disabled === true, 'busy disables load and save');
+  await h.r.ruleLoad();
+  await h.r.ruleSave();
+  must(h.model.calls.filter(c => c.ep === '/api/github-rule-get').length === 1, 'the second load is ignored');
+  must(h.model.calls.filter(c => c.ep === '/api/github-rule-save').length === 0, 'the save is ignored while loading');
+  openGate();
+  await pendingLoad;
+  must(h.r.busy() === false, 'busy released after the load');
+  must(h.byId('btnRuleLoad').disabled === false && h.byId('btnRuleSave').disabled === false, 'load and save re-enable');
+});
+
+await testAsync('a reload finishing during confirmation aborts the save', async () => {
+  const h = rulesHarness();
+  h.context.currentGlobalStatus = { githubConfigured: true };
+  await h.r.ruleLoad();
+  h.byId('ruleText').value = 'edited';
+  h.model.get = { ok: true, kind: 'project', path: 'rules/project.md', sha: 'sha-9', text: 'newer', redacted: false };
+  let pendingLoad = null;
+  h.model.onConfirm = () => { pendingLoad = h.r.ruleLoad(); };
+  await h.r.ruleSave();
+  await pendingLoad;
+  must(h.model.calls.filter(c => c.ep === '/api/github-rule-save').length === 0, 'reload during confirm never saves');
+  must(h.r.state().sha === 'sha-9' && h.byId('ruleText').value === 'newer', 'the reloaded content is kept');
+  must(h.r.busy() === false, 'busy released after the aborted save');
 });
 
 console.log(failures.length ? 'FAILURES: ' + failures.join('; ') : 'ALL GLOBAL SETTINGS DESIGN CHECKS PASSED');
