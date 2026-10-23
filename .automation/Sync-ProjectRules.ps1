@@ -132,7 +132,7 @@ function Invoke-ProjectSync {
       elseif ($ln -match '^targets\s*:') { return $false }
       # Only YAML 1.2 escapes: \0 \a \b \t \n \v \f \r \e \  \" \/ \\ \N \_ \L \P,
       # plus \xNN, \uNNNN, \UNNNNNNNN. A bare "\q" or "C:\Users" is refused.
-      if ($ln -cmatch '^description\s*:\s*"([^"\\]|\\[0abtnvfre " /\\N_LP]|\\x[0-9a-fA-F]{2}|\\u[0-9a-fA-F]{4}|\\U[0-9a-fA-F]{8})*"\s*(#.*)?$') { $seenDesc++; if ($seenDesc -gt 1) { return $false }; continue }
+      if ($ln -cmatch '^description\s*:[ \t]+"([^"\\]|\\[0abtnvfre " /\\N_LP]|\\x[0-9a-fA-F]{2}|\\u[0-9a-fA-F]{4}|\\U[0-9a-fA-F]{8})*"\s*(#.*)?$') { $seenDesc++; if ($seenDesc -gt 1) { return $false }; continue }
       elseif ($ln -match '^description\s*:') { return $false }
       return $false
     }

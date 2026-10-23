@@ -188,6 +188,8 @@ try {
   Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + '  targets: ["pi"]' + $nl + '---' + $nl) 'global')) 'T6b indented targets rejected'
   Assert (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + 'description: "common"' + $nl + '---' + $nl) 'project') 'T6b quoted description accepted'
   Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + 'description: common' + $nl + '---' + $nl) 'project')) 'T6b unquoted description rejected'
+  # YAML requires a space after a mapping colon; `description:"x"` breaks the real parser at sync time.
+  Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + 'description:"common"' + $nl + '---' + $nl) 'project')) 'T6b description without space after colon rejected'
   # An unescaped inner quote passes a greedy ".*" but is invalid YAML.
   Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + 'description: "say "hello" to everyone"' + $nl + '---' + $nl) 'project')) 'T6b unescaped quote in description rejected'
   Assert (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + 'description: "say \"hello\" to everyone"' + $nl + '---' + $nl) 'project') 'T6b escaped quote in description accepted'
