@@ -296,6 +296,22 @@ test('every used string key exists in English and Simplified Chinese', () => {
   }
 });
 
+test('rule editor strings exist and interpolate in every edition', () => {
+  const h = harness(undefined);
+  const keys = ['GitHub連携が未設定のため編集できません。', '取得しました。', '保存しました。',
+    '保存の確認', '取得元: {path}（SHA {sha}）', 'ルール種別', 'ルール本文'];
+  for (const key of keys) {
+    assert.ok(Object.prototype.hasOwnProperty.call(h.i18n.I18N.en, key), 'English missing: ' + key);
+    assert.ok(Object.prototype.hasOwnProperty.call(h.i18n.I18N['zh-CN'], key), 'Chinese missing: ' + key);
+  }
+  h.i18n.applyLanguage('en', false);
+  assert.equal(h.i18n.L('取得元: {path}（SHA {sha}）', { path: 'rules/global.md', sha: 'abc123' }),
+    'Source: rules/global.md (SHA abc123)');
+  assert.equal(h.i18n.L('取得しました。'), 'Loaded.');
+  h.i18n.applyLanguage('zh-CN', false);
+  assert.equal(h.i18n.L('取得しました。'), '已获取。');
+});
+
 // --- real rendering functions keep user data verbatim ---------------------
 const names = ['stateJa', 'resultJa', 'globalResultJa', 'renderStatusTable', 'renderGlobalTable',
   'globalProviderEntry', 'globalProviderLabel',
