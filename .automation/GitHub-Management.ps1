@@ -326,6 +326,9 @@ function Update-GitHubTargetsText([string]$Text, [string[]]$Targets) {
     }
   }
   if ($idx -lt 0) { return @{ ok = $false; error = 'frontmatter に targets がありません。' } }
+  # A wildcard already covers every target; appending slugs would mix "*" with
+  # concrete targets, which Test-GitHubRuleFrontmatter refuses.
+  if ($items -contains '*') { return @{ ok = $true; changed = $false; text = $src; added = @() } }
   $add = @()
   foreach ($t in @($Targets)) {
     $tt = ([string]$t).Trim()

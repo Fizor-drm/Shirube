@@ -139,6 +139,13 @@ try {
   Assert (-not $r5.ok) 'T5 missing frontmatter refused'
   $r6 = Update-GitHubTargetsText (('---' + "`r`n" + 'targets: ["a"]' + "`r`n" + '---' + "`r`n" + 'body' + "`r`n")) @('b')
   Assert ($r6.text.Contains("`r`n")) 'T5 CRLF preserved'
+  $ruleWildcard = ('---' + $nl + 'root: true' + $nl + 'targets: ["*"]' + $nl + '---' + $nl + '# wildcard body' + $nl)
+  Assert (Test-GitHubRuleFrontmatter $ruleWildcard 'global') 'T5 wildcard rule is editable before update'
+  $r7 = Update-GitHubTargetsText $ruleWildcard @('codexcli', 'opencode')
+  Assert ($r7.ok -and (-not $r7.changed)) 'T5 wildcard target is a no-op'
+  Assert ([string]$r7.text -ceq $ruleWildcard) 'T5 wildcard text unchanged'
+  Assert ($r7.added.Count -eq 0) 'T5 wildcard adds no target'
+  Assert (Test-GitHubRuleFrontmatter $r7.text 'global') 'T5 wildcard rule stays editable after update'
 
   # T6: adding targets commits only the file that changed.
   Save-GitHubSettings $auto 'Fizor-drm/ai-agent-rules' 'dev' 'rules' | Out-Null
