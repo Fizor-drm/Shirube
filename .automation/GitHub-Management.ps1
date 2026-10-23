@@ -430,11 +430,11 @@ function Test-GitHubRuleFrontmatter([string]$Text, [string]$Kind) {
     if ($ln -match '^[ \t]*$') { continue }
     if ($ln -match '^[ \t]') { return $false }
     if ($ln -match ':\s*[|>]\s*(#.*)?$') { return $false }
-    if ($ln -match '^root\s*:[ \t]+true\s*(#.*)?$') { $rootHits++; continue }
-    if ($ln -match '^root\s*:') { return $false }
-    if ($ln -match '^localRoot\s*:') { return $false }
+    if ($ln -cmatch '^root\s*:[ \t]+true([ \t]+#.*)?$') { $rootHits++; continue }
+    if ($ln -cmatch '^root\s*:') { return $false }
+    if ($ln -cmatch '^localRoot\s*:') { return $false }
     # Same contract as Sync-ProjectRules.ps1:126.
-    if ($ln -cmatch '^targets\s*:[ \t]+\[(\s*"[a-z0-9][a-z0-9-]*"(?:\s*,\s*"[a-z0-9][a-z0-9-]*")*\s*)\]\s*(#.*)?$') {
+    if ($ln -cmatch '^targets\s*:[ \t]+\[(\s*"[a-z0-9][a-z0-9-]*"(?:\s*,\s*"[a-z0-9][a-z0-9-]*")*\s*)\]([ \t]+#.*)?$') {
       $seenTargets++
       if ($seenTargets -gt 1) { return $false }
       foreach ($tm in [regex]::Matches([string]$Matches[1], '"([a-z0-9][a-z0-9-]*)"')) {
@@ -448,19 +448,19 @@ function Test-GitHubRuleFrontmatter([string]$Text, [string]$Kind) {
       }
       continue
     }
-    if ($ln -cmatch '^targets\s*:[ \t]+\[\s*"\*"\s*\]\s*(#.*)?$') {
+    if ($ln -cmatch '^targets\s*:[ \t]+\[\s*"\*"\s*\]([ \t]+#.*)?$') {
       $seenTargets++
       if ($seenTargets -gt 1) { return $false }
       if ($proj) { return $false }
       $wildcard = $true
       continue
     }
-    if ($ln -match '^targets\s*:') { return $false }
+    if ($ln -cmatch '^targets\s*:') { return $false }
     # No unescaped quote inside: `"say "hi""` is invalid YAML and would break the next sync.
     # Only YAML 1.2 escapes: \0 \a \b \t \n \v \f \r \e \  \" \/ \\ \N \_ \L \P,
     # plus \xNN, \uNNNN, \UNNNNNNNN. A bare "\q" or "C:\Users" is refused.
-    if ($ln -cmatch '^description\s*:[ \t]+"([^"\\]|\\[0abtnvfre " /\\N_LP]|\\x[0-9a-fA-F]{2}|\\u[0-9a-fA-F]{4}|\\U[0-9a-fA-F]{8})*"\s*(#.*)?$') { $seenDesc++; if ($seenDesc -gt 1) { return $false }; continue }
-    if ($ln -match '^description\s*:') { return $false }
+    if ($ln -cmatch '^description\s*:[ \t]+"([^"\\]|\\[0abtnvfre " /\\N_LP]|\\x[0-9a-fA-F]{2}|\\u[0-9a-fA-F]{4}|\\U[0-9a-fA-F]{8})*"([ \t]+#.*)?$') { $seenDesc++; if ($seenDesc -gt 1) { return $false }; continue }
+    if ($ln -cmatch '^description\s*:') { return $false }
     return $false
   }
   if ($rootHits -ne 1) { return $false }

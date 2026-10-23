@@ -204,6 +204,13 @@ try {
   Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + '---' + $nl) 'project')) 'T6b duplicate root rejected'
   Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'localRoot: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + '---' + $nl) 'project')) 'T6b root/localRoot mix rejected'
   Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'foo: bar' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + '---' + $nl) 'project')) 'T6b unknown frontmatter key rejected'
+  # YAML needs whitespace before an inline comment: `true#c` parses as the string "true#c".
+  Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true#comment' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + '---' + $nl) 'project')) 'T6b root comment without whitespace rejected'
+  Assert (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true # comment' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + '---' + $nl) 'project') 'T6b root comment with whitespace accepted'
+  Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode"]#c' + $nl + '---' + $nl) 'project')) 'T6b targets comment without whitespace rejected'
+  Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + 'description: "common"#c' + $nl + '---' + $nl) 'project')) 'T6b description comment without whitespace rejected'
+  # YAML keys are case-sensitive: `Root` is not `root`, so the required key would be missing.
+  Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'Root: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + '---' + $nl) 'project')) 'T6b capitalized Root key rejected'
 
   # T6c: read and write one rule file through the shared helpers.
   Save-GitHubSettings $auto 'Fizor-drm/ai-agent-rules' 'dev' 'rules' | Out-Null
@@ -241,13 +248,21 @@ try {
   # A missing space after the colon is invalid YAML and would break the next sync.
   foreach ($case in @(
     @{ name = 'root without space after the colon'; text = ('---' + $nl + 'root:true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + '---' + $nl) },
-    @{ name = 'targets without space after the colon'; text = ('---' + $nl + 'root: true' + $nl + 'targets:["codexcli", "opencode"]' + $nl + '---' + $nl) }
+    @{ name = 'targets without space after the colon'; text = ('---' + $nl + 'root: true' + $nl + 'targets:["codexcli", "opencode"]' + $nl + '---' + $nl) },
+    @{ name = 'root comment without space before #'; text = ('---' + $nl + 'root: true#comment' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + '---' + $nl) },
+    @{ name = 'capitalized Root key'; text = ('---' + $nl + 'Root: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + '---' + $nl) }
   )) {
     $script:GhCalls = @()
     $noSpace = Save-GitHubRuleContent $auto 'project' ([string]$case.text) 'sha-project'
     Assert (-not $noSpace.ok) ('T6c ' + $case.name + ' refused before commit')
     Assert (@($script:GhCalls | Where-Object { $_.method -ne 'GET' }).Count -eq 0) ('T6c ' + $case.name + ' never commits')
   }
+
+  # The same comment with a space before `#` is valid YAML and must save.
+  $script:GhCalls = @()
+  $spacedComment = Save-GitHubRuleContent $auto 'project' ('---' + $nl + 'root: true # comment' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + '---' + $nl + '# project body' + $nl) 'sha-project'
+  Assert ($spacedComment.ok) 'T6c root comment with space before # saves'
+  Assert (@($script:GhCalls | Where-Object { $_.method -ne 'GET' }).Count -eq 1) 'T6c root comment with space before # commits'
 
   $ruleGlobalWild = ('---' + $nl + 'root: true' + $nl + 'targets: ["*"]' + $nl + '---' + $nl + '# global body' + $nl)
   foreach ($case in @(@{ name = 'without targets'; text = $ruleGlobalBare }, @{ name = 'with a wildcard target'; text = $ruleGlobalWild })) {
