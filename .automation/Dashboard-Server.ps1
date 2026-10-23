@@ -1007,37 +1007,68 @@ input[type=number]{width:120px;background:#0a0a0a;border:1px solid #2c2c2c;color
 .topbar-right{display:flex;align-items:center;gap:8px;flex:none}
 .ghbtn{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;padding:0;border-radius:6px;border:1px solid #2a2a2a;background:#0a0a0a;color:#f5f5f5;cursor:pointer;flex:none}
 .ghbtn:hover{background:#161616;border-color:#3a3a3a}
-.ghbtn:focus-visible,.ghicon:focus-visible,.ghclose:focus-visible{outline:2px solid #4c9aff;outline-offset:2px}
-.ghovl{position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;z-index:60;padding:20px}
-.ghovl[hidden]{display:none}
-.ghbox{position:relative;box-sizing:border-box;width:min(560px,100%);max-height:calc(100vh - 40px);max-height:calc(100dvh - 40px);overflow:auto;background:#0d0d0d;border:1px solid #2a2a2a;border-radius:10px;padding:22px 24px 24px}
-.ghbox *{box-sizing:border-box}
-.ghbox h3{margin:0 0 6px;font-size:16px}
-.ghbox .ghlead{margin:0 0 16px;color:#b5b5b5;font-size:13px}
-.ghclose{position:absolute;top:12px;right:12px;width:30px;height:30px;border-radius:6px;border:1px solid #2a2a2a;background:#0a0a0a;color:#f5f5f5;font-size:18px;line-height:1;cursor:pointer}
-.ghclose:hover{background:#161616}
-.ghfield{margin:0 0 14px;border:0;padding:0;min-width:0}
-.ghfield>label,.ghfield>legend{display:block;margin:0 0 6px;padding:0;color:#d6d6d6;font-size:12px;font-weight:600}
-.ghrow{display:flex;gap:8px;align-items:center}
-.ghrow input{flex:1;min-width:0}
-#ghToken{width:100%;background:#0a0a0a;border:1px solid #2c2c2c;color:#fff;border-radius:6px;padding:10px 12px;font-size:13px;font-family:Consolas,"MS Gothic",monospace}
-#ghToken:focus{outline:2px solid #f5f5f5;outline-offset:1px}
-.ghicon{flex:none;width:38px;height:38px;padding:0;border-radius:6px;border:1px solid #2c2c2c;background:#0a0a0a;color:#f5f5f5;cursor:pointer;font-size:15px}
-.ghicon:hover{background:#161616}
-.ghhint{margin:6px 0 0;color:#9a9a9a;font-size:11px;line-height:1.6}
-.ghradio{display:flex;align-items:center;gap:8px;margin:0 0 6px;color:#e8e8ea;font-size:13px;font-weight:400}
-.ghradio input{width:16px;height:16px;flex:none}
-#ghFolderCustom{margin-top:6px}
-.ghpreview{margin:8px 0 0;padding:8px 10px;border:1px dashed #2a2a30;border-radius:6px;color:#9a9aa3;font:11px/1.7 Consolas,"MS Gothic",monospace;white-space:pre-wrap;word-break:break-all}
-.ghstatus{min-height:20px;margin:2px 0 12px;font-size:12px;color:#b5b5b5;word-break:break-word}
-.ghstatus.ok{color:#8fd694}
-.ghstatus.err{color:#f0a3a3}
-.ghactions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
-.ghactions button{padding:8px 16px}
-.ghactions .primary{border-color:#4c9aff;background:#1f6feb;color:#fff}
-.ghactions .primary:hover{background:#2b7bf0}
-.ghactions button:disabled{opacity:.6;cursor:not-allowed}
-@media(max-width:520px){.ghovl{padding:10px}.ghbox{padding:18px}}
+.ghbtn:focus-visible{outline:2px solid #4c9aff;outline-offset:2px}
+#ghOvl{--gh-surface:#111113;--gh-input-bg:#0a0a0a;--gh-text:#f5f5f5;--gh-muted:#9a9aa3;--gh-border:#2a2a30;--gh-accent:#4c9aff;--gh-accent-hover:#2b7bf0;--gh-accent-soft:rgba(76,154,255,.12);--gh-ok:#8fd694;--gh-err:#f0a3a3;--gh-code-bg:#17171a;--gh-backdrop:rgba(0,0,0,.72);position:fixed;inset:0;background:var(--gh-backdrop);display:flex;align-items:center;justify-content:center;z-index:60;padding:16px;font:14px/1.45 -apple-system,"Segoe UI","Hiragino Sans","Noto Sans JP",sans-serif;color:var(--gh-text)}
+#ghOvl[hidden]{display:none}
+#ghOvl *{box-sizing:border-box}
+#ghOvl .ghbox{width:min(680px,calc(100vw - 32px));max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflow:auto;padding:0;border:1px solid var(--gh-border);border-radius:12px;background:var(--gh-surface);color:var(--gh-text);box-shadow:0 16px 48px rgba(0,0,0,.25)}
+#ghOvl .gh-head{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--gh-border)}
+#ghOvl .gh-head svg{flex:none}
+#ghOvl .gh-head h2{margin:0;font-size:15px;color:var(--gh-text)}
+#ghOvl .gh-head p{margin:0;color:var(--gh-muted);font-size:12px}
+#ghOvl .ghclose{margin-left:auto;border:0;background:none;color:var(--gh-muted);font-size:20px;line-height:1;padding:4px 8px;border-radius:6px;width:auto;height:auto;font-weight:400;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+#ghOvl .ghclose:hover{background:var(--gh-code-bg);color:var(--gh-text)}
+#ghOvl form{padding:12px 16px;display:grid;gap:8px;margin:0}
+#ghOvl .ghfield{margin:0;border:0;padding:0;min-width:0}
+#ghOvl .ghfield>label,#ghOvl .ghfield>.ghlabel,#ghOvl #ghCustomWrap>label{display:block;font-weight:600;margin:0 0 2px;color:var(--gh-text);font-size:13px}
+#ghOvl .ghfield>.ghlabel{margin-bottom:4px}
+#ghOvl .ghfield .ghhint{color:var(--gh-muted);font-size:11.5px;margin:2px 0 0;line-height:1.35}
+#ghOvl .ghfield .ghhint.error{color:var(--gh-err)}
+#ghOvl .ghsecret{position:relative}
+#ghOvl input[type=text],#ghOvl input[type=password]{width:100%;padding:6px 10px;border:1px solid var(--gh-border);border-radius:6px;background:var(--gh-input-bg);color:var(--gh-text);font:inherit;margin:0}
+#ghOvl .gh-two{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:12px}
+#ghOvl .ghsecret input{padding-right:40px}
+#ghOvl input.mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:13px}
+#ghOvl input:focus,#ghOvl input:focus-visible,#ghOvl button:focus-visible{outline:2px solid var(--gh-accent);outline-offset:1px}
+#ghOvl input[aria-invalid=true]{border-color:var(--gh-err)}
+#ghOvl .gheye{position:absolute;top:50%;right:4px;transform:translateY(-50%);width:28px;height:28px;padding:0;display:grid;place-items:center;border:0;border-radius:6px;background:none;color:var(--gh-muted);cursor:pointer}
+#ghOvl .gheye:hover{background:var(--gh-code-bg);color:var(--gh-text)}
+#ghOvl .gheye[hidden],#ghOvl .gheye svg[hidden]{display:none}
+#ghOvl fieldset{border:1px solid var(--gh-border);border-radius:8px;padding:8px 12px;margin:0;display:grid;gap:8px;min-width:0}
+#ghOvl legend{padding:0 6px;font-weight:600;color:var(--gh-text);font-size:13px}
+#ghOvl .ghext-link{display:inline-flex;align-items:center;gap:4px;margin-top:2px;font-size:12px;color:var(--gh-accent);text-decoration:none}
+#ghOvl .ghext-link:hover{text-decoration:underline}
+#ghOvl .ghext-link:focus-visible{outline:2px solid var(--gh-accent);outline-offset:2px;border-radius:2px}
+#ghOvl .ghsr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+#ghOvl .ghlead{margin:0;color:var(--gh-muted);font-size:12px;line-height:1.35}
+#ghOvl .ghchoices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+#ghOvl .ghchoice{display:flex;gap:6px;align-items:flex-start;padding:6px 8px;margin:0;border:1px solid var(--gh-border);border-radius:8px;cursor:pointer;font-weight:400;color:var(--gh-text)}
+#ghOvl .ghchoice:hover{background:var(--gh-code-bg)}
+#ghOvl .ghchoice:has(input:checked){background:var(--gh-accent-soft);border-color:var(--gh-accent);box-shadow:0 0 0 1px var(--gh-accent) inset}
+#ghOvl .ghchoice:has(input:focus-visible){outline:2px solid var(--gh-accent);outline-offset:1px}
+#ghOvl .ghchoice input{margin-top:4px;accent-color:var(--gh-accent);width:auto;height:auto}
+#ghOvl .ghchoice b{font-weight:600;font-size:13px}
+#ghOvl .ghchoice small{display:block;color:var(--gh-muted);font-size:11.5px;line-height:1.3}
+#ghOvl .ghchoice em{font-style:normal;font-size:11px;margin-left:6px;padding:1px 6px;border-radius:999px;background:var(--gh-accent);color:#0b0b0c;font-weight:600;vertical-align:1px;white-space:nowrap;display:inline-block}
+#ghOvl #ghCustomWrap{margin-top:6px}
+#ghOvl .ghsummary{background:var(--gh-code-bg);border-radius:8px;padding:8px 10px}
+#ghOvl .ghsummary-title{font-size:11.5px;font-weight:600;color:var(--gh-muted);margin-bottom:2px}
+#ghOvl .ghsummary p{margin:0 0 4px;color:var(--gh-text);font-size:12.5px;line-height:1.35}
+#ghOvl .ghtree{font:11.5px/1.4 ui-monospace,"SF Mono",Menlo,Consolas,monospace;overflow-x:auto;color:var(--gh-text)}
+#ghOvl .ghtree .row{white-space:nowrap}
+#ghOvl .ghtree .target{color:var(--gh-accent);font-weight:600}
+#ghOvl .ghtree .note{margin-left:8px;font-family:inherit;font-size:12px;font-weight:400;color:var(--gh-accent);border:0;padding:0}
+#ghOvl .ghstatus{min-height:16px;font-size:12px;margin:0;color:var(--gh-muted);word-break:break-word}
+#ghOvl .ghstatus.ok{color:var(--gh-ok)}
+#ghOvl .ghstatus.err{color:var(--gh-err)}
+#ghOvl .ghfoot{display:flex;gap:8px;justify-content:space-between;align-items:center;padding-top:2px;flex-wrap:wrap}
+#ghOvl .ghfoot .right{display:flex;gap:8px}
+#ghOvl .ghbtn-act{padding:6px 14px;border-radius:6px;border:1px solid var(--gh-border);background:var(--gh-surface);color:var(--gh-text);font:inherit;font-weight:400}
+#ghOvl .ghbtn-act:hover{background:var(--gh-code-bg)}
+#ghOvl .ghbtn-act.primary{background:#1f6feb;border-color:#1f6feb;color:#fff;font-weight:400}
+#ghOvl .ghbtn-act.primary:hover{background:var(--gh-accent-hover)}
+#ghOvl .ghbtn-act:disabled{opacity:.5;cursor:not-allowed}
+@media(max-width:560px){#ghOvl .gh-two{grid-template-columns:1fr}#ghOvl .ghchoices{grid-template-columns:1fr}}
 /* #gsettings card selector */
 #gsettings{--gs-accent:#4c9aff;--gs-accent-soft:rgba(76,154,255,.12);--gs-card:#17171a;--gs-card-hover:#1d1d21;--gs-border:#2a2a30;--gs-muted:#9a9aa3;--gs-text:#e8e8ea;--gs-ok:#3fb950;--gs-off:#6b6b75;--gs-on-accent:#0b0b0c}
 #gsettings .gs-toolbar{display:flex;align-items:center;gap:4px;margin:16px 0 12px;flex-wrap:wrap}
@@ -1295,32 +1326,87 @@ input[type=number]{width:120px;background:#0a0a0a;border:1px solid #2c2c2c;color
 <div class="ovl" id="ovl" hidden><div class="mbox" role="dialog" aria-modal="true" aria-labelledby="mTitle" aria-describedby="mMsg"><h3 id="mTitle"></h3><p id="mMsg"></p><div class="btnrow" id="mBtns"></div></div></div>
 <div class="ghovl" id="ghOvl" hidden>
 <div class="ghbox" role="dialog" aria-modal="true" aria-labelledby="ghTitle" aria-describedby="ghLead">
+<div class="gh-head">
+<svg width="28" height="28" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+<path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/>
+</svg>
+<div>
+<h2 id="ghTitle" data-i18n="GitHub連携">GitHub連携</h2>
+<p id="ghLead" data-i18n="ルールファイルの保存先リポジトリを設定します">ルールファイルの保存先リポジトリを設定します</p>
+</div>
 <button type="button" class="ghclose" id="ghClose" aria-label="閉じる" data-i18n-aria="閉じる">&times;</button>
-<h3 id="ghTitle" data-i18n="GitHub連携">GitHub連携</h3>
-<p class="ghlead" id="ghLead" data-i18n="ルールの取得元リポジトリを設定します。">ルールの取得元リポジトリを設定します。</p>
+</div>
 <form id="ghForm" autocomplete="off" novalidate>
 <div class="ghfield">
-<label for="ghToken">Personal access token</label>
-<div class="ghrow"><input type="password" id="ghToken" placeholder="ghp_..." autocomplete="off" spellcheck="false" aria-describedby="ghTokenHint"><button type="button" class="ghicon" id="ghEye" aria-label="トークンを表示" data-i18n-aria="トークンを表示" aria-pressed="false">&#128065;</button></div>
-<p class="ghhint" id="ghTokenHint"></p>
+<label for="ghToken">Personal Access Token</label>
+<div class="ghsecret">
+<input type="password" id="ghToken" class="mono" placeholder="github_pat_xxxxxxxxxxxx" autocomplete="off" spellcheck="false" aria-describedby="ghTokenHint">
+<button type="button" class="gheye" id="ghEye" aria-label="トークンを表示" data-i18n-aria="トークンを表示" aria-pressed="false" title="表示" data-i18n-title="表示">
+<svg id="ghEyeOn" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+<svg id="ghEyeOff" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden><path d="M17.94 17.94A10.94 10.94 0 0112 19C5 19 1 12 1 12a18.5 18.5 0 015.06-5.94M9.9 4.24A10.9 10.9 0 0112 5c7 0 11 7 11 7a18.5 18.5 0 01-2.16 3.19M14.12 14.12a3 3 0 11-4.24-4.24"/><path d="M1 1l22 22"/></svg>
+</button>
 </div>
-<div class="ghfield"><label for="ghRepo" data-i18n="リポジトリ">リポジトリ</label><input type="text" id="ghRepo" placeholder="owner/repo" spellcheck="false" autocomplete="off"></div>
-<div class="ghfield"><label for="ghBranch" data-i18n="ブランチ">ブランチ</label><input type="text" id="ghBranch" placeholder="main" spellcheck="false" autocomplete="off"></div>
-<fieldset class="ghfield">
-<legend data-i18n="ルールフォルダ">ルールフォルダ</legend>
-<label class="ghradio"><input type="radio" name="ghFolder" value="rules" checked><span data-i18n="rules/（既定）">rules/（既定）</span></label>
-<label class="ghradio"><input type="radio" name="ghFolder" value="."><span data-i18n="リポジトリ直下">リポジトリ直下</span></label>
-<label class="ghradio"><input type="radio" name="ghFolder" value="__custom"><span data-i18n="カスタム">カスタム</span></label>
-<input type="text" id="ghFolderCustom" placeholder="config/rules" spellcheck="false" autocomplete="off" hidden>
-<p class="ghpreview" id="ghPreview"></p>
-<p class="ghhint" data-i18n="対象を保存すると、このフォルダの global.md と project.md に選択中の対象を自動追記します。">対象を保存すると、このフォルダの global.md と project.md に選択中の対象を自動追記します。</p>
+<div class="ghhint" id="ghTokenHint" data-i18n="必要な権限: Contents (Read and write)。Fine-grained トークンを推奨します。">必要な権限: Contents (Read and write)。Fine-grained トークンを推奨します。</div>
+<a class="ghext-link" id="ghTokenLink" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">
+<span data-i18n="GitHubでトークンを作成する">GitHubでトークンを作成する</span>
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><path d="M15 3h6v6"/><path d="M10 14L21 3"/></svg>
+<span class="ghsr-only" data-i18n="(新しいタブで開きます)">(新しいタブで開きます)</span>
+</a>
+</div>
+<fieldset>
+<legend data-i18n="ルールの保存先">ルールの保存先</legend>
+<p class="ghlead" data-i18n="GitHub上のどこにルールを保存するかを、3つの質問で決めます。">GitHub上のどこにルールを保存するかを、3つの質問で決めます。</p>
+<div class="gh-two">
+<div class="ghfield">
+<label for="ghRepo" data-i18n="① どのリポジトリに保存しますか?">① どのリポジトリに保存しますか?</label>
+<input type="text" id="ghRepo" class="mono" placeholder="例: Fizor-drm/Shirube" data-i18n-placeholder="例: Fizor-drm/Shirube" spellcheck="false" autocomplete="off">
+<div class="ghhint" id="ghRepoHint" data-i18n="GitHubのURL(https://github.com/…)をそのまま貼り付けてもOKです。">GitHubのURL(https://github.com/…)をそのまま貼り付けてもOKです。</div>
+</div>
+<div class="ghfield">
+<label for="ghBranch" data-i18n="② どのブランチに保存しますか?">② どのブランチに保存しますか?</label>
+<input type="text" id="ghBranch" class="mono" placeholder="main" spellcheck="false" autocomplete="off">
+<div class="ghhint" id="ghBranchHint" data-i18n="迷ったら「main」のままで大丈夫です。">迷ったら「main」のままで大丈夫です。</div>
+</div>
+</div>
+<div class="ghfield">
+<span class="ghlabel" id="ghFolderLabel" data-i18n="③ ルールをどのフォルダに入れますか?">③ ルールをどのフォルダに入れますか?</span>
+<div class="ghchoices" role="radiogroup" aria-labelledby="ghFolderLabel">
+<label class="ghchoice">
+<input type="radio" name="ghFolder" value="rules" checked>
+<span><b data-i18n="rules フォルダ">rules フォルダ</b><em data-i18n="おすすめ">おすすめ</em><small data-i18n="ルール専用のフォルダにまとめて保存します">ルール専用のフォルダにまとめて保存します</small></span>
+</label>
+<label class="ghchoice">
+<input type="radio" name="ghFolder" value=".">
+<span><b data-i18n="リポジトリの一番上">リポジトリの一番上</b><small data-i18n="フォルダを作らず、直接ファイルを置きます">フォルダを作らず、直接ファイルを置きます</small></span>
+</label>
+<label class="ghchoice">
+<input type="radio" name="ghFolder" value="__custom">
+<span><b data-i18n="別のフォルダを指定する">別のフォルダを指定する</b><small data-i18n="すでに使いたいフォルダがある場合はこちら">すでに使いたいフォルダがある場合はこちら</small></span>
+</label>
+</div>
+<div id="ghCustomWrap" hidden>
+<label for="ghFolderCustom" class="ghlabel" style="font-weight:500" data-i18n="フォルダの場所">フォルダの場所</label>
+<input type="text" id="ghFolderCustom" class="mono" placeholder="例: config/shirube/rules" data-i18n-placeholder="例: config/shirube/rules" spellcheck="false" autocomplete="off">
+<div class="ghhint" id="ghPathHint" data-i18n="「/」で区切ると、フォルダの中のフォルダも指定できます。まだ無いフォルダは自動で作られます。">「/」で区切ると、フォルダの中のフォルダも指定できます。まだ無いフォルダは自動で作られます。</div>
+</div>
+</div>
+<div class="ghsummary" aria-live="polite">
+<div class="ghsummary-title" data-i18n="この設定の場合">この設定の場合</div>
+<p id="ghSummaryText"></p>
+<div class="ghtree" id="ghTree" aria-hidden="true"></div>
+</div>
 </fieldset>
 <div class="ghstatus" id="ghStatus" role="status" aria-live="polite"></div>
-<div class="ghactions"><button type="button" id="ghTest" data-i18n="接続テスト">接続テスト</button><button type="submit" id="ghSave" class="primary" data-i18n="保存">保存</button></div>
+<div class="ghfoot">
+<button type="button" class="ghbtn-act" id="ghTest" data-i18n="接続テスト">接続テスト</button>
+<div class="right">
+<button type="button" class="ghbtn-act" id="ghCancel" data-i18n="キャンセル">キャンセル</button>
+<button type="submit" class="ghbtn-act primary" id="ghSave" data-i18n="保存">保存</button>
+</div>
+</div>
 </form>
 </div>
-</div>
-<script>
+</div><script>
 "use strict";
 const TOKEN = "__TOKEN__";
 const GLOBAL_CATALOG = (typeof __GLOBAL_CATALOG__ !== "undefined") ? __GLOBAL_CATALOG__ : [];
@@ -1746,7 +1832,45 @@ const I18N = {
     "GitHub: 追記は不要でした。": "GitHub: already up to date.",
     "GitHub: {reason}": "GitHub: {reason}",
     "GitHubへの追記に失敗しました：{reason}": "Could not add targets on GitHub: {reason}",
-    "連携が未設定です。": "not configured."
+    "連携が未設定です。": "not configured.",
+    "ルールファイルの保存先リポジトリを設定します": "Configure the repository where rule files are stored",
+    "表示": "Show",
+    "隠す": "Hide",
+    "必要な権限: Contents (Read and write)。Fine-grained トークンを推奨します。": "Required permission: Contents (Read and write). Fine-grained tokens are recommended.",
+    "トークンの形式が正しくありません (ghp_ または github_pat_ で始まる文字列)。": "Invalid token format (must start with ghp_ or github_pat_).",
+    "GitHubでトークンを作成する": "Create a token on GitHub",
+    "(新しいタブで開きます)": "(opens in a new tab)",
+    "ルールの保存先": "Where to save rules",
+    "GitHub上のどこにルールを保存するかを、3つの質問で決めます。": "Answer three questions to choose where your rules are stored on GitHub.",
+    "① どのリポジトリに保存しますか?": "1. Which repository do you want to save to?",
+    "例: Fizor-drm/Shirube": "e.g. Fizor-drm/Shirube",
+    "GitHubのURL(https://github.com/…)をそのまま貼り付けてもOKです。": "You can also paste a full GitHub URL (https://github.com/...).",
+    "読み取れませんでした。「ユーザー名/リポジトリ名」(例: Fizor-drm/Shirube)の形か、GitHubのURLを入力してください。": "Could not read the repository. Enter owner/repo (e.g. Fizor-drm/Shirube) or a GitHub URL.",
+    "② どのブランチに保存しますか?": "2. Which branch do you want to save to?",
+    "迷ったら「main」のままで大丈夫です。": "If you are unsure, leave it as \"main\".",
+    "ブランチ名を入力してください(わからなければ main)。": "Enter a branch name (use \"main\" if unsure).",
+    "③ ルールをどのフォルダに入れますか?": "3. Which folder should hold the rules?",
+    "rules フォルダ": "rules folder",
+    "おすすめ": "Recommended",
+    "ルール専用のフォルダにまとめて保存します": "Keep rule files together in a dedicated folder",
+    "リポジトリの一番上": "Repository root",
+    "フォルダを作らず、直接ファイルを置きます": "Place files directly at the top of the repository",
+    "別のフォルダを指定する": "Specify another folder",
+    "すでに使いたいフォルダがある場合はこちら": "Choose this if you already have a folder you want to use",
+    "フォルダの場所": "Folder path",
+    "例: config/shirube/rules": "e.g. config/shirube/rules",
+    "「/」で区切ると、フォルダの中のフォルダも指定できます。まだ無いフォルダは自動で作られます。": "Separate nested folders with \"/\". Missing folders are created automatically.",
+    "フォルダの場所を入力してください。": "Enter a folder path.",
+    "「..」は使えません。フォルダ名だけを入力してください。": "\"..\" is not allowed. Enter folder names only.",
+    "使えない文字が含まれています(< > : \" | ? * など)。": "Contains invalid characters (such as < > : \" | ? *).",
+    "この設定の場合": "With these settings",
+    "リポジトリ名": "repository",
+    "「{repo}」の「{branch}」ブランチにある「{folder}」フォルダの中に、ルールが1つずつファイルとして保存されます。": "Rule files will be saved one by one inside the \"{folder}\" folder on the \"{branch}\" branch of \"{repo}\".",
+    "「{repo}」の「{branch}」ブランチの一番上に、ルールが1つずつファイルとして保存されます。": "Rule files will be saved one by one at the top of the \"{branch}\" branch of \"{repo}\".",
+    "← ここに保存されます": "<- saved here",
+    "ルール名.yml": "rule-name.yml",
+    "キャンセル": "Cancel",
+    "入力内容を確認してください。": "Please check the highlighted fields."
   },
   "zh-CN": {
     " 既存 AGENTS.md はバックアップ後に同期で再生成されます（固有内容は自動転記されません）。": " 现有 AGENTS.md 会在备份后由同步重新生成（其中专有内容不会自动转写）。",
@@ -2135,7 +2259,45 @@ const I18N = {
     "GitHub: 追記は不要でした。": "GitHub：无需追加。",
     "GitHub: {reason}": "GitHub：{reason}",
     "GitHubへの追記に失敗しました：{reason}": "无法在 GitHub 中添加目标：{reason}",
-    "連携が未設定です。": "未设置。"
+    "連携が未設定です。": "未设置。",
+    "ルールファイルの保存先リポジトリを設定します": "设置用于保存规则文件的仓库",
+    "表示": "显示",
+    "隠す": "隐藏",
+    "必要な権限: Contents (Read and write)。Fine-grained トークンを推奨します。": "所需权限：Contents (Read and write)。推荐使用 Fine-grained 令牌。",
+    "トークンの形式が正しくありません (ghp_ または github_pat_ で始まる文字列)。": "令牌格式不正确（应以 ghp_ 或 github_pat_ 开头）。",
+    "GitHubでトークンを作成する": "在 GitHub 上创建令牌",
+    "(新しいタブで開きます)": "（在新标签页中打开）",
+    "ルールの保存先": "规则保存位置",
+    "GitHub上のどこにルールを保存するかを、3つの質問で決めます。": "通过 3 个问题决定将规则保存在 GitHub 的哪个位置。",
+    "① どのリポジトリに保存しますか?": "① 要保存到哪个仓库？",
+    "例: Fizor-drm/Shirube": "例：Fizor-drm/Shirube",
+    "GitHubのURL(https://github.com/…)をそのまま貼り付けてもOKです。": "也可以直接粘贴 GitHub 网址（https://github.com/…）。",
+    "読み取れませんでした。「ユーザー名/リポジトリ名」(例: Fizor-drm/Shirube)の形か、GitHubのURLを入力してください。": "无法识别。请输入“用户名/仓库名”（例：Fizor-drm/Shirube）或 GitHub 网址。",
+    "② どのブランチに保存しますか?": "② 要保存到哪个分支？",
+    "迷ったら「main」のままで大丈夫です。": "如果不确定，保持“main”即可。",
+    "ブランチ名を入力してください(わからなければ main)。": "请输入分支名称（不确定请填 main）。",
+    "③ ルールをどのフォルダに入れますか?": "③ 要将规则放入哪个文件夹？",
+    "rules フォルダ": "rules 文件夹",
+    "おすすめ": "推荐",
+    "ルール専用のフォルダにまとめて保存します": "集中保存在专门的规则文件夹中",
+    "リポジトリの一番上": "仓库最顶层",
+    "フォルダを作らず、直接ファイルを置きます": "不创建文件夹，直接放置文件",
+    "別のフォルダを指定する": "指定其他文件夹",
+    "すでに使いたいフォルダがある場合はこちら": "如果已有想使用的文件夹请选择此项",
+    "フォルダの場所": "文件夹路径",
+    "例: config/shirube/rules": "例：config/shirube/rules",
+    "「/」で区切ると、フォルダの中のフォルダも指定できます。まだ無いフォルダは自動で作られます。": "用“/”分隔即可指定子文件夹。不存在的文件夹会自动创建。",
+    "フォルダの場所を入力してください。": "请输入文件夹路径。",
+    "「..」は使えません。フォルダ名だけを入力してください。": "不能使用“..”，请只输入文件夹名称。",
+    "使えない文字が含まれています(< > : \" | ? * など)。": "包含不可用的字符（如 < > : \" | ? * 等）。",
+    "この設定の場合": "当前设置效果",
+    "リポジトリ名": "仓库名",
+    "「{repo}」の「{branch}」ブランチにある「{folder}」フォルダの中に、ルールが1つずつファイルとして保存されます。": "规则将作为单独的文件保存在“{repo}”的“{branch}”分支下的“{folder}”文件夹中。",
+    "「{repo}」の「{branch}」ブランチの一番上に、ルールが1つずつファイルとして保存されます。": "规则将作为单独的文件保存在“{repo}”的“{branch}”分支最顶层。",
+    "← ここに保存されます": "← 保存在这里",
+    "ルール名.yml": "规则名.yml",
+    "キャンセル": "取消",
+    "入力内容を確認してください。": "请检查输入内容。"
   }
 };
 let currentLang = "ja";
@@ -2243,6 +2405,7 @@ function applyLanguage(lang, reload){
   try{ if(typeof renderGlobalContent === "function") renderGlobalContent(); }catch(e){}
   try{ if(typeof renderGlobalStatus === "function") renderGlobalStatus(); }catch(e){}
   try{ if(typeof renderGlobalTargetsUI === "function") renderGlobalTargetsUI(); }catch(e){}
+  try{ if(typeof ghRenderPreview === "function") ghRenderPreview(); }catch(e){}
   try{ if(lastBackupDiff) renderBackupDiff(document.getElementById("backupDiffArea"), lastBackupDiff); }catch(e){}
   try{ if(lastGlobalBackupDiff) renderGlobalBackupDiff(lastGlobalBackupDiff.data); }catch(e){}
   try{ if(typeof renderProjectLog === "function") renderProjectLog(); }catch(e){}
@@ -4032,7 +4195,7 @@ document.getElementById("btnGlobalBackups").onclick = function(){ loadGlobalBack
 initLanguage();
 showHash();refresh();refreshGlobal();
 /* --- GitHub integration (topbar dialog) --------------------------------- */
-const ghState = {open:false, busy:false, restore:null};
+const ghState = {open:false, busy:false, restore:null, tokenSource:""};
 function ghEl(id){ return document.getElementById(id); }
 function ghSetStatus(msg, kind){
   const s = ghEl("ghStatus");
@@ -4040,16 +4203,71 @@ function ghSetStatus(msg, kind){
   s.textContent = msg || "";
   s.className = "ghstatus" + (kind ? " " + kind : "");
 }
-function ghFolderFromUI(){
+function ghNormalizePath(v){
+  let p = String(v || "").trim().replace(/\\/g, "/").replace(/\/{2,}/g, "/").replace(/^\/+/, "");
+  if(p && !p.endsWith("/")) p += "/";
+  return p;
+}
+function ghPathError(v){
+  const p = String(v || "").trim();
+  if(/(^|\/)\.\.(\/|$)/.test(p)) return L("「..」は使えません。フォルダ名だけを入力してください。");
+  if(/[<>:"|?*\x00-\x1f]/.test(p)) return L('使えない文字が含まれています(< > : " | ? * など)。');
+  return "";
+}
+function ghNormalizeRepo(){
+  const r = ghEl("ghRepo");
+  if(!r) return;
+  const m = r.value.trim().match(/^(?:https?:\/\/)?(?:www\.)?github\.com\/([^\/\s]+)\/([^\/\s#?]+)/i);
+  if(m) r.value = m[1] + "/" + m[2].replace(/\.git$/i, "");
+}
+function ghFolderMode(){
   const r = document.querySelector('input[name="ghFolder"]:checked');
-  if(!r) return "rules";
-  if(r.value === "__custom") return (ghEl("ghFolderCustom").value || "").trim();
-  return r.value;
+  return r ? r.value : "rules";
+}
+function ghFolderFromUI(){
+  const mode = ghFolderMode();
+  if(mode === "__custom"){
+    const p = ghNormalizePath(ghEl("ghFolderCustom").value).replace(/\/+$/g, "");
+    return p || "rules";
+  }
+  return mode;
 }
 function ghRenderPreview(){
-  const p = ghFolderFromUI();
-  const base = (!p || p === ".") ? "" : (p.replace(/\\/g, "/").replace(/^\/+|\/+$/g, "") + "/");
-  ghEl("ghPreview").textContent = base + "global.md" + "\n" + base + "project.md";
+  const mode = ghFolderMode();
+  const wrap = ghEl("ghCustomWrap");
+  if(wrap) wrap.hidden = (mode !== "__custom");
+  const r = (ghEl("ghRepo") && ghEl("ghRepo").value.trim()) || L("リポジトリ名");
+  const b = (ghEl("ghBranch") && ghEl("ghBranch").value.trim()) || "main";
+  const customNorm = ghNormalizePath(ghEl("ghFolderCustom").value);
+  const folderRaw = (mode === "__custom") ? (customNorm === "./" ? "" : (customNorm || "rules/")) : (mode === "." ? "" : "rules/");
+  const parts = folderRaw.split("/").filter(Boolean);
+  const folderText = parts.join("/");
+  const sum = ghEl("ghSummaryText");
+  if(sum){
+    sum.textContent = parts.length
+      ? L("「{repo}」の「{branch}」ブランチにある「{folder}」フォルダの中に、ルールが1つずつファイルとして保存されます。", {repo:r, branch:b, folder:folderText})
+      : L("「{repo}」の「{branch}」ブランチの一番上に、ルールが1つずつファイルとして保存されます。", {repo:r, branch:b});
+  }
+  const tree = ghEl("ghTree");
+  if(!tree) return;
+  while(tree.firstChild) tree.removeChild(tree.firstChild);
+  function row(depth, icon, label, target){
+    const el = document.createElement("div");
+    el.className = "row" + (target ? " target" : "");
+    el.style.paddingLeft = (depth * 20) + "px";
+    el.textContent = (depth ? "└ " : "") + icon + " " + label;
+    if(target){
+      const note = document.createElement("span");
+      note.className = "note";
+      note.textContent = L("← ここに保存されます");
+      el.appendChild(note);
+    }
+    tree.appendChild(el);
+  }
+  const repoLeaf = r.split("/").pop() || r;
+  row(0, "\uD83D\uDCC1", repoLeaf, parts.length === 0);
+  parts.forEach(function(p, i){ row(i + 1, "\uD83D\uDCC1", p, i === parts.length - 1); });
+  row(parts.length + 1, "\uD83D\uDCC4", "global.md / project.md", false);
 }
 function ghApplyFolder(path){
   const v = String(path || "rules").replace(/\\/g, "/").replace(/\/+$/g, "");
@@ -4058,59 +4276,109 @@ function ghApplyFolder(path){
   document.querySelectorAll('input[name="ghFolder"]').forEach(function(x){ if(x.value === v) hit = x; });
   if(hit){
     hit.checked = true;
-    custom.hidden = true;
     custom.value = "";
   } else {
     document.querySelector('input[name="ghFolder"][value="__custom"]').checked = true;
-    custom.hidden = false;
-    custom.value = (v === ".") ? "" : v;
+    custom.value = (v === ".") ? "" : ghNormalizePath(v);
   }
   ghRenderPreview();
 }
-function ghStatusHint(tokenSource){
-  let base;
-  if(tokenSource === "saved") base = L("保存済みのトークンを使用します。");
-  else if(tokenSource === "gh") base = L("gh CLI のトークンを使用します。");
-  else base = L("トークンが未設定です。");
-  ghEl("ghTokenHint").textContent = base + " " + L("Contents: Read and write 権限が必要です。空欄なら保存済みのトークンを使います。");
+function ghSetTokenVisible(show){
+  const t = ghEl("ghToken"), b = ghEl("ghEye"), on = ghEl("ghEyeOn"), off = ghEl("ghEyeOff");
+  if(!t || !b) return;
+  t.type = show ? "text" : "password";
+  if(on){ on.toggleAttribute("hidden", !!show); on.hidden = !!show; }
+  if(off){ off.toggleAttribute("hidden", !show); off.hidden = !show; }
+  b.setAttribute("aria-pressed", show ? "true" : "false");
+  b.setAttribute("aria-label", L(show ? "トークンを隠す" : "トークンを表示"));
+  b.title = L(show ? "隠す" : "表示");
+}
+function ghResetValidation(){
+  ["ghToken","ghRepo","ghBranch","ghFolderCustom"].forEach(function(id){
+    const el = ghEl(id);
+    if(el) el.removeAttribute("aria-invalid");
+  });
+  ["ghTokenHint","ghRepoHint","ghBranchHint","ghPathHint"].forEach(function(id){
+    const el = ghEl(id);
+    if(el && el.classList) el.classList.remove("error");
+  });
+  if(ghEl("ghTokenHint")) ghEl("ghTokenHint").textContent = L("必要な権限: Contents (Read and write)。Fine-grained トークンを推奨します。");
+  if(ghEl("ghRepoHint")) ghEl("ghRepoHint").textContent = L("GitHubのURL(https://github.com/…)をそのまま貼り付けてもOKです。");
+  if(ghEl("ghBranchHint")) ghEl("ghBranchHint").textContent = L("迷ったら「main」のままで大丈夫です。");
+  if(ghEl("ghPathHint")) ghEl("ghPathHint").textContent = L("「/」で区切ると、フォルダの中のフォルダも指定できます。まだ無いフォルダは自動で作られます。");
+}
+function ghValidate(){
+  ghNormalizeRepo();
+  ghRenderPreview();
+  let ok = true;
+  const tokenEl = ghEl("ghToken"), repoEl = ghEl("ghRepo"), branchEl = ghEl("ghBranch"), pathEl = ghEl("ghFolderCustom");
+  const t = tokenEl.value.trim();
+  const tOk = (t === "") ? true : /^(ghp_|github_pat_|gho_|ghu_|ghs_)[A-Za-z0-9_]{20,}$/.test(t);
+  tokenEl.setAttribute("aria-invalid", String(!tOk));
+  ghEl("ghTokenHint").classList.toggle("error", !tOk);
+  ghEl("ghTokenHint").textContent = L(tOk
+    ? "必要な権限: Contents (Read and write)。Fine-grained トークンを推奨します。"
+    : "トークンの形式が正しくありません (ghp_ または github_pat_ で始まる文字列)。");
+  ok = ok && tOk;
+
+  const rOk = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repoEl.value.trim());
+  repoEl.setAttribute("aria-invalid", String(!rOk));
+  ghEl("ghRepoHint").classList.toggle("error", !rOk);
+  ghEl("ghRepoHint").textContent = L(rOk
+    ? "GitHubのURL(https://github.com/…)をそのまま貼り付けてもOKです。"
+    : "読み取れませんでした。「ユーザー名/リポジトリ名」(例: Fizor-drm/Shirube)の形か、GitHubのURLを入力してください。");
+  ok = ok && rOk;
+
+  // 空欄は main 扱い(placeholder が main)。
+  branchEl.removeAttribute("aria-invalid");
+  ghEl("ghBranchHint").classList.remove("error");
+  ghEl("ghBranchHint").textContent = L("迷ったら「main」のままで大丈夫です。");
+
+  const custom = ghFolderMode() === "__custom";
+  const customNorm = ghNormalizePath(pathEl.value).replace(/\/+$/g, "");
+  const pe = custom ? (customNorm ? ghPathError(pathEl.value) : L("フォルダの場所を入力してください。")) : "";
+  pathEl.setAttribute("aria-invalid", String(!!pe));
+  ghEl("ghPathHint").classList.toggle("error", !!pe);
+  ghEl("ghPathHint").textContent = pe || L("「/」で区切ると、フォルダの中のフォルダも指定できます。まだ無いフォルダは自動で作られます。");
+  ok = ok && !pe;
+  return ok;
 }
 async function ghOpen(){
   if(ghState.open) return;
   ghState.open = true;
   ghState.restore = document.activeElement;
   ghEl("ghToken").value = "";
-  ghEl("ghToken").type = "password";
-  ghEl("ghEye").setAttribute("aria-pressed", "false");
-  ghEl("ghEye").setAttribute("aria-label", L("トークンを表示"));
+  ghSetTokenVisible(false);
   ghEl("ghRepo").value = "";
-  ghEl("ghBranch").value = "main";
+  ghEl("ghBranch").value = "";
   ghApplyFolder("rules");
+  ghResetValidation();
   ghSetStatus("");
-  ghStatusHint("");
   ghEl("ghOvl").hidden = false;
   try{
     const g = await api("/api/github-settings", "GET", null, 15000);
+    ghState.tokenSource = g.tokenSource || "";
     ghEl("ghRepo").value = g.repo || "";
-    ghEl("ghBranch").value = g.branch || "main";
+    ghEl("ghBranch").value = g.repo ? (g.branch || "") : "";
     ghApplyFolder(g.rulesPath || "rules");
-    ghStatusHint(g.tokenSource || "");
   }catch(e){ ghSetStatus(e.message, "err"); }
-  try{ ghEl("ghRepo").focus(); }catch(e){}
+  try{ ghEl("ghToken").focus(); }catch(e){}
 }
 function ghClose(){
   if(!ghState.open) return;
   ghState.open = false;
   ghEl("ghOvl").hidden = true;
+  ghEl("ghToken").value = "";
+  ghSetTokenVisible(false);
   const r = ghState.restore;
   ghState.restore = null;
   try{ if(r && r.focus) r.focus(); }catch(e){}
 }
 async function ghTest(){
   if(ghState.busy) return;
+  if(!ghValidate()){ ghSetStatus(L("入力内容を確認してください。"), "err"); return; }
   const repo = ghEl("ghRepo").value.trim();
-  const branch = ghEl("ghBranch").value.trim();
-  if(!repo){ ghSetStatus(L("リポジトリを入力してください。"), "err"); return; }
-  if(!branch){ ghSetStatus(L("ブランチを入力してください。"), "err"); return; }
+  const branch = ghEl("ghBranch").value.trim() || "main";
   ghState.busy = true;
   ghEl("ghTest").disabled = true;
   ghEl("ghSave").disabled = true;
@@ -4129,11 +4397,10 @@ async function ghTest(){
 async function ghSave(ev){
   if(ev && ev.preventDefault) ev.preventDefault();
   if(ghState.busy) return;
+  if(!ghValidate()){ ghSetStatus(L("入力内容を確認してください。"), "err"); return; }
   const repo = ghEl("ghRepo").value.trim();
-  const branch = ghEl("ghBranch").value.trim();
+  const branch = ghEl("ghBranch").value.trim() || "main";
   const folder = ghFolderFromUI();
-  if(!repo){ ghSetStatus(L("リポジトリを入力してください。"), "err"); return; }
-  if(!branch){ ghSetStatus(L("ブランチを入力してください。"), "err"); return; }
   ghState.busy = true;
   ghEl("ghTest").disabled = true;
   ghEl("ghSave").disabled = true;
@@ -4141,8 +4408,8 @@ async function ghSave(ev){
   try{
     const r = await api("/api/github-settings", "POST", {repo:repo, branch:branch, rulesPath:folder, token:ghEl("ghToken").value.trim()}, 30000);
     ghEl("ghToken").value = "";
+    ghState.tokenSource = r.tokenSource || "";
     ghSetStatus(L("保存しました。") + " " + String(r.repo || repo) + "@" + String(r.branch || branch), "ok");
-    ghStatusHint(r.tokenSource || "");
     try{ if(typeof refreshGlobal === "function") await refreshGlobal(); }catch(e2){}
   }catch(e){ ghSetStatus(e.message, "err"); }
   finally{
@@ -4153,29 +4420,30 @@ async function ghSave(ev){
 }
 document.getElementById("btnGitHub").onclick = function(){ ghOpen(); };
 document.getElementById("ghClose").onclick = function(){ ghClose(); };
+document.getElementById("ghCancel").onclick = function(){ ghClose(); };
 document.getElementById("ghTest").onclick = function(){ ghTest(); };
 document.getElementById("ghForm").onsubmit = function(ev){ ghSave(ev); };
 document.getElementById("ghEye").onclick = function(){
-  const t = ghEl("ghToken");
-  const show = t.type === "password";
-  t.type = show ? "text" : "password";
-  this.setAttribute("aria-pressed", show ? "true" : "false");
-  this.setAttribute("aria-label", L(show ? "トークンを隠す" : "トークンを表示"));
+  ghSetTokenVisible(ghEl("ghToken").type === "password");
 };
-document.querySelectorAll('input[name="ghFolder"]').forEach(function(x){
-  x.onchange = function(){
-    ghEl("ghFolderCustom").hidden = (x.value !== "__custom");
-    ghRenderPreview();
-  };
+["ghRepo","ghBranch","ghFolderCustom"].forEach(function(id){
+  ghEl(id).addEventListener("input", function(){ ghRenderPreview(); });
 });
-document.getElementById("ghFolderCustom").oninput = function(){ ghRenderPreview(); };
+ghEl("ghRepo").addEventListener("blur", function(){ ghNormalizeRepo(); ghRenderPreview(); });
+ghEl("ghRepo").addEventListener("paste", function(){ setTimeout(function(){ ghNormalizeRepo(); ghRenderPreview(); }, 0); });
+ghEl("ghFolderCustom").addEventListener("blur", function(){ ghEl("ghFolderCustom").value = ghNormalizePath(ghEl("ghFolderCustom").value); ghRenderPreview(); });
+document.querySelectorAll('input[name="ghFolder"]').forEach(function(x){
+  x.addEventListener("change", function(){
+    ghRenderPreview();
+    if(ghFolderMode() === "__custom") try{ ghEl("ghFolderCustom").focus(); }catch(e){}
+  });
+});
 document.getElementById("ghOvl").onclick = function(ev){ if(ev.target === this) ghClose(); };
 document.addEventListener("keydown", function(ev){
   if(!ghState.open) return;
   if(ev.key === "Escape"){ ev.preventDefault(); ghClose(); }
 });
-ghRenderPreview();
-</script>
+ghRenderPreview();</script>
 </body>
 </html>
 '@

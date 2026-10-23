@@ -1,4 +1,4 @@
-﻿# Self-check for GitHub-Management.ps1 (GitHub integration).
+# Self-check for GitHub-Management.ps1 (GitHub integration).
 # No network, no real token, no real home: Invoke-RestMethod is stubbed.
 # Never touches the deployed %LOCALAPPDATA%\Shirube tree.
 $ErrorActionPreference = 'Stop'
@@ -177,7 +177,17 @@ try {
   Assert ($server.Contains("'/api/github-settings'") -and $server.Contains("'/api/github-test'")) 'T9 endpoints registered'
   Assert ($server.Contains('Update-GitHubRuleTargets $AutoDir $tgNew')) 'T9 target save hooks the GitHub update'
   Assert ($server.Contains('id="btnGitHub"') -and $server.Contains('id="ghOvl"') -and $server.Contains('id="ghToken"')) 'T9 topbar button and dialog exist'
+  Assert ($server.Contains('href="https://github.com/settings/personal-access-tokens/new"')) 'T9 token creation link exists'
+  Assert ($server.Contains('class="ghsecret"') -and $server.Contains('id="ghEyeOn"') -and $server.Contains('id="ghEyeOff"')) 'T9 inside-field token visibility toggle exists'
+  Assert ($server.Contains('id="ghSummaryText"') -and $server.Contains('id="ghTree"') -and $server.Contains('id="ghCancel"')) 'T9 beginner-friendly summary tree and cancel button exist'
   Assert (-not $server.Contains('id="ghToken" value=')) 'T9 token field is never pre-filled'
+  Assert (-not $server.Contains('id="ghBranch" class="mono" value=')) 'T9 branch field is not pre-filled'
+  Assert (-not $server.Contains('ghEl("ghRepo").value = "Fizor-drm/Shirube"')) 'T9 repo field is not pre-filled with a sample'
+  Assert ($server.Contains('ghEl("ghBranch").value.trim() || "main"')) 'T9 empty branch falls back to main'
+  Assert ($server.Contains('toggleAttribute("hidden"') -and $server.Contains('on.hidden = !!show') -and $server.Contains('off.hidden = !show')) 'T9 eye icons toggle the hidden attribute on SVG'
+  Assert ($server.Contains('global.md / project.md')) 'T9 tree preview names the real synced files'
+  Assert ($server.Contains('color:#0b0b0c')) 'T9 recommended badge text uses the dark on-accent color'
+  Assert ($server.Contains('customNorm === "./" ? ""')) 'T9 custom "." preview targets the repository root'
   $sg = Get-Content -LiteralPath (Join-Path $devAuto 'Sync-GlobalRules.ps1') -Raw -Encoding UTF8
   $sp = Get-Content -LiteralPath (Join-Path $devAuto 'Sync-ProjectRules.ps1') -Raw -Encoding UTF8
   Assert ($sg.Contains('Get-GitHubSyncToken') -and $sp.Contains('Get-GitHubSyncToken')) 'T9 both syncs prefer the stored token'
