@@ -130,7 +130,7 @@ function Invoke-ProjectSync {
         $seenTargets++; if ($seenTargets -gt 1) { return $false }; continue
       }
       elseif ($ln -match '^targets\s*:') { return $false }
-      if ($ln -match '^description\s*:\s*".*"\s*(#.*)?$') { $seenDesc++; if ($seenDesc -gt 1) { return $false }; continue }
+      if ($ln -match '^description\s*:\s*"([^"\\]|\\.)*"\s*(#.*)?$') { $seenDesc++; if ($seenDesc -gt 1) { return $false }; continue }
       elseif ($ln -match '^description\s*:') { return $false }
       return $false
     }

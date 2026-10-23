@@ -188,6 +188,9 @@ try {
   Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + '  targets: ["pi"]' + $nl + '---' + $nl) 'global')) 'T6b indented targets rejected'
   Assert (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + 'description: "common"' + $nl + '---' + $nl) 'project') 'T6b quoted description accepted'
   Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + 'description: common' + $nl + '---' + $nl) 'project')) 'T6b unquoted description rejected'
+  # An unescaped inner quote passes a greedy ".*" but is invalid YAML.
+  Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + 'description: "say "hello" to everyone"' + $nl + '---' + $nl) 'project')) 'T6b unescaped quote in description rejected'
+  Assert (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + 'description: "say \"hello\" to everyone"' + $nl + '---' + $nl) 'project') 'T6b escaped quote in description accepted'
   Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + '---' + $nl) 'project')) 'T6b duplicate root rejected'
   Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'localRoot: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + '---' + $nl) 'project')) 'T6b root/localRoot mix rejected'
   Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'foo: bar' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + '---' + $nl) 'project')) 'T6b unknown frontmatter key rejected'
@@ -324,6 +327,16 @@ try {
         } catch { $code = $_.Exception.Response.StatusCode.value__ }
         Assert ($code -eq 409) ('T9b save with a changed ' + $badOrigin.name + ' is a 409')
       }
+      # A project sync holding the lock must answer 409 (busy), not 500.
+      $heldProj = $null
+      $codeProj = 0
+      try {
+        $heldProj = [System.IO.File]::Open((Join-Path $auto 'Sync-ProjectRules.lock'), 'OpenOrCreate', 'ReadWrite', 'None')
+        try {
+          Invoke-WebRequest -UseBasicParsing -TimeoutSec 5 -Method POST -Headers $hdr -ContentType 'application/json' -Body (@{ kind = 'project'; text = $ruleProject; sha = 'sha-project'; repo = 'Fizor-drm/ai-agent-rules'; branch = 'dev'; path = 'rules/project.md' } | ConvertTo-Json -Compress) -Uri 'http://127.0.0.1:18801/api/github-rule-save' | Out-Null
+        } catch { $codeProj = $_.Exception.Response.StatusCode.value__ }
+      } finally { if ($heldProj) { try { $heldProj.Close() } catch {} } }
+      Assert ($codeProj -eq 409) 'T9b project save while the sync lock is held is a 409'
     }
   } finally {
     if ($srv -and (-not $srv.HasExited)) { try { Stop-Process -Id $srv.Id -Force } catch {} }

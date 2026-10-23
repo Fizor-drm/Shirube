@@ -172,7 +172,7 @@ function Test-FrontmatterFlag([string]$Text, [string]$Key) {
       $seenTargets++; if ($seenTargets -gt 1) { return $false }; continue
     }
     elseif ($ln -match '^targets\s*:') { return $false }
-    if ($ln -match '^description\s*:\s*".*"\s*(#.*)?$') { $seenDesc++; if ($seenDesc -gt 1) { return $false }; continue }
+    if ($ln -match '^description\s*:\s*"([^"\\]|\\.)*"\s*(#.*)?$') { $seenDesc++; if ($seenDesc -gt 1) { return $false }; continue }
     elseif ($ln -match '^description\s*:') { return $false }
     return $false
   }
@@ -5412,11 +5412,17 @@ function Start-Dashboard {
           $glock = $null
           try {
             if ($gk -ceq 'global') { $glock = Open-GlobalSyncLock $AutoDir }
-            else { $glock = [System.IO.File]::Open((Join-Path $AutoDir 'Sync-ProjectRules.lock'), 'OpenOrCreate', 'ReadWrite', 'None') }
+            else { $glock = Open-SyncLock $AutoDir }
           } catch {
-            $eg = $_.Exception.Message
-            if ($eg.Contains('busy')) { Send-Json $ctx 409 @{ error = $eg }; continue }
-            Send-Json $ctx 500 @{ error = $eg }; continue
+            # Unwrap: File::Open surfaces a MethodInvocationException whose message
+            # has no 'busy', so a held project lock must be typed, not string-matched.
+            $eg = $_.Exception
+            while (($eg -is [System.Management.Automation.MethodInvocationException]) -and ($eg.InnerException)) { $eg = $eg.InnerException }
+            if (($eg -is [System.IO.IOException]) -or ([string]$eg.Message).Contains('busy')) {
+              Send-Json $ctx 409 @{ error = '同期実行中のため、終了後にやり直してください。(busy)' }
+              continue
+            }
+            Send-Json $ctx 500 @{ error = [string]$eg.Message }; continue
           }
           try {
             $expRepo = [string]$body.repo

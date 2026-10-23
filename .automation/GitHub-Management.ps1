@@ -456,7 +456,8 @@ function Test-GitHubRuleFrontmatter([string]$Text, [string]$Kind) {
       continue
     }
     if ($ln -match '^targets\s*:') { return $false }
-    if ($ln -match '^description\s*:\s*".*"\s*(#.*)?$') { $seenDesc++; if ($seenDesc -gt 1) { return $false }; continue }
+    # No unescaped quote inside: `"say "hi""` is invalid YAML and would break the next sync.
+    if ($ln -match '^description\s*:\s*"([^"\\]|\\.)*"\s*(#.*)?$') { $seenDesc++; if ($seenDesc -gt 1) { return $false }; continue }
     if ($ln -match '^description\s*:') { return $false }
     return $false
   }
