@@ -69,6 +69,31 @@ test('the vendor bundle exists, exposes ShirubeRuleLib and has no literal script
   must(/vendor\/rule-editor\/node_modules/.test(gitignore), 'node_modules of the vendor recipe is gitignored');
 });
 
+test('full license notices of every bundled package are committed', () => {
+  const licensesDir = path.join(here, '..', 'vendor', 'licenses');
+  must(fs.existsSync(licensesDir), 'licenses/ directory committed');
+  const expected = ['@codemirror+commands', '@codemirror+language', '@codemirror+state', '@codemirror+view',
+    '@lezer+common', '@lezer+highlight', '@lezer+lr', '@lezer+markdown',
+    '@marijn+find-cluster-break', 'dompurify', 'marked', 'style-mod', 'w3c-keyname'];
+  const files = fs.readdirSync(licensesDir);
+  for (const pkg of expected) {
+    const hit = files.filter(f => f.startsWith(pkg + '.'));
+    must(hit.length >= 1, 'license notice for ' + pkg);
+    for (const f of hit) {
+      const text = fs.readFileSync(path.join(licensesDir, f), 'utf8');
+      must(text.trim().length >= 200, pkg + ' notice carries full text (' + f + ')');
+    }
+  }
+  must(files.includes('dompurify.LICENSE') && files.includes('dompurify.LICENSE-MPL'), 'dompurify dual license (Apache-2.0 + MPL-2.0)');
+});
+
+test('the markdown language uses Language, not LRLanguage (subword commands crash on LRLanguage)', () => {
+  const mainSrc = fs.readFileSync(path.join(vendorDir, 'src', 'main.mjs'), 'utf8');
+  must(!/import[^;]*\bLRLanguage\b/.test(mainSrc) && !/LRLanguage\.(define|of)/.test(mainSrc), 'no LRLanguage usage in the vendor entry');
+  must(/new Language\(/.test(mainSrc), 'markdown language built like lang-markdown (Language + defineLanguageFacet)');
+  must(/cursorSubwordForward/.test(mainSrc) && /deleteGroupBackward/.test(mainSrc), 'word movement/deletion commands exposed for tests');
+});
+
 test('rules markup keeps rules-grid and ruleText and adds the three modes', () => {
   const start = src.indexOf('<div id="rules" hidden>');
   const end = src.indexOf('<div id="backups" hidden>', start);
@@ -135,12 +160,29 @@ test('localizeGeneratedUI exempts the CodeMirror and preview DOM', () => {
   must(/ruleEditorWrap/.test(body) && /rulePreview/.test(body), 'editor/preview subtrees are skipped by the traversal');
 });
 
+test('the CodeMirror editor enables line wrapping for long rule lines', () => {
+  must(/cm\.EditorView\.lineWrapping,/.test(src), 'EditorView.lineWrapping is part of the editor extensions');
+});
+
 test('the assembled page script (vendor bundle inlined) parses as JavaScript', () => {
   const scriptStart = src.indexOf('<script>');
   const scriptEnd = src.indexOf('</script>', scriptStart);
   const js = src.slice(scriptStart + '<script>'.length, scriptEnd)
     .replace('__RULE_EDITOR_VENDOR__', fs.readFileSync(vendorBundlePath, 'utf8'));
   new vm.Script(js); // throws on any syntax error, including broken script embedding
+});
+
+test('the three READMEs ship the vendor bundle and licenses in setup and migration', () => {
+  for (const name of ['README.md', 'README.en.md', 'README.zh-CN.md']) {
+    const text = fs.readFileSync(path.join(here, '..', '..', name), 'utf8');
+    const setup = text.slice(text.indexOf('### 4.'), text.indexOf('### 5.'));
+    must(/rule-editor\.bundle\.js/.test(setup) && /licenses/.test(setup), name + ': setup step 4 copies the bundle and license notices');
+    must(/rule-editor\\/.test(setup) || /rebuild-only|再ビルド用|重新构建/.test(setup), name + ': setup step 4 excludes the rebuild-only directory');
+    const bundleMentions = text.match(/rule-editor\.bundle\.js/g) || [];
+    must(bundleMentions.length >= 2, name + ': the bundle appears in setup and migration (' + bundleMentions.length + ')');
+    must(/\.automation\\\*\.ps1/.test(text), name + ': migration anchor (ps1 copy) preserved');
+    must(/管理\.bat/.test(text), name + ': migration anchor (launcher) preserved');
+  }
 });
 
 // --- Part 2: rules block behavior on a DOM stub --------------------------
@@ -200,7 +242,7 @@ function stubHarness() {
     'ruleEditorInit:ruleEditorInit,ruleEditorReady:ruleEditorReady,' +
     'ruleEditorApplyText:ruleEditorApplyText,ruleRenderPreviewNow:ruleRenderPreviewNow,' +
     'ruleSchedulePreview:ruleSchedulePreview,ruleLoad:ruleLoad,ruleSave:ruleSave,' +
-    'renderRulesLock:renderRulesLock};', context);
+    'renderRulesLock:renderRulesLock,view:function(){return ruleCmView;}};', context);
   return { context, byId, calls, r: context.__r };
 }
 
@@ -218,9 +260,10 @@ test('default mode is split and mode switching updates aria-pressed and panes', 
   must(h.byId('ruleSrcPane').hidden === false && h.byId('rulePreviewPane').hidden === true, 'edit hides the preview pane');
 
   h.r.ruleModeSet('preview');
-  must(h.byId('rulePreviewPane').hidden === false && h.byId('ruleSrcPane').hidden === true, 'preview hides the source pane');
+  must(h.r.ruleModeGet() === 'split', 'without the vendor editor, preview normalizes to split so the source stays usable');
+  must(h.byId('ruleSrcPane').hidden === false && h.byId('rulePreviewPane').hidden === false, 'normalized split shows both panes');
   h.r.ruleModeSet('bogus');
-  must(h.r.ruleModeGet() === 'preview', 'unknown modes are ignored');
+  must(h.r.ruleModeGet() === 'split', 'unknown modes are ignored');
 });
 
 test('preview fails closed to a localized notice when the vendor bundle is absent', () => {
@@ -301,10 +344,13 @@ if (!fs.existsSync(jsdomPath)) {
   })();
 
   function domHarness(withBundle) {
-    const dom = new JSDOM('<!doctype html><html><body><div id="host">' + rulesMarkup.replace('<div id="rules" hidden>', '<div id="rules">') + '</div></body></html>', { url: 'http://localhost/', runScripts: 'outside-only' });
+    const dom = new JSDOM('<!doctype html><html><body><div id="host">' + rulesMarkup.replace('<div id="rules" hidden>', '<div id="rules">') + '</div></body></html>', { url: 'http://localhost/', runScripts: 'outside-only', pretendToBeVisual: true });
     const ctx = dom.getInternalVMContext();
     if (typeof ctx.setTimeout !== 'function') ctx.setTimeout = (fn, ms) => setTimeout(fn, ms);
     if (typeof ctx.clearTimeout !== 'function') ctx.clearTimeout = clearTimeout;
+    // jsdom has no layout: give CM's measure pass the Range API it expects so
+    // pending animation frames do not throw after the assertions complete.
+    try { vm.runInContext('if (typeof Range !== "undefined" && !Range.prototype.getClientRects) { Range.prototype.getClientRects = function(){ return []; }; Range.prototype.getBoundingClientRect = function(){ return {left:0, top:0, right:0, bottom:0, width:0, height:0}; }; }', ctx); } catch (e) {}
     if (withBundle) vm.runInContext(bundle, ctx);
     const calls = { get: 0, save: [] };
     ctx.currentGlobalStatus = { githubConfigured: true };
@@ -323,7 +369,7 @@ if (!fs.existsSync(jsdomPath)) {
       'ruleEditorInit:ruleEditorInit,ruleEditorReady:ruleEditorReady,' +
       'ruleEditorApplyText:ruleEditorApplyText,ruleRenderPreviewNow:ruleRenderPreviewNow,' +
       'ruleLoad:ruleLoad,ruleSave:ruleSave,renderRulesLock:renderRulesLock,' +
-      'applyLanguage:applyLanguage,L:L};', ctx);
+      'applyLanguage:applyLanguage,L:L,view:function(){return ruleCmView;}};', ctx);
     return { dom, ctx, calls, r: ctx.__r };
   }
 
@@ -453,6 +499,142 @@ if (!fs.existsSync(jsdomPath)) {
     must(ta.value === '# 保存する\n\n- 保存する\n', 'source not translated');
   });
 
+  test('long lines wrap while line numbers and table stripes stay per logical line', () => {
+    const h = domHarness(true);
+    h.r.ruleEditorInit();
+    const ta = h.ctx.document.getElementById('ruleText');
+    ta.value = '| ' + 'long '.repeat(120) + '|\n| - |\n| end |';
+    h.r.ruleEditorApplyText();
+    if (!h.r.ruleEditorReady()) return; // editor unavailable in this DOM
+    const cm = h.ctx.ShirubeRuleLib.cm;
+    const wrap = h.r.view().state.facet(cm.EditorView.lineWrapping);
+    must(!!wrap && wrap.class === 'cm-lineWrapping', 'lineWrapping facet is enabled');
+    const content = h.ctx.document.querySelector('#ruleEditorWrap .cm-content');
+    must(content && content.childElementCount >= 3, 'the long line renders as a single logical line block');
+    must(ta.value.length > 600 && content.textContent.length > 500, 'the long line is rendered in the DOM');
+    must(h.ctx.document.querySelectorAll('#ruleEditorWrap .rule-md-row').length === 3, 'stripe decorations follow logical lines');
+  });
+
+  test('real word movement and deletion commands work without hasWrappers errors', () => {
+    const h = domHarness(true);
+    h.r.ruleEditorInit();
+    if (!h.r.ruleEditorReady()) return; // editor unavailable in this DOM
+    const cm = h.ctx.ShirubeRuleLib.cm;
+    const v = h.r.view();
+    const ta = h.ctx.document.getElementById('ruleText');
+    ta.value = 'one two three';
+    h.r.ruleEditorApplyText();
+    // cursor at end, Ctrl+Left (start of 'three'), Ctrl+Backspace deletes the group left of it ('two')
+    let out = {};
+    try {
+      v.dispatch({ selection: { anchor: v.state.doc.length } });
+      cm.cursorSubwordBackward(v);
+      out.afterMove = v.state.selection.main.head < v.state.doc.length;
+      cm.deleteGroupBackward(v);
+      out.docAfterDelete = v.state.doc.toString();
+      cm.cursorSubwordForward(v);
+      out.noThrow = true;
+    } catch (e) {
+      out.noThrow = false;
+      out.err = String(e && e.message);
+    }
+    must(out.noThrow === true, 'subword/group commands do not throw: ' + (out.err || ''));
+    must(out.afterMove === true, 'Ctrl+Left moves the cursor left');
+    must(out.docAfterDelete === 'one three', 'Ctrl+Backspace deletes the group left of the cursor (got: ' + JSON.stringify(out.docAfterDelete) + ')');
+    must(ta.value === 'one three', 'the mirror tracks command edits');
+  });
+
+  test('the editor uses an explicit dark theme with a visible caret and selection', () => {
+    const h = domHarness(true);
+    h.r.ruleEditorInit();
+    if (!h.r.ruleEditorReady()) return; // editor unavailable in this DOM
+    const cm = h.ctx.ShirubeRuleLib.cm;
+    must(!!h.r.view().state.facet(cm.EditorView.darkTheme), 'darkTheme facet is set');
+    const injected = Array.from(h.ctx.document.querySelectorAll('style'))
+      .map(s => s.textContent || '').join('\n');
+    must(/cm-cursor/.test(injected) && /#fff/.test(injected), 'caret color is forced to white');
+    must(/#264f78/.test(injected), 'selection background is forced to a dark-theme blue');
+  });
+
+  test('the GitHub lock blocks edits, deletes and undo inside CodeMirror', () => {
+    const h = domHarness(true);
+    h.r.ruleEditorInit();
+    if (!h.r.ruleEditorReady()) return; // editor unavailable in this DOM
+    const cm = h.ctx.ShirubeRuleLib.cm;
+    const v = h.r.view();
+    const ta = h.ctx.document.getElementById('ruleText');
+    ta.value = 'locked text';
+    h.r.ruleEditorApplyText();
+    // make an edit first so undo has something to undo
+    v.dispatch({ changes: { from: 0, to: 0, insert: 'x' } });
+    must(ta.value === 'xlocked text', 'pre-lock edit mirrored');
+    h.ctx.currentGlobalStatus = { githubConfigured: false };
+    h.r.renderRulesLock();
+    v.dispatch({ changes: { from: 0, to: 1, insert: 'y' } });
+    must(v.state.doc.toString() === 'xlocked text', 'locked: dispatched inserts are rejected by the change filter');
+    cm.deleteGroupBackward(v);
+    must(v.state.doc.toString() === 'xlocked text', 'locked: delete command cannot mutate the doc');
+    cm.historyKeymap && (() => {
+      const undo = cm.historyKeymap.find(k => k.key === 'Mod-z');
+      if (undo && undo.run) undo.run(v);
+    })();
+    must(v.state.doc.toString() === 'xlocked text', 'locked: Ctrl+Z cannot mutate the doc');
+    must(ta.value === 'xlocked text', 'locked: the raw textarea never changes');
+    h.ctx.currentGlobalStatus = { githubConfigured: true };
+    h.r.renderRulesLock();
+    v.dispatch({ changes: { from: 0, to: 1, insert: '' } });
+    must(v.state.doc.toString() === 'locked text', 'unlocked: edits flow again');
+  });
+
+  test('table row stripes come from the syntax tree and cover both GFM forms', () => {
+    const h = domHarness(true);
+    h.r.ruleEditorInit();
+    if (!h.r.ruleEditorReady()) return; // editor unavailable in this DOM
+    const countRows = () => ({
+      rows: h.ctx.document.querySelectorAll('#ruleEditorWrap .rule-md-row').length,
+      alt: h.ctx.document.querySelectorAll('#ruleEditorWrap .rule-md-row-alt').length
+    });
+    const ta = h.ctx.document.getElementById('ruleText');
+    ta.value = '| a | b |\n| --- | --- |\n| 1 | 2 |\n| 3 | 4 |\n';
+    h.r.ruleEditorApplyText();
+    const piped = countRows();
+    must(piped.rows === 4 && piped.alt === 2, 'piped table: every logical row striped (got ' + JSON.stringify(piped) + ')');
+
+    ta.value = 'A | B\n--- | ---\nx | y\n';
+    h.r.ruleEditorApplyText();
+    const bare = countRows();
+    must(bare.rows === 3 && bare.alt === 1, 'pipeless table: header/delimiter/row striped (got ' + JSON.stringify(bare) + ')');
+
+    ta.value = '```\n| a | b |\n| --- | --- |\n```\n| real | table |\n| --- | --- |\n';
+    h.r.ruleEditorApplyText();
+    const fenced = countRows();
+    must(fenced.rows === 2, 'fenced code lookalikes are not striped, only the real table (got ' + JSON.stringify(fenced) + ')');
+  });
+
+  test('the CodeMirror textbox carries a localized accessible name', () => {
+    const h = domHarness(true);
+    h.r.ruleEditorInit();
+    if (!h.r.ruleEditorReady()) return; // editor unavailable in this DOM
+    const content = h.ctx.document.querySelector('#ruleEditorWrap .cm-content');
+    must(content && content.getAttribute('aria-label') === 'ルール本文', 'textbox is named in Japanese');
+    const ta = h.ctx.document.getElementById('ruleText');
+    ta.value = '# 保存 {x}';
+    h.r.applyLanguage('en', false);
+    must(content.getAttribute('aria-label') === 'Rule body', 'the accessible name follows the locale');
+    must(ta.value === '# 保存 {x}', 'the raw source is untouched by the label update');
+  });
+
+  test('with the CodeMirror editor, preview mode does hide the source pane', () => {
+    const h = domHarness(true);
+    h.r.ruleEditorInit();
+    if (!h.r.ruleEditorReady()) return; // editor unavailable in this DOM
+    h.r.ruleModeSet('preview');
+    must(h.r.ruleModeGet() === 'preview', 'preview stays preview when the editor is real');
+    must(h.ctx.document.getElementById('ruleSrcPane').hidden === true, 'source pane hidden');
+    h.r.ruleModeSet('split');
+    must(h.ctx.document.getElementById('ruleSrcPane').hidden === false, 'split restores the source pane');
+  });
+
   test('without the vendor bundle the editor fails closed to the plain textarea', () => {
     const h = domHarness(false);
     h.r.ruleEditorInit();
@@ -466,6 +648,22 @@ if (!fs.existsSync(jsdomPath)) {
     h.r.applyLanguage('en', false);
     must(h.ctx.document.getElementById('rulePreview').textContent === 'The preview is unavailable. Only the source text can be edited.', 'unavailable notice follows the locale');
     must(!ta.hidden, 'fallback editor never gets hidden');
+  });
+
+  test('preview mode never hides the fallback textarea editor', () => {
+    const h = domHarness(false);
+    h.r.ruleEditorInit();
+    const ta = h.ctx.document.getElementById('ruleText');
+    const pane = h.ctx.document.getElementById('ruleSrcPane');
+    h.r.ruleModeSet('preview');
+    must(h.r.ruleModeGet() === 'split', 'preview normalizes to split without CodeMirror');
+    must(pane.hidden === false, 'the source pane stays visible');
+    must(!ta.closest('[hidden]'), 'no hidden ancestor above the fallback editor');
+    must(h.ctx.document.getElementById('btnRuleModeSplit').getAttribute('aria-pressed') === 'true', 'the effective mode is what the buttons show');
+    h.r.ruleModeSet('edit');
+    must(pane.hidden === false && h.ctx.document.getElementById('rulePreviewPane').hidden === true, 'edit still works');
+    h.r.ruleModeSet('split');
+    must(pane.hidden === false && h.ctx.document.getElementById('rulePreviewPane').hidden === false, 'split still works');
   });
 }
 

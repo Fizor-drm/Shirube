@@ -2564,6 +2564,7 @@ function applyLanguage(lang, reload){
   try{ if(typeof renderGlobalTargetsUI === "function") renderGlobalTargetsUI(); }catch(e){}
   try{ if(typeof renderRulesLock === "function") renderRulesLock(); }catch(e){}
   try{ if(typeof ruleRenderPreviewNow === "function") ruleRenderPreviewNow(); }catch(e){}
+  try{ if(typeof ruleEditorSetAria === "function") ruleEditorSetAria(); }catch(e){}
   try{ if(typeof ghRenderPreview === "function") ghRenderPreview(); }catch(e){}
   try{ if(lastBackupDiff) renderBackupDiff(document.getElementById("backupDiffArea"), lastBackupDiff); }catch(e){}
   try{ if(lastGlobalBackupDiff) renderGlobalBackupDiff(lastGlobalBackupDiff.data); }catch(e){}
@@ -4045,6 +4046,7 @@ const RULE_PREVIEW_MAX = 262144;
 const RULE_PREVIEW_DEBOUNCE = 300;
 let ruleCmView = null;
 let ruleCmEditable = null;
+let ruleCmAria = null;
 let rulePurifierInstance = null;
 let rulePreviewTimer = 0;
 let ruleMode = "split";
@@ -4133,6 +4135,9 @@ function ruleSchedulePreview(immediate){
 }
 function ruleModeSet(mode){
   if(["edit","split","preview"].indexOf(mode) < 0) return;
+  // Without the CodeMirror editor the preview cannot replace the source pane:
+  // normalize preview to split so the textarea fallback stays visible.
+  if(mode === "preview" && !ruleEditorReady()) mode = "split";
   ruleMode = mode;
   const map = {edit:"btnRuleModeEdit", split:"btnRuleModeSplit", preview:"btnRuleModePreview"};
   for(const k in map){
@@ -4149,9 +4154,17 @@ function ruleModeSet(mode){
   ruleSchedulePreview(true);
 }
 function ruleEditorReady(){ return !!ruleCmView; }
+function ruleCmEditableExt(locked){
+  const cm = ShirubeRuleLib.cm;
+  return [
+    cm.EditorView.editable.of(!locked),
+    cm.EditorState.readOnly.of(locked),
+    cm.EditorState.changeFilter.of(function(){ return !locked; })
+  ];
+}
 function ruleEditorSetReadOnly(locked){
   if(!ruleCmView || !ruleCmEditable) return;
-  try{ ruleCmView.dispatch({effects: ruleCmEditable.reconfigure(ShirubeRuleLib.cm.EditorView.editable.of(!locked))}); }catch(e){}
+  try{ ruleCmView.dispatch({effects: ruleCmEditable.reconfigure(ruleCmEditableExt(locked))}); }catch(e){}
 }
 function ruleEditorApplyText(){
   const ta = document.getElementById("ruleText");
@@ -4166,7 +4179,12 @@ function ruleEditorApplyText(){
   }
   ruleSchedulePreview(true);
 }
+function ruleEditorSetAria(){
+  if(!ruleCmView || !ruleCmAria) return;
+  try{ ruleCmView.dispatch({effects: ruleCmAria.reconfigure(ShirubeRuleLib.cm.EditorView.contentAttributes.of({"aria-label": L("ルール本文")}))}); }catch(e){}
+}
 function ruleEditorInit(){
+  if(ruleCmView) return;
   const ta = document.getElementById("ruleText");
   if(!ta) return;
   // Fallback editor path: the textarea drives the (debounced) preview itself.
@@ -4186,17 +4204,34 @@ function ruleEditorInit(){
       {tag: cm.tags.quote, color:"#9a9a9a"}
     ]);
     // Table source rows: inset rules + alternating backgrounds per logical line,
-    // so a row stays separated even when soft-wrapped.
+    // so a row stays separated even when soft-wrapped. Rows come from the GFM
+    // syntax tree, so tables without leading/trailing pipes are decorated too,
+    // while pipe lookalikes inside fenced code are not.
     const rowDecos = function(view){
       const doc = view.state.doc;
       const decos = [];
-      let run = 0;
-      for(let n=1; n<=doc.lines; n++){
-        const line = doc.line(n);
-        if(line.text.replace(/^\s+/, "").charAt(0) === "|"){
-          decos.push(cm.Decoration.line({class:"rule-md-row" + (run % 2 === 1 ? " rule-md-row-alt" : "")}).range(line.from));
-          run++;
-        }else{ run = 0; }
+      let tree = null;
+      try{ tree = cm.ensureSyntaxTree(view.state, doc.length, 50) || cm.syntaxTree(view.state); }catch(e1){ tree = cm.syntaxTree(view.state); }
+      if(tree){
+        tree.iterate({
+          enter: function(node){
+            if(node.name !== "Table") return undefined;
+            let idx = 0;
+            let child = node.node.firstChild;
+            while(child){
+              if(child.name === "TableHeader" || child.name === "TableDelimiter" || child.name === "TableRow"){
+                const fromLine = doc.lineAt(child.from).number;
+                const toLine = doc.lineAt(child.to).number;
+                for(let n=fromLine; n<=toLine; n++){
+                  decos.push(cm.Decoration.line({class:"rule-md-row" + (idx % 2 === 1 ? " rule-md-row-alt" : "")}).range(doc.line(n).from));
+                }
+                idx++;
+              }
+              child = child.nextSibling;
+            }
+            return false;
+          }
+        });
       }
       return cm.Decoration.set(decos);
     };
@@ -4204,17 +4239,31 @@ function ruleEditorInit(){
       function TableRowDecos(view){ this.decos = rowDecos(view); this.update = function(v){ this.decos = rowDecos(v); }; },
       {decorations: function(v){ return v.decos; }}
     );
+    // Dark theme so the caret, selection and focus ring stay visible on #0a0a0a.
+    const cmTheme = cm.EditorView.theme({
+      "&": {backgroundColor:"#0a0a0a", color:"#fff"},
+      ".cm-content": {caretColor:"#fff"},
+      ".cm-cursor, .cm-dropCursor": {borderLeftColor:"#fff", borderLeftWidth:"2px"},
+      ".cm-selectionBackground, &.cm-focused .cm-selectionBackground, .cm-content ::selection": {backgroundColor:"#264f78"},
+      "&.cm-focused": {outline:"1px solid #f5f5f5"}
+    }, {dark:true});
+    // The lock must hold for commands (undo/delete) too, so editable is paired
+    // with a readOnly facet and a change filter that rejects doc mutations.
     ruleCmEditable = new cm.Compartment();
+    ruleCmAria = new cm.Compartment();
     const state = cm.EditorState.create({
       doc: String(ta.value || ""),
       extensions: [
         cm.lineNumbers(),
         cm.history(),
         cm.keymap.of(cm.defaultKeymap.concat(cm.historyKeymap, [cm.indentWithTab])),
+        cm.EditorView.lineWrapping,
+        cmTheme,
         cm.markdownLanguage,
         cm.syntaxHighlighting(hl),
         tableRows,
-        ruleCmEditable.of(cm.EditorView.editable.of(!rulesLockedByGitHub())),
+        ruleCmEditable.of(ruleCmEditableExt(rulesLockedByGitHub())),
+        ruleCmAria.of(cm.EditorView.contentAttributes.of({"aria-label": L("ルール本文")})),
         cm.EditorView.updateListener.of(function(v){
           if(v.docChanged){
             ta.value = v.state.doc.toString();
