@@ -924,8 +924,22 @@ $script:Previews = @{}
 $script:BrowseProcs = @{}
 $script:InstanceId = ([System.Guid]::NewGuid().ToString('N') + '-' + $PID)
 
+# Vendored rule-editor bundle (CodeMirror 6 + marked + DOMPurify) inlined at the
+# head of the page script. Read once and cached; a missing bundle fails closed
+# to the plain textarea editor with a localized notice (no CDN, no eval).
+$script:RuleEditorVendor = $null
+function Get-RuleEditorVendor {
+  if ($null -eq $script:RuleEditorVendor) {
+    $script:RuleEditorVendor = ''
+    $vendorPath = Join-Path $PSScriptRoot 'vendor\rule-editor.bundle.js'
+    if (Test-Path -LiteralPath $vendorPath) {
+      try { $script:RuleEditorVendor = [System.IO.File]::ReadAllText($vendorPath) } catch { $script:RuleEditorVendor = '' }
+    }
+  }
+  return $script:RuleEditorVendor
+}
 function Get-PageHtml {
-  return @'
+  $html = @'
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -976,6 +990,38 @@ h1{font-size:22px;margin:0 0 6px}
 #ruleText{width:100%;min-height:340px;background:#0a0a0a;border:1px solid #2c2c2c;color:#fff;border-radius:6px;padding:10px 12px;font-family:ui-monospace,Consolas,"Courier New",monospace;font-size:12px;line-height:1.6;resize:vertical}
 #ruleText:disabled{opacity:.5;cursor:not-allowed}
 #ruleText:focus{outline:2px solid #f5f5f5;outline-offset:1px}
+#ruleText{overflow-wrap:anywhere}
+#ruleText.cm-off{display:none}
+.rule-modes{display:flex;gap:8px;margin:12px 0 0;flex-wrap:wrap}
+.rmode{padding:6px 14px;font-size:12px}
+.rmode[aria-pressed="true"]{background:#2563eb;border-color:#2563eb;color:#fff}
+.rmode[aria-pressed="true"]:hover{background:#2563eb}
+.rule-src,.rule-view{min-width:0}
+.rules-grid.solo .rule-src,.rules-grid.solo .rule-view{grid-column:1/-1}
+#ruleEditorWrap{min-height:340px;background:#0a0a0a;border:1px solid #2c2c2c;border-radius:6px;overflow:hidden;display:none}
+#ruleEditorWrap.cm-on{display:block}
+#ruleEditorWrap .cm-editor{background:#0a0a0a;color:#fff}
+#ruleEditorWrap .cm-scroller{font-family:ui-monospace,Consolas,"Courier New",monospace;font-size:12px;line-height:1.6;overflow-wrap:anywhere}
+#ruleEditorWrap .cm-gutters{background:#0a0a0a;border-right:1px solid #2c2c2c;color:#8b949e;flex:none}
+#ruleEditorWrap .cm-content{padding:10px 12px}
+#ruleEditorWrap .cm-line{padding:0 2px 0 0}
+#ruleEditorWrap .rule-md-row{background:#111214;box-shadow:inset 0 1px 0 #1f1f1f,inset 0 -1px 0 #1f1f1f}
+#ruleEditorWrap .rule-md-row.rule-md-row-alt{background:#17191c}
+#rulePreview{min-height:340px;background:#0a0a0a;border:1px solid #2c2c2c;border-radius:6px;padding:10px 12px;font-size:13px;overflow-wrap:anywhere}
+#rulePreview h1,#rulePreview h2,#rulePreview h3,#rulePreview h4,#rulePreview h5,#rulePreview h6{margin:14px 0 8px;color:#fff}
+#rulePreview h1{font-size:20px}#rulePreview h2{font-size:17px}#rulePreview h3{font-size:15px}
+#rulePreview p,#rulePreview ul,#rulePreview ol{margin:8px 0}
+#rulePreview code{background:#1c1c1c;border:1px solid #2c2c2c;border-radius:4px;padding:1px 5px;font-family:ui-monospace,Consolas,"Courier New",monospace;font-size:12px}
+#rulePreview pre{background:#0d0d0d;border:1px solid #242424;border-radius:6px;padding:10px;overflow:auto}
+#rulePreview pre code{background:none;border:none;padding:0}
+#rulePreview table{border-collapse:collapse;margin:8px 0}
+#rulePreview th,#rulePreview td{border:1px solid #2c2c2c;padding:6px 9px}
+#rulePreview th{background:#181818;color:#fff;font-weight:700}
+#rulePreview tbody tr:nth-child(odd){background:#101010}
+#rulePreview tbody th[scope=row]{font-weight:700;text-align:left}
+#rulePreview a{color:#7ab7ff}
+.rpreview-scroll{overflow-x:auto;border-radius:6px}
+.rpreview-scroll:focus{outline:2px solid #f5f5f5;outline-offset:1px}
 @media(max-width:1000px){.row2,.cols2,.rules-grid{grid-template-columns:1fr}aside{display:none}.mainscroll{padding:20px 16px 32px}.summarybar{padding:8px 16px 6px}}
 @media(max-width:480px){.summarybar{padding:8px 12px 6px}.summarybar .grid3{gap:6px}.summarybar .card{padding:8px 10px}.summarybar .btnrow button{padding:2px 5px;font-size:10px}}
 @media(max-height:520px){.topbar{padding:3px 10px 2px}.topnav{padding:2px 8px!important}.topnav a{padding:2px 5px!important;font-size:11px!important}.summarybar{padding:2px 10px 1px}.summarybar .card{padding:2px 6px}.summarybar .card h2{margin:0 0 2px;font-size:11px}.summarybar .grid3{gap:3px}.summarybar .big{font-size:13px}.summarybar .muted{font-size:10px;-webkit-line-clamp:1}.summarybar .btnrow{margin-top:2px}.summarybar .btnrow button{padding:2px 5px;font-size:10px}.helper{display:none!important}.mainscroll{padding:6px 10px 10px}}
@@ -1289,11 +1335,16 @@ input[type=number]{width:120px;background:#0a0a0a;border:1px solid #2c2c2c;color
 <p class="muted" data-i18n="GitHub上の global.md / project.md を取得して編集・保存します。保存にはGitHub連携とトークンが必要です。取得時のSHAと一致した場合のみ更新します。">GitHub上の global.md / project.md を取得して編集・保存します。保存にはGitHub連携とトークンが必要です。取得時のSHAと一致した場合のみ更新します。</p>
 <p class="muted warn" id="rulesGate" hidden data-i18n="GitHub連携が未設定のため編集できません。上部のGitHubボタンから設定してください。">GitHub連携が未設定のため編集できません。上部のGitHubボタンから設定してください。</p>
 <div class="btnrow"><select id="selRuleKind" aria-label="ルール種別" data-i18n-aria="ルール種別"><option value="project">project.md</option><option value="global">global.md</option></select><button id="btnRuleLoad" data-i18n="取得">取得</button><button id="btnRuleSave" class="primary" data-i18n="保存">保存</button></div>
-<div class="rules-grid">
-<textarea id="ruleText" spellcheck="false" aria-label="ルール本文" data-i18n-aria="ルール本文"></textarea>
-<div>
 <p class="muted" id="ruleMeta"></p>
 <div id="msgRule" role="status"></div>
+<div class="rule-modes" role="group" aria-label="表示モード" data-i18n-aria="表示モード"><button type="button" id="btnRuleModeEdit" class="rmode" aria-pressed="false" data-i18n="編集">編集</button><button type="button" id="btnRuleModeSplit" class="rmode" aria-pressed="true" data-i18n="分割">分割</button><button type="button" id="btnRuleModePreview" class="rmode" aria-pressed="false" data-i18n="プレビュー">プレビュー</button></div>
+<div class="rules-grid" id="rulesGrid">
+<div class="rule-src" id="ruleSrcPane">
+<textarea id="ruleText" spellcheck="false" aria-label="ルール本文" data-i18n-aria="ルール本文"></textarea>
+<div id="ruleEditorWrap" class="rule-cm" aria-label="ルール本文" data-i18n-aria="ルール本文"></div>
+</div>
+<div class="rule-view" id="rulePreviewPane" aria-label="共通ルールプレビュー" data-i18n-aria="共通ルールプレビュー">
+<div id="rulePreview" class="rpreview"></div>
 </div>
 </div>
 </div>
@@ -1458,6 +1509,7 @@ input[type=number]{width:120px;background:#0a0a0a;border:1px solid #2c2c2c;color
 </div>
 </div><script>
 "use strict";
+__RULE_EDITOR_VENDOR__
 const TOKEN = "__TOKEN__";
 const GLOBAL_CATALOG = (typeof __GLOBAL_CATALOG__ !== "undefined") ? __GLOBAL_CATALOG__ : [];
 const GLOBAL_DEFAULT_TARGETS = ["codexcli", "opencode"];
@@ -1939,7 +1991,15 @@ const I18N = {
     "読込中です。完了してから保存してください。": "Loading. Wait for it to finish before saving.",
     "内容が更新されました。取得し直してから保存してください。": "The content changed. Load it again before saving.",
     "ルール種別": "Rule type",
-    "ルール本文": "Rule body"
+    "ルール本文": "Rule body",
+    "表示モード": "View mode",
+    "編集": "Edit",
+    "分割": "Split",
+    "共通ルールプレビュー": "Shared rule preview",
+    "テーブル": "Table",
+    "プレビューを表示できません。ソースのみ編集できます。": "The preview is unavailable. Only the source text can be edited.",
+    "プレビューの表示中にエラーが発生しました。": "The preview could not be rendered.",
+    "本文が大きいためプレビューを省略しました。": "The text is too large, so the preview was skipped."
   },
   "zh-CN": {
     " 既存 AGENTS.md はバックアップ後に同期で再生成されます（固有内容は自動転記されません）。": " 现有 AGENTS.md 会在备份后由同步重新生成（其中专有内容不会自动转写）。",
@@ -2385,7 +2445,15 @@ const I18N = {
     "読込中です。完了してから保存してください。": "正在加载。请等待完成后再保存。",
     "内容が更新されました。取得し直してから保存してください。": "内容已更新。请重新获取后再保存。",
     "ルール種別": "规则类型",
-    "ルール本文": "规则正文"
+    "ルール本文": "规则正文",
+    "表示モード": "显示模式",
+    "編集": "编辑",
+    "分割": "分栏",
+    "共通ルールプレビュー": "共通规则预览",
+    "テーブル": "表格",
+    "プレビューを表示できません。ソースのみ編集できます。": "无法显示预览。仅可编辑源文本。",
+    "プレビューの表示中にエラーが発生しました。": "显示预览时发生错误。",
+    "本文が大きいためプレビューを省略しました。": "文本过大，已跳过预览。"
   }
 };
 let currentLang = "ja";
@@ -2439,6 +2507,7 @@ function localizeGeneratedUI(fromLang){
       return;
     }
     if(n.nodeType === 1 && /^(PRE|TEXTAREA|INPUT|SELECT|CODE)$/.test(n.tagName || "")) return;
+    if(n.nodeType === 1 && (n.id === "ruleEditorWrap" || n.id === "rulePreview" || n.id === "rulePreviewPane")) return;
     const children = n.childNodes || [];
     for(let i=0;i<children.length;i++) visit(children[i]);
   }
@@ -2494,6 +2563,7 @@ function applyLanguage(lang, reload){
   try{ if(typeof renderGlobalStatus === "function") renderGlobalStatus(); }catch(e){}
   try{ if(typeof renderGlobalTargetsUI === "function") renderGlobalTargetsUI(); }catch(e){}
   try{ if(typeof renderRulesLock === "function") renderRulesLock(); }catch(e){}
+  try{ if(typeof ruleRenderPreviewNow === "function") ruleRenderPreviewNow(); }catch(e){}
   try{ if(typeof ghRenderPreview === "function") ghRenderPreview(); }catch(e){}
   try{ if(lastBackupDiff) renderBackupDiff(document.getElementById("backupDiffArea"), lastBackupDiff); }catch(e){}
   try{ if(lastGlobalBackupDiff) renderGlobalBackupDiff(lastGlobalBackupDiff.data); }catch(e){}
@@ -3968,6 +4038,196 @@ async function refreshGlobal(deadline, forceAdopt){
 function rulesLockedByGitHub(){
   return !(currentGlobalStatus && currentGlobalStatus.githubConfigured === true);
 }
+// --- common rule Markdown editor/preview (vendored CM6 + marked + DOMPurify) ---
+// The vendor bundle is inlined at the head of this script. Without it the
+// editor fails closed to the plain textarea and the preview shows a notice.
+const RULE_PREVIEW_MAX = 262144;
+const RULE_PREVIEW_DEBOUNCE = 300;
+let ruleCmView = null;
+let ruleCmEditable = null;
+let rulePurifierInstance = null;
+let rulePreviewTimer = 0;
+let ruleMode = "split";
+function ruleVendorReady(){
+  try{ return !!(globalThis.ShirubeRuleLib && ShirubeRuleLib.marked && ShirubeRuleLib.DOMPurify && ShirubeRuleLib.cm); }catch(e){ return false; }
+}
+function rulePurifier(){
+  if(!rulePurifierInstance){ rulePurifierInstance = ShirubeRuleLib.DOMPurify(window); }
+  return rulePurifierInstance;
+}
+function ruleBuildPreviewHtml(text){
+  const rawHtml = ShirubeRuleLib.marked.parse(text, {gfm:true, breaks:false, async:false});
+  // External Markdown is untrusted: parse, then sanitize with a minimal
+  // allowlist. No svg/math/form/iframe/object/embed/style/script/media, no
+  // images, no event/style/id/name attributes, http(s)/mailto links only.
+  return rulePurifier().sanitize(rawHtml, {
+    ALLOWED_TAGS: ["p","br","strong","em","b","i","del","s","code","pre","blockquote","ul","ol","li","h1","h2","h3","h4","h5","h6","table","thead","tbody","tr","th","td","hr","a"],
+    ALLOWED_ATTR: ["href"],
+    ALLOW_DATA_ATTR: false,
+    ALLOWED_URI_REGEXP: /^(?:https?|mailto):/i,
+    FORBID_TAGS: ["svg","math","form","iframe","object","embed","style","script","img","input","button","textarea","select","video","audio","source","track","link","meta","base"],
+    FORBID_ATTR: ["style","id","name","class","src","srcset"]
+  });
+}
+function ruleAugmentPreview(root){
+  // Post-sanitization augmentation: only fixed known nodes/attributes.
+  try{
+    const tables = root.querySelectorAll("table");
+    for(let i=0;i<tables.length;i++){
+      const t = tables[i];
+      const tb = t.querySelector("tbody");
+      if(tb){
+        const rows = tb.querySelectorAll("tr");
+        for(let j=0;j<rows.length;j++){
+          const c = rows[j].querySelector("td");
+          if(c){
+            const th = document.createElement("th");
+            th.setAttribute("scope","row");
+            while(c.firstChild) th.appendChild(c.firstChild);
+            c.parentNode.replaceChild(th, c);
+          }
+        }
+      }
+      if(t.parentNode){
+        const w = document.createElement("div");
+        w.className = "rpreview-scroll";
+        w.setAttribute("role","region");
+        w.setAttribute("aria-label", L("テーブル"));
+        w.setAttribute("tabindex","0");
+        t.parentNode.insertBefore(w, t);
+        w.appendChild(t);
+      }
+    }
+    const links = root.querySelectorAll("a[href]");
+    for(let k=0;k<links.length;k++){
+      links[k].setAttribute("target","_blank");
+      links[k].setAttribute("rel","noopener noreferrer");
+    }
+  }catch(e){}
+}
+function ruleRenderPreviewNow(){
+  const out = document.getElementById("rulePreview");
+  if(!out) return;
+  const ta = document.getElementById("ruleText");
+  const text = ta ? String(ta.value || "") : "";
+  if(text.length > RULE_PREVIEW_MAX){
+    out.textContent = L("本文が大きいためプレビューを省略しました。");
+    return;
+  }
+  if(!ruleVendorReady()){
+    out.textContent = L("プレビューを表示できません。ソースのみ編集できます。");
+    return;
+  }
+  try{
+    out.textContent = "";
+    out.innerHTML = ruleBuildPreviewHtml(text);
+    ruleAugmentPreview(out);
+  }catch(e){
+    out.textContent = L("プレビューの表示中にエラーが発生しました。");
+  }
+}
+function ruleSchedulePreview(immediate){
+  if(immediate){ ruleRenderPreviewNow(); return; }
+  if(rulePreviewTimer) clearTimeout(rulePreviewTimer);
+  rulePreviewTimer = setTimeout(function(){ rulePreviewTimer = 0; ruleRenderPreviewNow(); }, RULE_PREVIEW_DEBOUNCE);
+}
+function ruleModeSet(mode){
+  if(["edit","split","preview"].indexOf(mode) < 0) return;
+  ruleMode = mode;
+  const map = {edit:"btnRuleModeEdit", split:"btnRuleModeSplit", preview:"btnRuleModePreview"};
+  for(const k in map){
+    try{ document.getElementById(map[k]).setAttribute("aria-pressed", k === mode ? "true" : "false"); }catch(e){}
+  }
+  try{
+    document.getElementById("ruleSrcPane").hidden = (mode === "preview");
+    document.getElementById("rulePreviewPane").hidden = (mode === "edit");
+    const grid = document.getElementById("rulesGrid");
+    if(grid && grid.classList){
+      if(mode === "split") grid.classList.remove("solo"); else grid.classList.add("solo");
+    }
+  }catch(e2){}
+  ruleSchedulePreview(true);
+}
+function ruleEditorReady(){ return !!ruleCmView; }
+function ruleEditorSetReadOnly(locked){
+  if(!ruleCmView || !ruleCmEditable) return;
+  try{ ruleCmView.dispatch({effects: ruleCmEditable.reconfigure(ShirubeRuleLib.cm.EditorView.editable.of(!locked))}); }catch(e){}
+}
+function ruleEditorApplyText(){
+  const ta = document.getElementById("ruleText");
+  if(!ta) return;
+  if(ruleCmView){
+    try{
+      const txt = String(ta.value || "");
+      if(ruleCmView.state.doc.toString() !== txt){
+        ruleCmView.dispatch({changes:{from:0, to:ruleCmView.state.doc.length, insert:txt}});
+      }
+    }catch(e){}
+  }
+  ruleSchedulePreview(true);
+}
+function ruleEditorInit(){
+  const ta = document.getElementById("ruleText");
+  if(!ta) return;
+  // Fallback editor path: the textarea drives the (debounced) preview itself.
+  try{ ta.addEventListener("input", function(){ ruleSchedulePreview(false); }); }catch(e0){}
+  if(!ruleVendorReady()) return;
+  try{
+    const wrap = document.getElementById("ruleEditorWrap");
+    if(!wrap) return;
+    const cm = ShirubeRuleLib.cm;
+    const hl = cm.HighlightStyle.define([
+      {tag: cm.tags.heading, color:"#60a5fa", fontWeight:"bold"},
+      {tag: cm.tags.monospace, color:"#fbbf24"},
+      {tag: cm.tags.processingInstruction, color:"#8b949e"},
+      {tag: cm.tags.contentSeparator, color:"#8b949e"},
+      {tag: cm.tags.link, color:"#60a5fa"},
+      {tag: cm.tags.url, color:"#8b949e"},
+      {tag: cm.tags.quote, color:"#9a9a9a"}
+    ]);
+    // Table source rows: inset rules + alternating backgrounds per logical line,
+    // so a row stays separated even when soft-wrapped.
+    const rowDecos = function(view){
+      const doc = view.state.doc;
+      const decos = [];
+      let run = 0;
+      for(let n=1; n<=doc.lines; n++){
+        const line = doc.line(n);
+        if(line.text.replace(/^\s+/, "").charAt(0) === "|"){
+          decos.push(cm.Decoration.line({class:"rule-md-row" + (run % 2 === 1 ? " rule-md-row-alt" : "")}).range(line.from));
+          run++;
+        }else{ run = 0; }
+      }
+      return cm.Decoration.set(decos);
+    };
+    const tableRows = cm.ViewPlugin.fromClass(
+      function TableRowDecos(view){ this.decos = rowDecos(view); this.update = function(v){ this.decos = rowDecos(v); }; },
+      {decorations: function(v){ return v.decos; }}
+    );
+    ruleCmEditable = new cm.Compartment();
+    const state = cm.EditorState.create({
+      doc: String(ta.value || ""),
+      extensions: [
+        cm.lineNumbers(),
+        cm.history(),
+        cm.keymap.of(cm.defaultKeymap.concat(cm.historyKeymap, [cm.indentWithTab])),
+        cm.markdownLanguage,
+        cm.syntaxHighlighting(hl),
+        tableRows,
+        ruleCmEditable.of(cm.EditorView.editable.of(!rulesLockedByGitHub())),
+        cm.EditorView.updateListener.of(function(v){
+          if(v.docChanged){
+            ta.value = v.state.doc.toString();
+            ruleSchedulePreview(false);
+          }
+        })
+      ]
+    });
+    ruleCmView = new cm.EditorView({state: state, parent: wrap});
+    ta.classList.add("cm-off");
+    wrap.classList.add("cm-on");
+  }catch(e){ ruleCmView = null; }
+}
 let ruleLoaded = null;
 let ruleBusy = false;
 function renderRulesLock(){
@@ -3977,6 +4237,7 @@ function renderRulesLock(){
   try{ document.getElementById("selRuleKind").disabled = locked || ruleBusy; }catch(e2){}
   try{ document.getElementById("btnRuleLoad").disabled = locked || ruleBusy; }catch(e3){}
   try{ document.getElementById("btnRuleSave").disabled = locked || ruleBusy || !ruleLoaded; }catch(e4){}
+  try{ ruleEditorSetReadOnly(locked); }catch(e5){}
 }
 function ruleKind(){
   try{ return document.getElementById("selRuleKind").value === "global" ? "global" : "project"; }catch(e){ return "project"; }
@@ -3998,6 +4259,7 @@ async function ruleLoad(){
     const r = await api("/api/github-rule-get", "POST", {kind:kind}, 30000);
     ruleLoaded = {kind:kind, sha:String(r.sha || ""), repo:String(r.repo || ""), branch:String(r.branch || ""), path:String(r.path || "")};
     document.getElementById("ruleText").value = String(r.text || "");
+    ruleEditorApplyText();
     renderRuleMeta(r);
     if(r.redacted) setMsg("msgRule", L("伏字表示中の内容はそのまま保存できません。再取得しても伏字のままの場合、そのまま保存しないでください。"), false);
     else setMsg("msgRule", L("取得しました。"), true);
@@ -4042,10 +4304,16 @@ try{
     ruleLoaded = null;
     document.getElementById("ruleText").value = "";
     document.getElementById("ruleMeta").textContent = "";
+    ruleEditorApplyText();
     renderRulesLock();
   };
 }catch(eK){}
+try{ document.getElementById("btnRuleModeEdit").onclick = function(){ ruleModeSet("edit"); }; }catch(eM1){}
+try{ document.getElementById("btnRuleModeSplit").onclick = function(){ ruleModeSet("split"); }; }catch(eM2){}
+try{ document.getElementById("btnRuleModePreview").onclick = function(){ ruleModeSet("preview"); }; }catch(eM3){}
 renderRulesLock();
+ruleModeSet("split");
+ruleEditorInit();
 async function pollGlobalUntilDone(syncId, tries, delayMs, deadline){
   const dl = deadline || (Date.now() + 60000);
   for(let i=0;i<tries;i++){
@@ -4645,6 +4913,7 @@ ghRenderPreview();</script>
 </body>
 </html>
 '@
+  return $html.Replace('__RULE_EDITOR_VENDOR__', (Get-RuleEditorVendor))
 }
 function Send-Json($Ctx, [int]$Code, $Obj) {
   $j = ConvertTo-Json -InputObject $Obj -Depth 6 -Compress
