@@ -87,6 +87,14 @@ test('full license notices of every bundled package are committed', () => {
   must(files.includes('dompurify.LICENSE') && files.includes('dompurify.LICENSE-MPL'), 'dompurify dual license (Apache-2.0 + MPL-2.0)');
 });
 
+test('embedded notices survive in the bundle and the regenerator notice ships beside it', () => {
+  const bundle = fs.readFileSync(vendorBundlePath, 'utf8');
+  must(/Cure53/.test(bundle) && /DOMPurify/.test(bundle), 'the Cure53 @license header stays embedded in the bundle');
+  must(/regenerator-runtime/.test(bundle) && /Facebook, Inc\./.test(bundle), 'the Facebook regenerator-runtime MIT comment stays embedded in the bundle');
+  const regen = fs.readFileSync(path.join(here, '..', 'vendor', 'licenses', 'dompurify+regenerator-runtime.LICENSE'), 'utf8');
+  must(/MIT License/.test(regen) && /Facebook, Inc\./.test(regen) && /Sebastian McKenzie/.test(regen), 'the regenerator-runtime MIT full text is shipped as a notice');
+});
+
 test('the markdown language uses Language, not LRLanguage (subword commands crash on LRLanguage)', () => {
   const mainSrc = fs.readFileSync(path.join(vendorDir, 'src', 'main.mjs'), 'utf8');
   must(!/import[^;]*\bLRLanguage\b/.test(mainSrc) && !/LRLanguage\.(define|of)/.test(mainSrc), 'no LRLanguage usage in the vendor entry');
@@ -619,6 +627,47 @@ if (!fs.existsSync(jsdomPath)) {
     must(ta.value === 'y# fresh source', 'unlocked: user input builds on the new source, not the stale one');
   });
 
+  await testAsync('undo history resets when another file is loaded or the kind changes', async () => {
+    const h = domHarness(true);
+    h.r.ruleEditorInit();
+    if (!h.r.ruleEditorReady()) return; // editor unavailable in this DOM
+    const cm = h.ctx.ShirubeRuleLib.cm;
+    const doc = h.ctx.document;
+    const ta = doc.getElementById('ruleText');
+    const posts = [];
+    h.ctx.api = (ep, method, body) => {
+      if (ep === '/api/github-rule-get') {
+        const kind = doc.getElementById('selRuleKind').value;
+        return Promise.resolve({ ok: true, kind, path: 'rules/' + kind + '.md', repo: 'R', branch: 'main', sha: 'sha-' + kind, text: kind === 'global' ? 'global authority' : 'project authority', redacted: false });
+      }
+      if (ep === '/api/github-rule-save') { posts.push(body); return Promise.resolve({ ok: true, sha: 'sha-new', repo: 'R', branch: 'main', path: 'rules/global.md' }); }
+      return Promise.resolve({ ok: true });
+    };
+    const undo = () => {
+      const k = cm.historyKeymap.find(x => x.key === 'Mod-z');
+      return k && k.run(h.r.view());
+    };
+    // project file: in-file edit + undo still works
+    await h.r.ruleLoad();
+    must(ta.value === 'project authority' && h.r.view().state.doc.toString() === 'project authority', 'project load lands in the editor and textarea');
+    h.r.view().dispatch({ changes: { from: 0, to: 0, insert: 'X' } });
+    must(ta.value === 'Xproject authority', 'in-file edit mirrors to the textarea');
+    undo();
+    must(h.r.view().state.doc.toString() === 'project authority', 'undo works within the same file');
+    // switch kind (authority clear) and load the global file
+    doc.getElementById('selRuleKind').value = 'global';
+    doc.getElementById('selRuleKind').onchange();
+    must(h.r.view().state.doc.toString() === '', 'kind clear resets the editor');
+    await h.r.ruleLoad();
+    must(ta.value === 'global authority' && h.r.view().state.doc.toString() === 'global authority', 'global load lands in the editor and textarea');
+    // cross-file undo must not resurrect the project text
+    undo();
+    must(h.r.view().state.doc.toString() === 'global authority', 'undo cannot bring back the other file\'s text');
+    must(ta.value === 'global authority', 'the textarea keeps the global authority after the undo attempt');
+    await h.r.ruleSave();
+    must(posts.length === 1 && posts[0].kind === 'global' && posts[0].text === 'global authority' && posts[0].sha === 'sha-global', 'save posts the loaded global file with its own sha');
+  });
+
   test('table row stripes come from the syntax tree and cover both GFM forms', () => {
     const h = domHarness(true);
     h.r.ruleEditorInit();
@@ -666,6 +715,33 @@ if (!fs.existsSync(jsdomPath)) {
     must(h.ctx.document.getElementById('ruleSrcPane').hidden === true, 'source pane hidden');
     h.r.ruleModeSet('split');
     must(h.ctx.document.getElementById('ruleSrcPane').hidden === false, 'split restores the source pane');
+  });
+
+  test('row headers pick the row\'s own first cell, not a descendant cell', () => {
+    const h = domHarness(true);
+    const ta = h.ctx.document.getElementById('ruleText');
+    const p = h.ctx.document.getElementById('rulePreview');
+
+    // raw HTML row already using th in the first column keeps it and only gains scope
+    ta.value = '<table><thead><tr><th>H</th></tr></thead><tbody><tr><th>RowA</th><td>42</td></tr></tbody></table>';
+    h.r.ruleRenderPreviewNow();
+    const firstTh = p.querySelector('tbody th');
+    must(firstTh && firstTh.textContent === 'RowA' && firstTh.getAttribute('scope') === 'row', 'existing th keeps its text and gains scope=row');
+    must(p.querySelectorAll('tbody td').length === 1 && p.querySelector('tbody td').textContent === '42', 'the second cell stays a td');
+
+    // nested table: the outer row converts its own first cell, never a nested cell
+    ta.value = '<table><tbody><tr><td>outer</td><td><table><tbody><tr><td>inner</td></tr></tbody></table></td></tr></tbody></table>';
+    h.r.ruleRenderPreviewNow();
+    const outerRow = p.querySelector('table > tbody > tr');
+    must(outerRow && outerRow.children[0].tagName === 'TH' && outerRow.children[0].textContent === 'outer', 'the outer first cell is the converted row header');
+    must(outerRow.children[1].tagName === 'TD', 'the outer second cell stays td');
+    const inner = p.querySelectorAll('table > tbody > tr')[1];
+    must(inner && inner.children[0].textContent === 'inner', 'the nested table is intact');
+
+    // standard GFM keeps converting td to th scope=row
+    ta.value = '| a | b |\n| - | - |\n| 1 | 2 |';
+    h.r.ruleRenderPreviewNow();
+    must(p.querySelector('tbody th[scope=row]').textContent === '1', 'GFM body rows still get th scope=row');
   });
 
   test('without the vendor bundle the editor fails closed to the plain textarea', () => {

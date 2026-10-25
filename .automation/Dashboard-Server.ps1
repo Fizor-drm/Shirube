@@ -4047,6 +4047,7 @@ const RULE_PREVIEW_DEBOUNCE = 300;
 let ruleCmView = null;
 let ruleCmEditable = null;
 let ruleCmAria = null;
+let ruleCmStateBuilder = null;
 let rulePurifierInstance = null;
 let rulePreviewTimer = 0;
 let ruleMode = "split";
@@ -4081,12 +4082,18 @@ function ruleAugmentPreview(root){
       if(tb){
         const rows = tb.querySelectorAll("tr");
         for(let j=0;j<rows.length;j++){
-          const c = rows[j].querySelector("td");
-          if(c){
+          const row = rows[j];
+          // The row's own first cell only: a direct child, never a cell of a
+          // nested table, and an existing TH keeps its content.
+          const first = (row.children && row.children[0]) || null;
+          if(!first) continue;
+          if(first.tagName === "TH"){
+            first.setAttribute("scope","row");
+          }else if(first.tagName === "TD"){
             const th = document.createElement("th");
             th.setAttribute("scope","row");
-            while(c.firstChild) th.appendChild(c.firstChild);
-            c.parentNode.replaceChild(th, c);
+            while(first.firstChild) th.appendChild(first.firstChild);
+            row.replaceChild(th, first);
           }
         }
       }
@@ -4169,14 +4176,15 @@ function ruleEditorSetReadOnly(locked){
 function ruleEditorApplyText(){
   const ta = document.getElementById("ruleText");
   if(!ta) return;
-  if(ruleCmView){
+  if(ruleCmView && ruleCmStateBuilder){
     try{
       const txt = String(ta.value || "");
       if(ruleCmView.state.doc.toString() !== txt){
-        // Authoritative programmatic sync (ruleLoad / kind clear): bypass the
-        // lock's change filter so CM matches the textarea even while locked.
-        // User editing stays blocked; only this sync opts out via filter:false.
-        ruleCmView.dispatch({changes:{from:0, to:ruleCmView.state.doc.length, insert:txt}, filter:false});
+        // Authoritative sync (ruleLoad / kind clear): replace the whole state.
+        // This both matches the new authority even while locked (filter:false
+        // territory before) and resets undo history, so another file's text
+        // can never come back through Ctrl+Z. User editing stays filtered.
+        ruleCmView.setState(ruleCmStateBuilder(txt));
       }
     }catch(e){}
   }
@@ -4254,27 +4262,30 @@ function ruleEditorInit(){
     // with a readOnly facet and a change filter that rejects doc mutations.
     ruleCmEditable = new cm.Compartment();
     ruleCmAria = new cm.Compartment();
-    const state = cm.EditorState.create({
-      doc: String(ta.value || ""),
-      extensions: [
-        cm.lineNumbers(),
-        cm.history(),
-        cm.keymap.of(cm.defaultKeymap.concat(cm.historyKeymap, [cm.indentWithTab])),
-        cm.EditorView.lineWrapping,
-        cmTheme,
-        cm.markdownLanguage,
-        cm.syntaxHighlighting(hl),
-        tableRows,
-        ruleCmEditable.of(ruleCmEditableExt(rulesLockedByGitHub())),
-        ruleCmAria.of(cm.EditorView.contentAttributes.of({"aria-label": L("ルール本文")})),
-        cm.EditorView.updateListener.of(function(v){
-          if(v.docChanged){
-            ta.value = v.state.doc.toString();
-            ruleSchedulePreview(false);
-          }
-        })
-      ]
-    });
+    ruleCmStateBuilder = function(txt){
+      return cm.EditorState.create({
+        doc: String(txt || ""),
+        extensions: [
+          cm.lineNumbers(),
+          cm.history(),
+          cm.keymap.of(cm.defaultKeymap.concat(cm.historyKeymap, [cm.indentWithTab])),
+          cm.EditorView.lineWrapping,
+          cmTheme,
+          cm.markdownLanguage,
+          cm.syntaxHighlighting(hl),
+          tableRows,
+          ruleCmEditable.of(ruleCmEditableExt(rulesLockedByGitHub())),
+          ruleCmAria.of(cm.EditorView.contentAttributes.of({"aria-label": L("ルール本文")})),
+          cm.EditorView.updateListener.of(function(v){
+            if(v.docChanged){
+              ta.value = v.state.doc.toString();
+              ruleSchedulePreview(false);
+            }
+          })
+        ]
+      });
+    };
+    const state = ruleCmStateBuilder(ta.value);
     ruleCmView = new cm.EditorView({state: state, parent: wrap});
     ta.classList.add("cm-off");
     wrap.classList.add("cm-on");
