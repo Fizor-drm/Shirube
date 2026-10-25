@@ -47,3 +47,6 @@ rulesync.lock
 rulesync.jsonc
 # Playwright MCP browser captures.
 .playwright-mcp/
+# Build/test dependencies of the vendored rule-editor bundle (the built bundle
+# itself at .automation/vendor/rule-editor.bundle.js is committed).
+.automation/vendor/rule-editor/node_modules/
