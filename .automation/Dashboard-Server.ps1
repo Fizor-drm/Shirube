@@ -4178,14 +4178,12 @@ function ruleEditorApplyText(){
   if(!ta) return;
   if(ruleCmView && ruleCmStateBuilder){
     try{
-      const txt = String(ta.value || "");
-      if(ruleCmView.state.doc.toString() !== txt){
-        // Authoritative sync (ruleLoad / kind clear): replace the whole state.
-        // This both matches the new authority even while locked (filter:false
-        // territory before) and resets undo history, so another file's text
-        // can never come back through Ctrl+Z. User editing stays filtered.
-        ruleCmView.setState(ruleCmStateBuilder(txt));
-      }
+      // Authoritative sync (ruleLoad / kind clear): always replace the state.
+      // The new document is authoritative even while locked, and the undo
+      // history resets on every load/clear — including when the text is
+      // unchanged or empty — so another file's (or an older) text can never
+      // come back through Ctrl+Z. User editing stays filtered.
+      ruleCmView.setState(ruleCmStateBuilder(String(ta.value || "")));
     }catch(e){}
   }
   ruleSchedulePreview(true);

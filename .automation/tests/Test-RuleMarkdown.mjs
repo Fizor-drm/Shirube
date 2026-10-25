@@ -668,6 +668,46 @@ if (!fs.existsSync(jsdomPath)) {
     must(posts.length === 1 && posts[0].kind === 'global' && posts[0].text === 'global authority' && posts[0].sha === 'sha-global', 'save posts the loaded global file with its own sha');
   });
 
+  await testAsync('undo history resets even when the reloaded text is identical or empty', async () => {
+    const h = domHarness(true);
+    h.r.ruleEditorInit();
+    if (!h.r.ruleEditorReady()) return; // editor unavailable in this DOM
+    const cm = h.ctx.ShirubeRuleLib.cm;
+    const doc = h.ctx.document;
+    const ta = doc.getElementById('ruleText');
+    let getText = 'project authority';
+    h.ctx.api = (ep) => {
+      if (ep === '/api/github-rule-get') {
+        const kind = doc.getElementById('selRuleKind').value;
+        return Promise.resolve({ ok: true, kind, path: 'rules/' + kind + '.md', repo: 'R', branch: 'main', sha: 'sha-' + kind, text: kind === 'global' ? getText : 'project authority', redacted: false });
+      }
+      return Promise.resolve({ ok: true });
+    };
+    const undo = () => {
+      const k = cm.historyKeymap.find(x => x.key === 'Mod-z');
+      return k && k.run(h.r.view());
+    };
+    // same-text reload: edit away and back, then re-fetch the identical text
+    await h.r.ruleLoad();
+    h.r.view().dispatch({ changes: { from: 0, to: 'project authority'.length, insert: 'edited away' } });
+    // stay outside CM's newGroupDelay window so the two edits are separate undo events
+    await new Promise(r => setTimeout(r, 550));
+    h.r.view().dispatch({ changes: { from: 0, to: 'edited away'.length, insert: 'project authority' } });
+    must(h.r.view().state.doc.toString() === 'project authority', 'doc edited back to the loaded text (history holds the edits)');
+    await h.r.ruleLoad();
+    undo();
+    must(h.r.view().state.doc.toString() === 'project authority' && ta.value === 'project authority', 'identical reload resets history: undo changes nothing');
+    // empty-doc cross-kind: edit the project file down to empty, clear, load an empty global file
+    h.r.view().dispatch({ changes: { from: 0, to: 'project authority'.length, insert: '' } });
+    doc.getElementById('selRuleKind').value = 'global';
+    doc.getElementById('selRuleKind').onchange();
+    getText = '';
+    await h.r.ruleLoad();
+    must(h.r.view().state.doc.toString() === '' && ta.value === '', 'empty global load lands');
+    undo();
+    must(h.r.view().state.doc.toString() === '' && ta.value === '', 'empty reload resets history: undo cannot resurrect the project text');
+  });
+
   test('table row stripes come from the syntax tree and cover both GFM forms', () => {
     const h = domHarness(true);
     h.r.ruleEditorInit();
