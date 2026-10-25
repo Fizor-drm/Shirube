@@ -18,7 +18,7 @@ Node requirement — the dashboard only reads this file.
 
 ## Sizes (measured 2026-10-25)
 
-- `rule-editor.bundle.js`: 393,908 bytes minified (384.7 KB), 128,213 bytes gzip (125.2 KB)
+- `rule-editor.bundle.js`: 394,879 bytes minified (385.6 KB), 128,611 bytes gzip (125.6 KB)
   - roughly: @codemirror/view 202.1 KB, marked 45.6 KB, @codemirror/state ~45 KB,
     @lezer/markdown 34.3 KB, DOMPurify 30.3 KB, remaining CM/lezer packages ~90 KB
 
@@ -39,10 +39,15 @@ assembled page script, and the real parse/sanitize pipeline in jsdom.
 
 ## Third-party licenses
 
-- CodeMirror: Copyright (c) Marijn Haverbeke — MIT (https://codemirror.net/5/LICENSE for CM5; CM6 packages are MIT, https://github.com/codemirror/basic-setup)
-- marked: Copyright (c) 2011-2025, Christopher Jeffrey — MIT (https://github.com/markedjs/marked/blob/master/LICENSE.md)
-- DOMPurify: Copyright 2015 Mario Heiderich — Apache-2.0 OR MPL-2.0 (https://github.com/cure53/DOMPurify/blob/main/LICENSE)
+Full license notices for every package whose code is embedded in the bundle
+are committed next to this file in `licenses/` (copied from the pinned
+packages by `build.mjs` on every rebuild):
 
-Full license texts are available in the respective npm packages; the minified
-bundle carries no license banner (esbuild `legalComments: "none"`) to keep the
-embedded page small, which is why they are reproduced above.
+- @codemirror/{commands,language,state,view}, @lezer/{common,highlight,lr,markdown},
+  @marijn/find-cluster-break, style-mod, w3c-keyname, marked — MIT
+- dompurify — Apache-2.0 OR MPL-2.0 (both full texts included)
+
+The minified bundle itself carries no license banner (esbuild
+`legalComments: "none"`) to keep the embedded page small; when redistributing
+the bundle, keep `licenses/` (or the equivalent notices) with it. esbuild is a
+build-time-only dependency (MIT) and is not part of the bundle.
