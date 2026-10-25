@@ -18,7 +18,7 @@ Node requirement — the dashboard only reads this file.
 
 ## Sizes (measured 2026-10-25)
 
-- `rule-editor.bundle.js`: 394,879 bytes minified (385.6 KB), 128,611 bytes gzip (125.6 KB)
+- `rule-editor.bundle.js`: 395,230 bytes minified (386.0 KB), 128,821 bytes gzip (125.8 KB)
   - roughly: @codemirror/view 202.1 KB, marked 45.6 KB, @codemirror/state ~45 KB,
     @lezer/markdown 34.3 KB, DOMPurify 30.3 KB, remaining CM/lezer packages ~90 KB
 
@@ -45,9 +45,14 @@ packages by `build.mjs` on every rebuild):
 
 - @codemirror/{commands,language,state,view}, @lezer/{common,highlight,lr,markdown},
   @marijn/find-cluster-break, style-mod, w3c-keyname, marked — MIT
-- dompurify — Apache-2.0 OR MPL-2.0 (both full texts included)
+- dompurify — Apache-2.0 OR MPL-2.0 (both full texts included), plus the
+  embedded regenerator-runtime (babel-helpers) MIT notice
+  (`dompurify+regenerator-runtime.LICENSE`)
 
-The minified bundle itself carries no license banner (esbuild
-`legalComments: "none"`) to keep the embedded page small; when redistributing
-the bundle, keep `licenses/` (or the equivalent notices) with it. esbuild is a
-build-time-only dependency (MIT) and is not part of the bundle.
+The bundle keeps the `/*! @license */` notices embedded in the DOMPurify dist
+(Cure53 header and the Facebook regenerator-runtime MIT comment) by building
+with esbuild `legalComments: "inline"`; the other packages carry no such
+embedded banners, so their full notices live in `licenses/`. When
+redistributing the bundle, keep `licenses/` (or the equivalent notices) with
+it. esbuild is a build-time-only dependency (MIT) and is not part of the
+bundle.

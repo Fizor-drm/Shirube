@@ -25,7 +25,10 @@ const result = await build({
   bundle: true,
   format: "iife",
   minify: true,
-  legalComments: "none",
+  // inline (not none): the DOMPurify dist embeds /*! @license */ notices
+  // (Cure53 header and the Facebook regenerator-runtime MIT comment) that
+  // "none" would strip from the shipped bundle.
+  legalComments: "inline",
   write: false,
   charset: "utf8",
   target: ["es2019"]
@@ -53,6 +56,35 @@ for (const pkg of LICENSED) {
     fs.writeFileSync(path.join(licensesOut, pkg.replace(/\//g, "+") + "." + name), text, "utf8");
   }
 }
+
+// DOMPurify embeds regenerator-runtime helpers (babel-helpers) under the MIT
+// license; that code is not a separate npm package, so its notice is written
+// verbatim here. Source: https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE
+const REGENERATOR_NOTICE = `MIT License
+
+Copyright (c) 2014-present Sebastian McKenzie and other contributors
+Copyright (c) 2014-present, Facebook, Inc. (ONLY ./src/helpers/regenerator* files)
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+`;
+fs.writeFileSync(path.join(licensesOut, "dompurify+regenerator-runtime.LICENSE"), REGENERATOR_NOTICE, "utf8");
 
 const kb = (n) => (n / 1024).toFixed(1) + "KB";
 console.log("wrote " + out);
