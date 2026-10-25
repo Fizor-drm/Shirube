@@ -122,12 +122,14 @@ Copy-Item .automation\settings.example.json .automation\settings.json
 
 ### 4. 放置受保护的副本（原 3.4）
 
-将 `.automation` 中的运行文件（`*.ps1`、`*.vbs`、`settings.json`）、步骤 2 创建的两个配置文件夹以及 `管理.bat` 放到 `%LOCALAPPDATA%\Shirube`。
+将 `.automation` 中的运行文件（`*.ps1`、`*.vbs`、`settings.json`）、规则编辑用的 `vendor\` 文件（`rule-editor.bundle.js` 与 `licenses\`）、步骤 2 创建的两个配置文件夹以及 `管理.bat` 放到 `%LOCALAPPDATA%\Shirube`。`vendor\rule-editor.bundle.js`（共通规则的 Markdown 编辑器/预览）和 `vendor\licenses\`（随附许可证声明）在运行时是必需的。`vendor\rule-editor\`（仅用于重新构建的 `node_modules` 和源码）运行时不需要，不复制。缺少该 bundle 时界面仍可使用，但规则编辑会回退为仅源码模式（无预览）。
 
 ```powershell
 $root = Join-Path $env:LOCALAPPDATA 'Shirube'
 New-Item -ItemType Directory -Force (Join-Path $root '.automation') | Out-Null
 Copy-Item .automation\*.ps1, .automation\*.vbs, .automation\settings.json (Join-Path $root '.automation')
+New-Item -ItemType Directory -Force (Join-Path $root '.automation\vendor') | Out-Null
+Copy-Item .automation\vendor\rule-editor.bundle.js, .automation\vendor\licenses (Join-Path $root '.automation\vendor') -Recurse
 Copy-Item global-preview, project-common-preview $root -Recurse
 Copy-Item 管理.bat $root
 ```
@@ -138,12 +140,13 @@ Copy-Item 管理.bat $root
 ```text
 %LOCALAPPDATA%\Shirube\
 ├─ .automation\
+│  └─ vendor\ （rule-editor.bundle.js 与 licenses\）
 ├─ global-preview\rulesync.jsonc
 ├─ project-common-preview\rulesync.jsonc
 └─ 管理.bat
 ```
 
-`projects.json`、日志、备份和状态文件会在运行时创建在 `.automation` 内（日志在 `.automation\logs`，备份在 `.automation\backups`）。仓库中的 `source-repo`、`trial`、`.rulesync` 是个人工作文件，不会复制。
+`projects.json`、日志、备份和状态文件会在运行时创建在 `.automation` 内（日志在 `.automation\logs`，备份在 `.automation\backups`）。仓库中的 `source-repo`、`trial`、`.rulesync`、`.automation\vendor\rule-editor`（仅用于重新构建）是个人或开发用工作文件，不会复制。
 
 </details>
 
@@ -294,7 +297,7 @@ Project 的 frontmatter 只接受固定格式。请将 3 个键各写一行，�
 1. 关闭管理界面和正在运行的同步。确认 `%LOCALAPPDATA%\Rulesync\.automation\settings.json` 中 `taskNameGlobal` / `taskNameProject` 设置的实际任务名（未设置时为旧默认值 `Rulesync Global Auto Sync` / `Rulesync Project Auto Sync`）。记录这两个任务当前的启用/禁用状态，然后禁用它们。只停止旧默认名称的任务会留下使用自定义名称的启用任务。
 2. 如果 `settings.json` 中的 `taskNameGlobal` / `taskNameProject` 仍是旧默认值，请更新为 `Shirube Global Auto Sync` / `Shirube Project Auto Sync`。如果使用自定义任务名，请不要改名，并让任务计划程序保持一致。
 3. 将 `%LOCALAPPDATA%\Rulesync` 整个文件夹移动到 `%LOCALAPPDATA%\Shirube`。`projects.json`、日志、备份、状态文件以及 `global-preview` / `project-common-preview` 中的个性化设置（`rulesync.jsonc`）会保留。
-4. 将仓库中的 `.automation\*.ps1`、`*.vbs` 放到 `%LOCALAPPDATA%\Shirube\.automation`，将启动器 `管理.bat` 和 `Shirube-Manager.bat` 放到 `%LOCALAPPDATA%\Shirube`。`settings.json`、`projects.json`、日志、备份和预览设置使用已移动的文件，请不要覆盖。
+4. 将仓库中的 `.automation\*.ps1`、`*.vbs` 放到 `%LOCALAPPDATA%\Shirube\.automation`，将 `.automation\vendor\rule-editor.bundle.js` 和 `.automation\vendor\licenses` 放到 `%LOCALAPPDATA%\Shirube\.automation\vendor`，将启动器 `管理.bat` 和 `Shirube-Manager.bat` 放到 `%LOCALAPPDATA%\Shirube`。`settings.json`、`projects.json`、日志、备份和预览设置使用已移动的文件，请不要覆盖。（仅用于重新构建的 `vendor\rule-editor` 运行时不需要，不复制。）
 5. 在任务计划程序中将两个任务的名称和操作改为 Shirube 的值（或用新名称重新创建）。操作应指向新的 `<Shirube>\.automation\Run-GlobalRules.vbs` / `Run-ProjectRules.vbs`。迁移期间保持两个任务禁用，注册或改名后也不要启用。在步骤 7 的验证完成之前，不要开始生产环境的自动执行。
 6. 在任务计划程序中确认两个任务的名称和操作（Action）指向新的 `%LOCALAPPDATA%\Shirube\.automation\Run-GlobalRules.vbs` / `Run-ProjectRules.vbs`，并且仍处于禁用状态。然后打开管理界面，确认 Global 的同步间隔和启用状态、Project 的同步间隔符合预期。管理界面不会显示任务名和操作。请在任务计划程序中确认名称和操作。此确认期间也要保持两个任务禁用。如果没有新的默认任务，应用会兼容性地引用旧默认名称的任务，但迁移后请不要保留旧任务。
 7. 动作确认不要针对生产环境的 `%LOCALAPPDATA%\Shirube` 和实际注册项目，而要在与 3.4 相同保护设置的受保护的隔离副本中进行。

@@ -122,12 +122,14 @@ Copy-Item .automation\settings.example.json .automation\settings.json
 
 ### 4. 保護コピーへ配置する（旧 3.4）
 
-`.automation` 内の実行用ファイル（`*.ps1`、`*.vbs`、`settings.json`）と、手順 2 で作った 2 つの設定フォルダ、`管理.bat` を `%LOCALAPPDATA%\Shirube` へ配置します。
+`.automation` 内の実行用ファイル（`*.ps1`、`*.vbs`、`settings.json`）に加え、ルール編集用の `vendor\` （`rule-editor.bundle.js` と `licenses\`）、手順 2 で作った 2 つの設定フォルダ、`管理.bat` を `%LOCALAPPDATA%\Shirube` へ配置します。`vendor\rule-editor.bundle.js`（共通ルールの Markdown エディタ・プレビュー）と `vendor\licenses\`（同梱ライセンス）は実行に必要です。`vendor\rule-editor\`（再ビルド用の `node_modules` とソース）は実行には不要なのでコピーしません。バンドルが無い場合も画面は動きますが、ルール編集はソースのみ（プレビューなし）にフォールバックします。
 
 ```powershell
 $root = Join-Path $env:LOCALAPPDATA 'Shirube'
 New-Item -ItemType Directory -Force (Join-Path $root '.automation') | Out-Null
 Copy-Item .automation\*.ps1, .automation\*.vbs, .automation\settings.json (Join-Path $root '.automation')
+New-Item -ItemType Directory -Force (Join-Path $root '.automation\vendor') | Out-Null
+Copy-Item .automation\vendor\rule-editor.bundle.js, .automation\vendor\licenses (Join-Path $root '.automation\vendor') -Recurse
 Copy-Item global-preview, project-common-preview $root -Recurse
 Copy-Item 管理.bat $root
 ```
@@ -138,12 +140,13 @@ Copy-Item 管理.bat $root
 ```text
 %LOCALAPPDATA%\Shirube\
 ├─ .automation\
+│  └─ vendor\ （rule-editor.bundle.js と licenses\）
 ├─ global-preview\rulesync.jsonc
 ├─ project-common-preview\rulesync.jsonc
 └─ 管理.bat
 ```
 
-`projects.json`、ログ、バックアップ、状態ファイルは実行時に `.automation` 内へ作られます（ログは `.automation\logs`、バックアップは `.automation\backups`）。リポジトリ内の `source-repo`、`trial`、`.rulesync` は個人用の作業物なのでコピーしません。
+`projects.json`、ログ、バックアップ、状態ファイルは実行時に `.automation` 内へ作られます（ログは `.automation\logs`、バックアップは `.automation\backups`）。リポジトリ内の `source-repo`、`trial`、`.rulesync`、`.automation\vendor\rule-editor`（再ビルド用）は個人用または開発用の作業物なのでコピーしません。
 
 </details>
 
@@ -294,7 +297,7 @@ JSON が壊れている、キーが無い、型が違う（数値や配列など
 1. 管理画面と実行中の同期を終了します。`%LOCALAPPDATA%\Rulesync\.automation\settings.json` の `taskNameGlobal` / `taskNameProject` に設定されている実際のタスク名（未設定なら旧既定の `Rulesync Global Auto Sync` / `Rulesync Project Auto Sync`）を確認します。その 2 つのタスクの現在の有効/無効状態を記録してから無効化します。旧既定名だけを止めると、独自名のタスクが有効なまま残ります。
 2. `settings.json` の `taskNameGlobal` / `taskNameProject` が旧既定値のままなら、`Shirube Global Auto Sync` / `Shirube Project Auto Sync` に更新します。独自のタスク名を使っている場合はその名前を変えず、タスク スケジューラ側と一致させます。
 3. `%LOCALAPPDATA%\Rulesync` を `%LOCALAPPDATA%\Shirube` へフォルダごと移動します。`projects.json`、ログ、バックアップ、状態ファイル、`global-preview` / `project-common-preview` の個人設定（`rulesync.jsonc`）はそのまま残ります。
-4. リポジトリ側の `.automation\*.ps1`・`*.vbs` は `%LOCALAPPDATA%\Shirube\.automation` へ、ランチャーの `管理.bat` と `Shirube-Manager.bat` は `%LOCALAPPDATA%\Shirube` へ配置します。`settings.json`・`projects.json`・ログ・バックアップ・プレビュー設定は移動済みのものを使うため、上書きしないでください。
+4. リポジトリ側の `.automation\*.ps1`・`*.vbs` は `%LOCALAPPDATA%\Shirube\.automation` へ、`.automation\vendor\rule-editor.bundle.js` と `.automation\vendor\licenses` は `%LOCALAPPDATA%\Shirube\.automation\vendor` へ、ランチャーの `管理.bat` と `Shirube-Manager.bat` は `%LOCALAPPDATA%\Shirube` へ配置します。`settings.json`・`projects.json`・ログ・バックアップ・プレビュー設定は移動済みのものを使うため、上書きしないでください。（再ビルド用の `vendor\rule-editor` は実行に不要なのでコピーしません。）
 5. タスク スケジューラで 2 つのタスクの名前と操作を Shirube の値へ変更します（または新しい名前で作り直します）。操作は新しい `<Shirube>\.automation\Run-GlobalRules.vbs` / `Run-ProjectRules.vbs` を指します。移行中は 2 つのタスクを無効のままにし、登録・改名の後も有効化しないでください。本番の自動実行は手順 7 の検証が終わるまで開始しません。
 6. タスク スケジューラで 2 つのタスクの名前・操作（Action）が新しい `%LOCALAPPDATA%\Shirube\.automation\Run-GlobalRules.vbs` / `Run-ProjectRules.vbs` を指していることと、無効状態のままであることを確認します。続いて管理画面を起動し、Global は同期間隔と有効状態、Project は同期間隔が意図した値であることを確認します。管理画面にはタスク名と操作は表示されません。名前と操作はタスク スケジューラ側で確認してください。この確認中も 2 つのタスクは無効のままにします。新しい既定タスクが無い場合、アプリは旧既定名のタスクを互換参照しますが、移行後は旧タスクを残さないでください。
 7. 動作確認は、本番の `%LOCALAPPDATA%\Shirube` と実際の登録プロジェクトを対象にできない、3.4 と同じ保護設定を施した隔離済みの検証用コピーで行います。

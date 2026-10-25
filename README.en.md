@@ -122,12 +122,14 @@ The defaults match the current task names and rulesync version. See Settings for
 
 ### 4. Place the protected copy (formerly 3.4)
 
-Copy the runtime files in `.automation` (`*.ps1`, `*.vbs`, `settings.json`), the two settings folders from step 2, and `管理.bat` into `%LOCALAPPDATA%\Shirube`.
+Copy the runtime files in `.automation` (`*.ps1`, `*.vbs`, `settings.json`) plus the rule-editor `vendor\` files (`rule-editor.bundle.js` and `licenses\`), the two settings folders from step 2, and `管理.bat` into `%LOCALAPPDATA%\Shirube`. `vendor\rule-editor.bundle.js` (the shared-rule Markdown editor/preview) and `vendor\licenses\` (its bundled license notices) are required at runtime. `vendor\rule-editor\` (the rebuild-only `node_modules` and sources) is not needed at runtime and is not copied. Without the bundle the dashboard still works, but rule editing falls back to plain source only (no preview).
 
 ```powershell
 $root = Join-Path $env:LOCALAPPDATA 'Shirube'
 New-Item -ItemType Directory -Force (Join-Path $root '.automation') | Out-Null
 Copy-Item .automation\*.ps1, .automation\*.vbs, .automation\settings.json (Join-Path $root '.automation')
+New-Item -ItemType Directory -Force (Join-Path $root '.automation\vendor') | Out-Null
+Copy-Item .automation\vendor\rule-editor.bundle.js, .automation\vendor\licenses (Join-Path $root '.automation\vendor') -Recurse
 Copy-Item global-preview, project-common-preview $root -Recurse
 Copy-Item 管理.bat $root
 ```
@@ -138,12 +140,13 @@ Copy-Item 管理.bat $root
 ```text
 %LOCALAPPDATA%\Shirube\
 ├─ .automation\
+│  └─ vendor\ (rule-editor.bundle.js and licenses\)
 ├─ global-preview\rulesync.jsonc
 ├─ project-common-preview\rulesync.jsonc
 └─ 管理.bat
 ```
 
-`projects.json`, logs, backups, and state files are created under `.automation` at runtime (logs in `.automation\logs`, backups in `.automation\backups`). The `source-repo`, `trial`, and `.rulesync` folders in the repository are personal working files and are not copied.
+`projects.json`, logs, backups, and state files are created under `.automation` at runtime (logs in `.automation\logs`, backups in `.automation\backups`). The `source-repo`, `trial`, `.rulesync`, and `.automation\vendor\rule-editor` (rebuild-only) folders in the repository are personal or development working files and are not copied.
 
 </details>
 
@@ -294,7 +297,7 @@ If you use the old `%LOCALAPPDATA%\Rulesync`, migrate in the following order whi
 1. Close the dashboard and any running sync. Check the actual task names configured in `taskNameGlobal` / `taskNameProject` in `%LOCALAPPDATA%\Rulesync\.automation\settings.json` (if unset, the old defaults `Rulesync Global Auto Sync` / `Rulesync Project Auto Sync`). Record the current enabled/disabled state of both tasks, then disable them. Stopping only the old default names leaves custom-named tasks enabled.
 2. If `taskNameGlobal` / `taskNameProject` in `settings.json` still use the old defaults, update them to `Shirube Global Auto Sync` / `Shirube Project Auto Sync`. If you use custom task names, keep them and make Task Scheduler match.
 3. Move `%LOCALAPPDATA%\Rulesync` to `%LOCALAPPDATA%\Shirube` as a folder. `projects.json`, logs, backups, state files, and the personal settings in `global-preview` / `project-common-preview` (`rulesync.jsonc`) remain in place.
-4. Place the repository's `.automation\*.ps1` and `*.vbs` in `%LOCALAPPDATA%\Shirube\.automation`, and the launchers `管理.bat` and `Shirube-Manager.bat` in `%LOCALAPPDATA%\Shirube`. Use the moved `settings.json`, `projects.json`, logs, backups, and preview settings; do not overwrite them.
+4. Place the repository's `.automation\*.ps1` and `*.vbs` in `%LOCALAPPDATA%\Shirube\.automation`, `.automation\vendor\rule-editor.bundle.js` and `.automation\vendor\licenses` in `%LOCALAPPDATA%\Shirube\.automation\vendor`, and the launchers `管理.bat` and `Shirube-Manager.bat` in `%LOCALAPPDATA%\Shirube`. Use the moved `settings.json`, `projects.json`, logs, backups, and preview settings; do not overwrite them. (The rebuild-only `vendor\rule-editor` is not needed at runtime and is not copied.)
 5. In Task Scheduler, change the names and actions of the two tasks to the Shirube values (or recreate them with the new names). The actions must point to the new `<Shirube>\.automation\Run-GlobalRules.vbs` / `Run-ProjectRules.vbs`. During migration keep both tasks disabled; do not enable them after registering or renaming them. Do not start production automation until validation in step 7 is complete.
 6. In Task Scheduler, confirm that the names and actions (Action) of both tasks point to the new `%LOCALAPPDATA%\Shirube\.automation\Run-GlobalRules.vbs` / `Run-ProjectRules.vbs` and that they are still disabled. Then open the dashboard and confirm that Global's sync interval and enabled state, and Project's sync interval, are the intended values. The dashboard does not show task names or actions. Check names and actions in Task Scheduler. Keep both tasks disabled during this check as well. If the new default tasks are absent, the app falls back to the old default names for compatibility, but do not keep the old tasks after migration.
 7. Validate in a protected isolated copy with the same protection settings as 3.4, not against the production `%LOCALAPPDATA%\Shirube` or the actual registered projects.
