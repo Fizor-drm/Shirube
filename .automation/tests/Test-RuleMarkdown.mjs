@@ -586,6 +586,39 @@ if (!fs.existsSync(jsdomPath)) {
     must(v.state.doc.toString() === 'locked text', 'unlocked: edits flow again');
   });
 
+  await testAsync('a load finishing while locked still syncs the editor; user edits stay blocked', async () => {
+    const h = domHarness(true);
+    h.r.ruleEditorInit();
+    if (!h.r.ruleEditorReady()) return; // editor unavailable in this DOM
+    const cm = h.ctx.ShirubeRuleLib.cm;
+    const ta = h.ctx.document.getElementById('ruleText');
+    let resolveGet;
+    h.ctx.api = (ep) => {
+      if (ep === '/api/github-rule-get') {
+        return new Promise(resolve => { resolveGet = () => resolve({ ok: true, kind: 'project', path: 'rules/project.md', repo: 'R', branch: 'main', sha: 's1', text: '# fresh source', redacted: false }); });
+      }
+      return Promise.resolve({ ok: true });
+    };
+    const pending = h.r.ruleLoad();
+    await new Promise(r => setTimeout(r, 0));
+    // the lock closes while the GET is in flight, then it resolves
+    h.ctx.currentGlobalStatus = { githubConfigured: false };
+    h.r.renderRulesLock();
+    resolveGet();
+    await pending;
+    must(ta.value === '# fresh source', 'textarea holds the loaded source');
+    must(h.r.view().state.doc.toString() === '# fresh source', 'CodeMirror is synced to the load despite the lock');
+    h.r.view().dispatch({ changes: { from: 0, to: 0, insert: 'x' } });
+    must(ta.value === '# fresh source', 'locked: user dispatches are still rejected');
+    const undo = cm.historyKeymap.find(k => k.key === 'Mod-z');
+    if (undo && undo.run) undo.run(h.r.view());
+    must(h.r.view().state.doc.toString() === '# fresh source', 'locked: undo is still rejected');
+    h.ctx.currentGlobalStatus = { githubConfigured: true };
+    h.r.renderRulesLock();
+    h.r.view().dispatch({ changes: { from: 0, to: 0, insert: 'y' } });
+    must(ta.value === 'y# fresh source', 'unlocked: user input builds on the new source, not the stale one');
+  });
+
   test('table row stripes come from the syntax tree and cover both GFM forms', () => {
     const h = domHarness(true);
     h.r.ruleEditorInit();

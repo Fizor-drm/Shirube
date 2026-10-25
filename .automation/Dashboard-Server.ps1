@@ -4173,7 +4173,10 @@ function ruleEditorApplyText(){
     try{
       const txt = String(ta.value || "");
       if(ruleCmView.state.doc.toString() !== txt){
-        ruleCmView.dispatch({changes:{from:0, to:ruleCmView.state.doc.length, insert:txt}});
+        // Authoritative programmatic sync (ruleLoad / kind clear): bypass the
+        // lock's change filter so CM matches the textarea even while locked.
+        // User editing stays blocked; only this sync opts out via filter:false.
+        ruleCmView.dispatch({changes:{from:0, to:ruleCmView.state.doc.length, insert:txt}, filter:false});
       }
     }catch(e){}
   }
