@@ -659,14 +659,24 @@ function Invoke-GlobalSync {
             # stay a private precaution and are never written back.
             Global-AssertNoLinkChain $bdir $AutoDir 'バックアップ先'
             $agentsRels = @{}
+            $rbErrs = @()
+            $unsafeTargets = @{}
             foreach ($t in $EffArr) {
-              Global-AssertNoLinkChain ([string]$ContentPaths[$t]) $HomeBase $t
-              try { $agentsRels[([string]$ContentPaths[$t]).Substring($HomeBase.Length).TrimStart('\', '/') -replace '[\\/:]', '_'] = $true } catch {}
+              $cp = [string]$ContentPaths[$t]
+              try {
+                Global-AssertNoLinkChain $cp $HomeBase $t
+                try { $agentsRels[$cp.Substring($HomeBase.Length).TrimStart('\', '/') -replace '[\\/:]', '_'] = $true } catch {}
+              } catch {
+                $unsafeTargets[[string]$t] = $true
+                $rbErrs += $_.Exception.Message
+              }
             }
             # Collect per-target failures and keep going: returning on the first
             # error would leave the remaining targets with unapproved content.
-            $rbErrs = @()
-            foreach ($rel in @($anchorHashes.Keys)) {
+            # The ordinal order keeps the rollback sequence reproducible.
+            $rbRels = [string[]]@($anchorHashes.Keys)
+            [Array]::Sort($rbRels, [System.StringComparer]::Ordinal)
+            foreach ($rel in $rbRels) {
               if (-not $agentsRels.ContainsKey($rel)) { continue }
               $dst = $null
               foreach ($bt in $BackupTargets) {
@@ -685,6 +695,7 @@ function Invoke-GlobalSync {
             # Files absent before generate but created by it are removed again.
             foreach ($ae in $anchorFiles) {
               if ((-not [bool]$ae.present) -and ([string]$ae.kind -ceq 'agents')) {
+                if ($unsafeTargets.ContainsKey([string]$ae.target)) { continue }
                 $ap2 = [string]$ContentPaths[[string]$ae.target]
                 try {
                   Global-AssertNoLinkChain $ap2 $HomeBase '巻戻し'
