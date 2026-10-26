@@ -17,11 +17,40 @@ function Get-DashboardPort {
 }
 function Get-DashboardAutoDir {
   if ($env:DASHBOARD_AUTODIR -and (Test-Path -LiteralPath $env:DASHBOARD_AUTODIR -PathType Container)) {
-    return $env:DASHBOARD_AUTODIR
+    $p = [System.IO.Path]::GetFullPath($env:DASHBOARD_AUTODIR)
+    # A trailing separator would break quoted command-line arguments further
+    # down. Keep a drive root (C:\) intact: C: is drive-relative, not a root.
+    if (($p.Length -gt 3) -and $p.EndsWith('\')) { $p = $p.TrimEnd('\') }
+    return $p
   }
   return (Get-AutoDir)
 }
 function Get-NormPath([string]$P) { return [System.IO.Path]::GetFullPath(($P -replace '/', '\')) }
+# Quotes one Start-Process -ArgumentList value for the Windows command line.
+# Start-Process joins the array with spaces without escaping, and
+# CommandLineToArgvW reads \" as an escaped quote: a value ending in a
+# backslash would swallow the closing quote, so backslashes before a quote
+# are doubled (drive roots and UNC shares included).
+function ConvertTo-DashboardQuotedArg([string]$Value) {
+  $v = [string]$Value
+  $sb = New-Object System.Text.StringBuilder
+  foreach ($ch in $v.ToCharArray()) {
+    if ($ch -eq [char]'"') {
+      $s = $sb.ToString()
+      $bs = 0
+      for ($i = $s.Length - 1; $i -ge 0; $i--) { if ($s[$i] -eq [char]'\') { $bs++ } else { break } }
+      for ($k = 0; $k -lt $bs; $k++) { [void]$sb.Append('\') }
+      [void]$sb.Append('\"')
+      continue
+    }
+    [void]$sb.Append($ch)
+  }
+  $all = $sb.ToString()
+  $tail = 0
+  for ($i = $all.Length - 1; $i -ge 0; $i--) { if ($all[$i] -eq [char]'\') { $tail++ } else { break } }
+  for ($k = 0; $k -lt $tail; $k++) { [void]$sb.Append('\') }
+  return ('"' + $sb.ToString() + '"')
+}
 function Test-Contained([string]$Candidate, [string]$Root) {
   $c = Get-NormPath $Candidate; $r = Get-NormPath $Root
   $sep = [System.IO.Path]::DirectorySeparatorChar
@@ -637,22 +666,22 @@ function Start-BrowseRequest([string]$AutoDir, [string]$Hint, [hashtable]$PreCap
   $ps = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
   if (-not (Test-Path -LiteralPath $ps)) { throw 'powershell absolute missing.' }
   # Console stays hidden; the folder dialog itself is visible and interactive (explicit user request).
-  $args = @('-NoProfile', '-NonInteractive', '-STA', '-ExecutionPolicy', 'Bypass', '-File', "`"$helper`"", '-AutoDir', "`"$AutoDir`"", '-BrowseId', "`"$id`"")
+  $args = @('-NoProfile', '-NonInteractive', '-STA', '-ExecutionPolicy', 'Bypass', '-File', (ConvertTo-DashboardQuotedArg $helper), '-AutoDir', (ConvertTo-DashboardQuotedArg $AutoDir), '-BrowseId', (ConvertTo-DashboardQuotedArg $id))
   # Foreground basis: server-captured HWND+PID+start as owner data. Helper validates
   # live+visible+identity on its STA thread, falls back to Zero when not a browser
   # window. Invalid/zero keeps current parentless behavior (safe).
   try {
     if ($cap -and ([long]$cap.Hwnd) -gt 0) {
-      $args += @('-OwnerHwnd', "`"$([long]$cap.Hwnd)`"")
-      try { if ([int]$cap.Pid -gt 0) { $args += @('-OwnerPid', "`"$([int]$cap.Pid)`"") } } catch {}
-      try { $s0 = [string]$cap.Start; if ($s0 -and ($s0.Trim() -ne '')) { $args += @('-OwnerStart', "`"$s0`"") } } catch {}
+      $args += @('-OwnerHwnd', (ConvertTo-DashboardQuotedArg ([string]([long]$cap.Hwnd))))
+      try { if ([int]$cap.Pid -gt 0) { $args += @('-OwnerPid', (ConvertTo-DashboardQuotedArg ([string]([int]$cap.Pid)))) } } catch {}
+      try { $s0 = [string]$cap.Start; if ($s0 -and ($s0.Trim() -ne '')) { $args += @('-OwnerStart', (ConvertTo-DashboardQuotedArg $s0)) } } catch {}
     }
   } catch {}
   $h = ''
   if ($Hint -and ($Hint.Trim() -ne '')) {
     try {
       $h = Get-NormPath ($Hint.Trim())
-      if ((Test-Path -LiteralPath $h -PathType Container)) { $args += @('-InitialPath', "`"$h`"") }
+      if ((Test-Path -LiteralPath $h -PathType Container)) { $args += @('-InitialPath', (ConvertTo-DashboardQuotedArg $h)) }
     } catch {}
   }
   $proc = Start-Process -FilePath $ps -ArgumentList $args -WindowStyle Hidden -PassThru
@@ -787,12 +816,12 @@ function Start-HiddenSync([string]$AutoDir, [string[]]$ProjectNames = @(), [bool
   if (Test-Path -LiteralPath $watch) {
     $ps = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
     if (-not (Test-Path -LiteralPath $ps)) { throw 'powershell absolute missing.' }
-    Start-Process -FilePath $ps -ArgumentList '-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass', '-File', "`"$watch`"", '-AutoDir', "`"$AutoDir`"", '-RunId', "`"$($req.id)`"", '-RequestPath', "`"$reqFile`"" -WindowStyle Hidden | Out-Null
+    Start-Process -FilePath $ps -ArgumentList '-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass', '-File', (ConvertTo-DashboardQuotedArg $watch), '-AutoDir', (ConvertTo-DashboardQuotedArg $AutoDir), '-RunId', (ConvertTo-DashboardQuotedArg ([string]$req.id)), '-RequestPath', (ConvertTo-DashboardQuotedArg $reqFile) -WindowStyle Hidden | Out-Null
   } else {
     if ($ProjectNames.Count -gt 0 -or $PreviewOnly) { throw '選択・プレビュー同期には Watch-Sync.ps1 が必要です。' }
     $w = Join-Path $env:SystemRoot 'System32\wscript.exe'
     if (-not (Test-Path -LiteralPath $w)) { throw 'wscript absolute missing.' }
-    Start-Process -FilePath $w -ArgumentList '//B', '//Nologo', "`"$vbs`"" -WindowStyle Hidden | Out-Null
+    Start-Process -FilePath $w -ArgumentList '//B', '//Nologo', (ConvertTo-DashboardQuotedArg $vbs) -WindowStyle Hidden | Out-Null
   }
   return $req
 }
@@ -826,14 +855,14 @@ function Start-HiddenGlobalSync([string]$AutoDir, [string[]]$TargetNames = @(), 
   if (Test-Path -LiteralPath $watch) {
     $ps = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
     if (-not (Test-Path -LiteralPath $ps)) { throw 'powershell absolute missing.' }
-    Start-Process -FilePath $ps -ArgumentList '-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass', '-File', "`"$watch`"", '-AutoDir', "`"$AutoDir`"", '-RunId', "`"$($req.id)`"", '-RequestPath', "`"$reqFile`"" -WindowStyle Hidden | Out-Null
+    Start-Process -FilePath $ps -ArgumentList '-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass', '-File', (ConvertTo-DashboardQuotedArg $watch), '-AutoDir', (ConvertTo-DashboardQuotedArg $AutoDir), '-RunId', (ConvertTo-DashboardQuotedArg ([string]$req.id)), '-RequestPath', (ConvertTo-DashboardQuotedArg $reqFile) -WindowStyle Hidden | Out-Null
   } else {
     if ($sel.Count -gt 0 -or $PreviewOnly -or ($PlanId -ne '')) { throw '選択・プレビュー同期には Watch-GlobalSync.ps1 が必要です。' }
     $vbs = Join-Path $AutoDir 'Run-GlobalRules.vbs'
     if (-not (Test-Path -LiteralPath $vbs)) { throw 'hidden task launcher missing.' }
     $w = Join-Path $env:SystemRoot 'System32\wscript.exe'
     if (-not (Test-Path -LiteralPath $w)) { throw 'wscript absolute missing.' }
-    Start-Process -FilePath $w -ArgumentList '//B', '//Nologo', "`"$vbs`"" -WindowStyle Hidden | Out-Null
+    Start-Process -FilePath $w -ArgumentList '//B', '//Nologo', (ConvertTo-DashboardQuotedArg $vbs) -WindowStyle Hidden | Out-Null
   }
   return $req
 }
@@ -3604,15 +3633,6 @@ document.getElementById("btnImportPrev2").onclick = async function(){
     (v.skip||[]).forEach(function(s){ h += "<p class='muted'>"+L("維持：{name}（{reason}）", {name:esc(s.name), reason:esc(s.reason||"")})+"</p>"; });
     (v.conflict||[]).forEach(function(c3){ h += "<p class='err'>"+L("競合：{name}（{reason}）", {name:esc(c3.name), reason:esc(c3.reason||"")})+"</p>"; });
     (v.invalid||[]).forEach(function(iv){ h += "<p class='err'>"+L("不正：{name}（{reason}）", {name:esc(iv.name), reason:esc(iv.reason||"")})+"</p>"; });
-    if(v.interval){
-      if(v.interval.incoming !== null && v.interval.incoming !== undefined){
-        h += "<p class='muted'>" + ((v.interval.current === null || v.interval.current === undefined)
-          ? L("同期間隔: 未設定 → {next}分に変更します（Projectのみ、Global不変）。", {next:v.interval.incoming})
-          : L("同期間隔: {current}分 → {next}分に変更します（Projectのみ、Global不変）。", {current:esc(String(v.interval.current)), next:v.interval.incoming})) + "</p>";
-      } else if(!v.interval.valid){
-        h += "<p class='err'>"+L("同期間隔: {reason}", {reason:esc(v.interval.reason || L("不正"))})+"</p>";
-      }
-    }
     if(v.interval){
       if(v.interval.incoming !== null && v.interval.incoming !== undefined){
         h += "<p class='muted'>" + ((v.interval.current === null || v.interval.current === undefined)

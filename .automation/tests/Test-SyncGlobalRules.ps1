@@ -69,6 +69,12 @@ if defined DUMMY_EXPECT_TOKEN (
   )
 )
 set /p N=<"%D%\counter.txt"
+if defined DUMMY_MUTATE (
+  if "%N%"=="3" (
+    echo mutated-codex>> "%HOME_DIR%\.codex\AGENTS.md" 2>nul
+    echo mutated-opencode>> "%HOME_DIR%\.config\opencode\AGENTS.md" 2>nul
+  )
+)
 set F=%D%\exit_!N!.txt
 set CODE=0
 if exist "!F!" set /p CODE=<"!F!"
@@ -430,6 +436,26 @@ exit /b 0
   Assert ($null -eq $st19.providers.'antigravity-cli'.lastSuccessAt) 'T19 uncovered target gets no success stamp'
   Assert (-not [string]::IsNullOrWhiteSpace([string]$st19.providers.'antigravity-cli'.error)) 'T19 uncovered target carries a reason'
   Assert ((Get-Logs).Contains('antigravity-cli')) 'T19 log names the uncovered target'
+
+  # T20: a failed generate restores every target even when the first rollback
+  # fails. Only the two AGENTS files remain in the backup so the rollback order
+  # is codexcli then opencode: locking codexcli makes the old early-return code
+  # skip the opencode restore.
+  Reset-Case @(0, 1, 0, 1)
+  Remove-Item -LiteralPath (Join-Path $fakeHome '.config\opencode\opencode.json'), (Join-Path $fakeHome '.config\opencode\opencode.jsonc') -Force -ErrorAction SilentlyContinue
+  $env:DUMMY_MUTATE = '1'
+  $codexLock = $null
+  try {
+    $codexLock = [System.IO.File]::Open((Join-Path $fakeHome '.codex\AGENTS.md'), 'Open', 'Read', 'Read')
+    $code = Invoke-GlobalSync
+  } finally {
+    if ($codexLock) { $codexLock.Close() }
+    Remove-Item Env:DUMMY_MUTATE -ErrorAction SilentlyContinue
+  }
+  Assert ($code -eq 1) 'T20 failed generate still fails the run'
+  Assert (((Get-Content -LiteralPath (Join-Path $fakeHome '.config\opencode\AGENTS.md') -Raw -Encoding UTF8).Trim()) -ceq 'fake-opencode-agents') 'T20 rollback restores the remaining target after a rollback failure'
+  Assert ((Get-Logs).Contains('rollback also failed')) 'T20 rollback failure is reported explicitly'
+  Assert (((Get-Content -LiteralPath (Join-Path $fakeHome '.codex\AGENTS.md') -Raw -Encoding UTF8).Trim()) -ceq 'fake-codex-agents') 'T20 locked target keeps its pre-run content'
 
   Assert (((Get-Location).Path) -eq $initCwd) 'T15 cwd restored at end'
   Assert ($env:HOME_DIR -eq $fakeHome) 'T15 HOME_DIR kept for harness restore'

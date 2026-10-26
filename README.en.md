@@ -97,6 +97,7 @@ Clone it into any folder.
 
 ```powershell
 git clone https://github.com/Fizor-drm/Shirube.git
+Set-Location Shirube
 ```
 
 ### 2. Create the rulesync settings

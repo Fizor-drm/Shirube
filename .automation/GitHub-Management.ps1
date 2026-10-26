@@ -111,7 +111,207 @@ function ConvertTo-GitHubRulesPath([string]$Path) {
   return $p
 }
 
-# Saves the settings and repoints both local rulesync source configs.
+# Removes // and /* */ comments outside strings so ConvertFrom-Json can read a
+# JSONC file. Returns $null when the text is not a JSON object.
+function ConvertFrom-GitHubJsonc([string]$Text) {
+  $src = [string]$Text
+  if (($src.Length -gt 0) -and ($src[0] -eq [char]0xFEFF)) { $src = $src.Substring(1) }
+  $out = New-Object System.Text.StringBuilder
+  $i = 0
+  $n = $src.Length
+  while ($i -lt $n) {
+    $c = $src[$i]
+    if ($c -eq [char]'"') {
+      $j = $i + 1
+      [void]$out.Append($c)
+      while ($j -lt $n) {
+        $cj = $src[$j]
+        [void]$out.Append($cj)
+        if (($cj -eq [char]'\') -and (($j + 1) -lt $n)) { $j++; [void]$out.Append($src[$j]); $j++; continue }
+        if ($cj -eq [char]'"') { $j++; break }
+        $j++
+      }
+      $i = $j
+      continue
+    }
+    if (($c -eq [char]'/') -and (($i + 1) -lt $n) -and ($src[$i + 1] -eq [char]'/')) {
+      while (($i -lt $n) -and ($src[$i] -ne [char]"`n")) { $i++ }
+      continue
+    }
+    if (($c -eq [char]'/') -and (($i + 1) -lt $n) -and ($src[$i + 1] -eq [char]'*')) {
+      $i += 2
+      while ((($i + 1) -lt $n) -and -not (($src[$i] -eq [char]'*') -and ($src[$i + 1] -eq [char]'/'))) { $i++ }
+      $i += 2
+      continue
+    }
+    [void]$out.Append($c)
+    $i++
+  }
+  try { $o = ($out.ToString() | ConvertFrom-Json) } catch { return $null }
+  if (($null -eq $o) -or ($o -is [array])) { return $null }
+  return $o
+}
+
+# Span of the value of a root-level JSONC key (@{ start; end }), or $null.
+# Used for in-place rewrites: everything outside the span stays byte-identical.
+function Find-GitHubJsoncValue([string]$Text, [string]$Key) {
+  $src = [string]$Text
+  $n = $src.Length
+  $i = 0
+  if (($n -gt 0) -and ($src[0] -eq [char]0xFEFF)) { $i = 1 }
+  $depth = 0
+  $last = ''
+  while ($i -lt $n) {
+    $c = $src[$i]
+    if ($c -eq [char]'"') {
+      $sb = New-Object System.Text.StringBuilder
+      $j = $i + 1
+      while ($j -lt $n) {
+        $cj = $src[$j]
+        if (($cj -eq [char]'\') -and (($j + 1) -lt $n)) { [void]$sb.Append($src[$j + 1]); $j += 2; continue }
+        if ($cj -eq [char]'"') { $j++; break }
+        [void]$sb.Append($cj)
+        $j++
+      }
+      $last = $sb.ToString()
+      $i = $j
+      continue
+    }
+    if (($c -eq [char]'/') -and (($i + 1) -lt $n) -and ($src[$i + 1] -eq [char]'/')) {
+      while (($i -lt $n) -and ($src[$i] -ne [char]"`n")) { $i++ }
+      continue
+    }
+    if (($c -eq [char]'/') -and (($i + 1) -lt $n) -and ($src[$i + 1] -eq [char]'*')) {
+      $i += 2
+      while ((($i + 1) -lt $n) -and -not (($src[$i] -eq [char]'*') -and ($src[$i + 1] -eq [char]'/'))) { $i++ }
+      $i += 2
+      continue
+    }
+    if (($c -eq [char]'{') -or ($c -eq [char]'[')) { $depth++; $last = ''; $i++; continue }
+    if (($c -eq [char]'}') -or ($c -eq [char]']')) { $depth--; $last = ''; $i++; continue }
+    if (($c -eq [char]':') -and ($depth -eq 1) -and ($last -ceq $Key)) {
+      $j = $i + 1
+      while ($j -lt $n) {
+        $cj = $src[$j]
+        if ([char]::IsWhiteSpace($cj)) { $j++; continue }
+        if (($cj -eq [char]'/') -and (($j + 1) -lt $n) -and ($src[$j + 1] -eq [char]'/')) {
+          while (($j -lt $n) -and ($src[$j] -ne [char]"`n")) { $j++ }
+          continue
+        }
+        if (($cj -eq [char]'/') -and (($j + 1) -lt $n) -and ($src[$j + 1] -eq [char]'*')) {
+          $j += 2
+          while ((($j + 1) -lt $n) -and -not (($src[$j] -eq [char]'*') -and ($src[$j + 1] -eq [char]'/'))) { $j++ }
+          $j += 2
+          continue
+        }
+        break
+      }
+      if ($j -ge $n) { return $null }
+      $start = $j
+      $end = -1
+      $q = $src[$j]
+      if ($q -eq [char]'"') {
+        $j++
+        while ($j -lt $n) {
+          if (($src[$j] -eq [char]'\') -and (($j + 1) -lt $n)) { $j += 2; continue }
+          if ($src[$j] -eq [char]'"') { $end = $j + 1; break }
+          $j++
+        }
+      }
+      elseif (($q -eq [char]'{') -or ($q -eq [char]'[')) {
+        $d = 0
+        while ($j -lt $n) {
+          $cj = $src[$j]
+          if ($cj -eq [char]'"') {
+            $j++
+            while ($j -lt $n) {
+              if (($src[$j] -eq [char]'\') -and (($j + 1) -lt $n)) { $j += 2; continue }
+              if ($src[$j] -eq [char]'"') { $j++; break }
+              $j++
+            }
+            continue
+          }
+          if (($cj -eq [char]'/') -and (($j + 1) -lt $n) -and ($src[$j + 1] -eq [char]'/')) {
+            while (($j -lt $n) -and ($src[$j] -ne [char]"`n")) { $j++ }
+            continue
+          }
+          if (($cj -eq [char]'/') -and (($j + 1) -lt $n) -and ($src[$j + 1] -eq [char]'*')) {
+            $j += 2
+            while ((($j + 1) -lt $n) -and -not (($src[$j] -eq [char]'*') -and ($src[$j + 1] -eq [char]'/'))) { $j++ }
+            $j += 2
+            continue
+          }
+          if (($cj -eq [char]'{') -or ($cj -eq [char]'[')) { $d++; $j++; continue }
+          if (($cj -eq [char]'}') -or ($cj -eq [char]']')) {
+            $d--
+            $j++
+            if ($d -eq 0) { $end = $j; break }
+            continue
+          }
+          $j++
+        }
+      }
+      else {
+        while ($j -lt $n) {
+          $cj = $src[$j]
+          if (($cj -eq [char]',') -or ($cj -eq [char]'}') -or ($cj -eq [char]']') -or [char]::IsWhiteSpace($cj)) { break }
+          $j++
+        }
+        $end = $j
+      }
+      if ($end -lt 0) { return $null }
+      return @{ start = $start; end = $end }
+    }
+    if (-not [char]::IsWhiteSpace($c)) { $last = '' }
+    $i++
+  }
+  return $null
+}
+
+# Rewrites only the root-level `sources` value; other keys, comments, spacing
+# and line endings stay as the user wrote them.
+function Set-GitHubSourceConfigText([string]$Text, $Entry) {
+  $src = [string]$Text
+  if ($null -eq (ConvertFrom-GitHubJsonc $src)) { throw 'rulesync.jsonc を読み取れませんでした。' }
+  $nl = "`n"
+  if ($src.Contains("`r`n")) { $nl = "`r`n" }
+  $entryJson = (ConvertTo-Json -InputObject $Entry -Depth 6 -Compress)
+  $arr = '[' + $nl + '    ' + $entryJson + $nl + '  ]'
+  $span = Find-GitHubJsoncValue $src 'sources'
+  if ($span) { return ($src.Substring(0, [int]$span.start) + $arr + $src.Substring([int]$span.end)) }
+  $close = $src.LastIndexOf('}')
+  if ($close -lt 0) { throw 'rulesync.jsonc を読み取れませんでした。' }
+  $head = $src.Substring(0, $close).TrimEnd()
+  if (-not $head.EndsWith('{')) { $head = $head + ',' }
+  return ($head + $nl + '  "sources": ' + $arr + $nl + $src.Substring($close))
+}
+
+# Prepares both config rewrites without writing: every input is validated and
+# every new text is built before Save-GitHubSettings touches the disk.
+function Get-GitHubSourceConfigChanges([string]$AutoDir, $Settings) {
+  $root = Split-Path $AutoDir -Parent
+  $specs = @(
+    @{ dir = (Join-Path $root 'global-preview'); rule = 'global' },
+    @{ dir = (Join-Path $root 'project-common-preview'); rule = 'project' }
+  )
+  $src = ([string]$Settings.repo + '@' + [string]$Settings.branch)
+  $path = [string]$Settings.rulesPath
+  $changes = @()
+  foreach ($s in $specs) {
+    $f = Join-Path $s.dir 'rulesync.jsonc'
+    if (-not (Test-Path -LiteralPath $f -PathType Leaf)) { continue }
+    if (Test-GitHubReparse $f) { throw 'rulesync.jsonc を確認できませんでした。' }
+    try { $old = Read-GitHubText $f } catch { throw 'rulesync.jsonc を読み取れませんでした。' }
+    if (-not ([string]$old).Trim()) { throw 'rulesync.jsonc を読み取れませんでした。' }
+    $entry = [ordered]@{ source = $src; rules = @([string]$s.rule) }
+    if (($path -ne '') -and ($path -ne 'rules')) { $entry['rulesPath'] = $path }
+    $changes += @{ path = $f; old = $old; text = (Set-GitHubSourceConfigText $old $entry) }
+  }
+  return $changes
+}
+
+# Saves the settings and repoints both local rulesync source configs as one
+# transaction: if any write fails, every touched file is restored.
 function Save-GitHubSettings([string]$AutoDir, [string]$Repo, [string]$Branch, [string]$RulesPath) {
   $r = ConvertTo-GitHubRepoSlug $Repo
   if (-not (Test-GitHubRepoSlug $r)) { throw 'リポジトリは owner/repo の形式で指定してください。' }
@@ -121,8 +321,40 @@ function Save-GitHubSettings([string]$AutoDir, [string]$Repo, [string]$Branch, [
   if (-not (Test-GitHubRulesPath $p)) { throw 'フォルダの場所が不正です（.. や使えない文字は指定できません）。' }
   $p = ConvertTo-GitHubRulesPath $p
   $o = [ordered]@{ schemaVersion = 1; repo = $r; branch = $b; rulesPath = $p; updatedAt = ([DateTime]::UtcNow.ToString('o')) }
-  Write-GitHubPrivateText (Get-GitHubSettingsPath $AutoDir) (ConvertTo-Json -InputObject $o -Depth 4)
-  Update-GitHubSourceConfig $AutoDir $o
+  $changes = @(Get-GitHubSourceConfigChanges $AutoDir $o)
+  $settingsPath = Get-GitHubSettingsPath $AutoDir
+  $settingsExisted = Test-Path -LiteralPath $settingsPath -PathType Leaf
+  $settingsOld = $null
+  if ($settingsExisted) { $settingsOld = [System.IO.File]::ReadAllBytes($settingsPath) }
+  $written = @()
+  try {
+    Write-GitHubPrivateText $settingsPath (ConvertTo-Json -InputObject $o -Depth 4)
+    $written += $settingsPath
+    foreach ($ch in $changes) {
+      Write-GitHubPrivateText ([string]$ch.path) ([string]$ch.text)
+      $written += [string]$ch.path
+    }
+  }
+  catch {
+    $applyErr = $_
+    $rbErrs = @()
+    foreach ($wp in $written) {
+      try {
+        if ($wp -ceq $settingsPath) {
+          if ($settingsExisted) { [System.IO.File]::WriteAllBytes($wp, $settingsOld) }
+          else { Remove-Item -LiteralPath $wp -Force }
+        }
+        else {
+          $oldCh = @($changes | Where-Object { [string]$_.path -ceq $wp })[0]
+          if ($oldCh) { Write-GitHubPrivateText $wp ([string]$oldCh.old) }
+        }
+      } catch { $rbErrs += $_.Exception.Message }
+    }
+    if ($rbErrs.Count -gt 0) {
+      throw ($applyErr.Exception.Message + '（巻戻しにも失敗しました。保存内容を確認してください: ' + ($rbErrs -join '; ') + '）')
+    }
+    throw $applyErr
+  }
   return @{ ok = $true; repo = $r; branch = $b; rulesPath = $p; updatedAt = [string]$o.updatedAt }
 }
 
@@ -263,34 +495,6 @@ function Test-GitHubConnection([string]$AutoDir, [string]$Repo, [string]$Branch,
   return @{ ok = $true; repo = $r; branch = $b; sha = $sha }
 }
 
-# Rewrites sources in both local rulesync configs. Other keys stay untouched;
-# the integration owns the source entry once configured.
-function Update-GitHubSourceConfig([string]$AutoDir, $Settings) {
-  $root = Split-Path $AutoDir -Parent
-  $specs = @(
-    @{ dir = (Join-Path $root 'global-preview'); rule = 'global' },
-    @{ dir = (Join-Path $root 'project-common-preview'); rule = 'project' }
-  )
-  $src = ([string]$Settings.repo + '@' + [string]$Settings.branch)
-  $path = [string]$Settings.rulesPath
-  foreach ($s in $specs) {
-    $f = Join-Path $s.dir 'rulesync.jsonc'
-    if (-not (Test-Path -LiteralPath $f -PathType Leaf)) { continue }
-    if (Test-GitHubReparse $f) { throw 'rulesync.jsonc を確認できませんでした。' }
-    try { $o = Get-Content -LiteralPath $f -Raw -Encoding UTF8 | ConvertFrom-Json }
-    catch { throw 'rulesync.jsonc を読み取れませんでした。' }
-    $entry = [ordered]@{ source = $src; rules = @([string]$s.rule) }
-    if (($path -ne '') -and ($path -ne 'rules')) { $entry['rulesPath'] = $path }
-    $newObj = [ordered]@{}
-    foreach ($p in $o.PSObject.Properties) {
-      if ($p.Name -eq 'sources') { $newObj['sources'] = @($entry) } else { $newObj[$p.Name] = $p.Value }
-    }
-    if (-not $newObj.Contains('sources')) { $newObj['sources'] = @($entry) }
-    $json = (ConvertTo-Json -InputObject $newObj -Depth 8) + "`r`n"
-    Write-GitHubPrivateText $f $json
-  }
-}
-
 # Adds missing targets to one rule file's inline frontmatter array.
 # Returns @{ ok; changed; text; added } and never rewrites an unknown shape.
 # shortcut: only the one-line `targets: [..]` form is supported; upgrade if a
@@ -311,10 +515,13 @@ function Update-GitHubTargetsText([string]$Text, [string[]]$Targets) {
   if ($close -lt 0) { return @{ ok = $false; error = 'frontmatter の終端が見つかりません。' } }
   $idx = -1
   $items = @()
+  $trail = ''
   for ($i = 1; $i -lt $close; $i++) {
-    if ($lines[$i] -match '^(\s*)targets\s*:\s*\[(.*)\]\s*$') {
+    # Same shape as Test-GitHubRuleFrontmatter: a trailing comment is allowed.
+    if ($lines[$i] -match '^(\s*)targets\s*:\s*\[([^\]]*)\]([ \t]+#.*)?\s*$') {
       $idx = $i
       $inner = [string]$Matches[2]
+      $trail = [string]$Matches[3]
       foreach ($m in [regex]::Matches($inner, '"([^"]*)"|''([^'']*)''|([^,\s]+)')) {
         $v = ($m.Groups[1].Value + $m.Groups[2].Value + $m.Groups[3].Value)
         if ($v -ne '') { $items += $v }
@@ -338,7 +545,7 @@ function Update-GitHubTargetsText([string]$Text, [string[]]$Targets) {
   $all = @($items) + @($add)
   $lead = ''
   if ($lines[$idx] -match '^(\s*)') { $lead = [string]$Matches[1] }
-  $lines[$idx] = $lead + 'targets: [' + (($all | ForEach-Object { '"' + $_ + '"' }) -join ', ') + ']'
+  $lines[$idx] = $lead + 'targets: [' + (($all | ForEach-Object { '"' + $_ + '"' }) -join ', ') + ']' + $trail
   return @{ ok = $true; changed = $true; text = ($lines -join $nl); added = @($add) }
 }
 
@@ -579,6 +786,14 @@ function Update-GitHubRuleTargets([string]$AutoDir, [string[]]$Targets) {
     }
     if (-not $upd.changed) {
       $files += @{ name = $name; path = $rel; added = @(); ok = $true; error = '' }
+      continue
+    }
+    # The rewrite repairs quoting but must never commit a file the validator
+    # rejects (duplicate/unsupported slugs in the fetched text).
+    if (-not (Test-GitHubRuleFrontmatter ([string]$upd.text) $name)) {
+      $msg = '更新後のfrontmatterが不正です。'
+      if ($fail -eq '') { $fail = ($msg + ' (' + $name + '.md)') }
+      $files += @{ name = $name; path = $rel; added = @(); ok = $false; error = $msg }
       continue
     }
     $addedList = @($upd.added)

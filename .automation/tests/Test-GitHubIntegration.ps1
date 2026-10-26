@@ -104,6 +104,60 @@ try {
   $gj3 = Get-Content -LiteralPath (Join-Path $gPrev 'rulesync.jsonc') -Raw -Encoding UTF8 | ConvertFrom-Json
   Assert ([string]$gj3.sources[0].rulesPath -ceq '.') 'T3 repo root written as dot'
 
+  # T3b: a JSONC config keeps its comments and unrelated text through the save.
+  $jsonc = ('{' + "`n" +
+    '  // local overrides' + "`n" +
+    '  "$schema": "schema.json",' + "`n" +
+    '  "targets": ["codexcli"], /* keep */' + "`n" +
+    '  "sources": [' + "`n" +
+    '    { "source": "old/rules", "rules": ["global"] } // old' + "`n" +
+    '  ]' + "`n" +
+    '}' + "`n")
+  Set-Content -LiteralPath (Join-Path $gPrev 'rulesync.jsonc') -Value $jsonc -Encoding UTF8
+  Set-Content -LiteralPath (Join-Path $pPrev 'rulesync.jsonc') -Value '{"targets":["pi"],"sources":[]}' -Encoding Ascii
+  Save-GitHubSettings $auto 'Fizor-drm/ai-agent-rules' 'main' 'rules' | Out-Null
+  $gRaw = Get-Content -LiteralPath (Join-Path $gPrev 'rulesync.jsonc') -Raw -Encoding UTF8
+  Assert (($gRaw.Contains('// local overrides')) -and ($gRaw.Contains('/* keep */'))) 'T3b comments in the config survive the save'
+  Assert ($gRaw.Contains('"targets": ["codexcli"]')) 'T3b unrelated keys and formatting survive the save'
+  $gJ3b = $null
+  if (Get-Command ConvertFrom-GitHubJsonc -ErrorAction SilentlyContinue) { $gJ3b = ConvertFrom-GitHubJsonc $gRaw }
+  Assert (($null -ne $gJ3b) -and ([string]$gJ3b.sources[0].source -ceq 'Fizor-drm/ai-agent-rules@main')) 'T3b sources repointed in a JSONC config'
+
+  # T3c: every input is validated before the first write (all-or-nothing).
+  Save-GitHubSettings $auto 'Fizor-drm/ai-agent-rules' 'main' 'rules' | Out-Null
+  $settingsBefore = Get-Content -LiteralPath (Join-Path $auto 'github-settings.json') -Raw -Encoding UTF8
+  $gBefore = Get-Content -LiteralPath (Join-Path $gPrev 'rulesync.jsonc') -Raw -Encoding UTF8
+  $lockedCfg = $null
+  $failedSave = $false
+  try {
+    $lockedCfg = [System.IO.File]::Open((Join-Path $pPrev 'rulesync.jsonc'), 'Open', 'ReadWrite', 'None')
+    Save-GitHubSettings $auto 'Fizor-drm/ai-agent-rules' 'other' 'rules2' | Out-Null
+  } catch { $failedSave = $true } finally { if ($lockedCfg) { $lockedCfg.Close() } }
+  Assert ($failedSave) 'T3c unreadable config refuses the save'
+  Assert ((Get-Content -LiteralPath (Join-Path $auto 'github-settings.json') -Raw -Encoding UTF8) -ceq $settingsBefore) 'T3c failed save leaves the settings unchanged'
+  Assert ((Get-Content -LiteralPath (Join-Path $gPrev 'rulesync.jsonc') -Raw -Encoding UTF8) -ceq $gBefore) 'T3c failed save leaves the other config unchanged'
+
+  # T3d: a write failure mid-transaction rolls back every file already written.
+  Save-GitHubSettings $auto 'Fizor-drm/ai-agent-rules' 'main' 'rules' | Out-Null
+  $setBefore3d = Get-Content -LiteralPath (Join-Path $auto 'github-settings.json') -Raw -Encoding UTF8
+  $gBefore3d = Get-Content -LiteralPath (Join-Path $gPrev 'rulesync.jsonc') -Raw -Encoding UTF8
+  $pBefore3d = Get-Content -LiteralPath (Join-Path $pPrev 'rulesync.jsonc') -Raw -Encoding UTF8
+  $origWriteText = (Get-Item function:Write-GitHubPrivateText).ScriptBlock
+  $script:ghWriteCalls = 0
+  function Write-GitHubPrivateText { param([string]$Path, [string]$Text)
+    $script:ghWriteCalls++
+    if ($script:ghWriteCalls -eq 3) { throw 'injected-write-fail' }
+    & $origWriteText $Path $Text
+  }
+  $midFail = $false
+  try { Save-GitHubSettings $auto 'Fizor-drm/ai-agent-rules' 'dev' 'other' | Out-Null }
+  catch { $midFail = $true }
+  finally { Set-Item -Path function:Write-GitHubPrivateText -Value $origWriteText -Force }
+  Assert ($midFail) 'T3d mid-transaction write failure is reported'
+  Assert ((Get-Content -LiteralPath (Join-Path $auto 'github-settings.json') -Raw -Encoding UTF8) -ceq $setBefore3d) 'T3d settings rolled back'
+  Assert ((Get-Content -LiteralPath (Join-Path $gPrev 'rulesync.jsonc') -Raw -Encoding UTF8) -ceq $gBefore3d) 'T3d first written config rolled back'
+  Assert ((Get-Content -LiteralPath (Join-Path $pPrev 'rulesync.jsonc') -Raw -Encoding UTF8) -ceq $pBefore3d) 'T3d unwritten config unchanged'
+
   # T4: token is encrypted at rest and never stored in plain text.
   Assert ((Get-GitHubToken $auto) -eq '') 'T4 no token by default'
   $tok = 'ghp_' + ('A' * 36)
@@ -146,6 +200,12 @@ try {
   Assert ([string]$r7.text -ceq $ruleWildcard) 'T5 wildcard text unchanged'
   Assert ($r7.added.Count -eq 0) 'T5 wildcard adds no target'
   Assert (Test-GitHubRuleFrontmatter $r7.text 'global') 'T5 wildcard rule stays editable after update'
+  # T5b: the trailing comment the validator accepts must survive the rewrite.
+  $ruleComment = ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode"] # base' + $nl + '---' + $nl + '# commented body' + $nl)
+  $r8 = Update-GitHubTargetsText $ruleComment @('pi')
+  Assert ($r8.ok -and $r8.changed) 'T5b rule with a trailing comment is editable'
+  Assert ($r8.text.Contains('targets: ["codexcli", "opencode", "pi"] # base')) 'T5b trailing comment is preserved'
+  Assert (Test-GitHubRuleFrontmatter $r8.text 'project') 'T5b rewritten text still passes the validator'
 
   # T6: adding targets commits only the file that changed.
   Save-GitHubSettings $auto 'Fizor-drm/ai-agent-rules' 'dev' 'rules' | Out-Null
@@ -170,6 +230,17 @@ try {
   $sent = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String([string]$putBody.content))
   Assert ($sent.Contains('targets: ["codexcli", "antigravity-cli"]')) 'T6 committed content has the target'
   Assert (-not ([string]$putBody.content).Contains($tok)) 'T6 token never written into the commit'
+
+  # T6g: a fetched rule the validator rejects must never be committed.
+  $ruleDup = ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "codexcli"]' + $nl + '---' + $nl + '# dup body' + $nl)
+  $ruleProjectPi = ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode", "pi"]' + $nl + '---' + $nl + '# project body' + $nl)
+  $script:GhFiles = @{}
+  $script:GhFiles['https://api.github.com/repos/Fizor-drm/ai-agent-rules/contents/rules/global.md'] = @{ sha = 'sha-global'; content = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($ruleDup)) }
+  $script:GhFiles['https://api.github.com/repos/Fizor-drm/ai-agent-rules/contents/rules/project.md'] = @{ sha = 'sha-project'; content = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($ruleProjectPi)) }
+  $script:GhCalls = @()
+  $upDup = Update-GitHubRuleTargets $auto @('pi')
+  Assert (-not $upDup.ok) 'T6g duplicate-target rule reports a failure'
+  Assert (@($script:GhCalls | Where-Object { ($_.method -ne 'GET') -and ($_.uri -like '*global.md') }).Count -eq 0) 'T6g invalid rewritten frontmatter is never committed'
 
   # T6b: rule editor frontmatter contract.
   Assert (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + '---' + $nl) 'project') 'T6b project frontmatter accepted'

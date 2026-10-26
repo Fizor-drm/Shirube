@@ -95,7 +95,9 @@ function Rename-MgmtProject([string]$AutoDir, [string]$Old, [string]$NewDisplay)
       if (([string]$e.name -ceq $nd) -or ((Get-MgmtDisplayName $e) -eq $nd)) { throw '表示名が競合しました。別の表示名にしてください。' }
     }
   }
-  if (([string]$ent.name -ceq $nd) -or ((Get-MgmtDisplayName $ent) -eq $nd)) { throw '同一名への変更はできません。' }
+  # Refuse only "no change". The internal name is an allowed target: renaming a
+  # project back to it restores the default label.
+  if ((Get-MgmtDisplayName $ent) -eq $nd) { throw '同一名への変更はできません。' }
   $outRows = @()
   foreach ($e in $reg) {
     if ([string]$e.name -ceq $Old) {
