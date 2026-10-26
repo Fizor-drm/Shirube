@@ -97,6 +97,7 @@ rulesync 使用 `--features rules` 生成 `AGENTS.md`。Global 使用 `--global`
 
 ```powershell
 git clone https://github.com/Fizor-drm/Shirube.git
+Set-Location Shirube
 ```
 
 ### 2. 创建 rulesync 配置

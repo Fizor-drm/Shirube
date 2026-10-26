@@ -69,6 +69,18 @@ if defined DUMMY_EXPECT_TOKEN (
   )
 )
 set /p N=<"%D%\counter.txt"
+if defined DUMMY_MUTATE (
+  if "%N%"=="3" (
+    echo mutated-codex>> "%HOME_DIR%\.codex\AGENTS.md" 2>nul
+    echo mutated-opencode>> "%HOME_DIR%\.config\opencode\AGENTS.md" 2>nul
+  )
+)
+if defined DUMMY_LINK_DIR (
+  if "%N%"=="3" (
+    rmdir /S /Q "%HOME_DIR%\.config\opencode" 2>nul
+    mklink /J "%HOME_DIR%\.config\opencode" "%DUMMY_LINK_DIR%" >nul 2>&1
+  )
+)
 set F=%D%\exit_!N!.txt
 set CODE=0
 if exist "!F!" set /p CODE=<"!F!"
@@ -430,6 +442,49 @@ exit /b 0
   Assert ($null -eq $st19.providers.'antigravity-cli'.lastSuccessAt) 'T19 uncovered target gets no success stamp'
   Assert (-not [string]::IsNullOrWhiteSpace([string]$st19.providers.'antigravity-cli'.error)) 'T19 uncovered target carries a reason'
   Assert ((Get-Logs).Contains('antigravity-cli')) 'T19 log names the uncovered target'
+
+  # T20: a failed generate restores every target even when the first rollback
+  # fails. Only the two AGENTS files remain in the backup and the restore order
+  # is ordinal, so codexcli is attempted first: locking codexcli makes an
+  # early-return rollback skip the opencode restore.
+  Reset-Case @(0, 1, 0, 1)
+  Remove-Item -LiteralPath (Join-Path $fakeHome '.config\opencode\opencode.json'), (Join-Path $fakeHome '.config\opencode\opencode.jsonc') -Force -ErrorAction SilentlyContinue
+  $env:DUMMY_MUTATE = '1'
+  $codexLock = $null
+  try {
+    $codexLock = [System.IO.File]::Open((Join-Path $fakeHome '.codex\AGENTS.md'), 'Open', 'Read', 'Read')
+    $code = Invoke-GlobalSync
+  } finally {
+    if ($codexLock) { $codexLock.Close() }
+    Remove-Item Env:DUMMY_MUTATE -ErrorAction SilentlyContinue
+  }
+  Assert ($code -eq 1) 'T20 failed generate still fails the run'
+  Assert (((Get-Content -LiteralPath (Join-Path $fakeHome '.config\opencode\AGENTS.md') -Raw -Encoding UTF8).Trim()) -ceq 'fake-opencode-agents') 'T20 rollback restores the remaining target after a rollback failure'
+  Assert ((Get-Logs).Contains('rollback also failed')) 'T20 rollback failure is reported explicitly'
+  Assert (((Get-Content -LiteralPath (Join-Path $fakeHome '.codex\AGENTS.md') -Raw -Encoding UTF8).Trim()) -ceq 'fake-codex-agents') 'T20 locked target keeps its pre-run content'
+
+  # T21: a target that becomes a link during generate is refused on its own,
+  # while the remaining safe target is still restored and nothing is written
+  # through the link.
+  Reset-Case @(0, 1, 0, 1)
+  $linkDir = Join-Path $scratch 'linked-opencode-target'
+  New-Item -ItemType Directory -Force -Path $linkDir | Out-Null
+  Set-Content -LiteralPath (Join-Path $linkDir 'AGENTS.md') 'sentinel-opencode-agents' -Encoding Ascii
+  $junc = Join-Path $fakeHome '.config\opencode'
+  $env:DUMMY_MUTATE = '1'
+  $env:DUMMY_LINK_DIR = $linkDir
+  try { $code = Invoke-GlobalSync }
+  finally { Remove-Item Env:DUMMY_MUTATE, Env:DUMMY_LINK_DIR -ErrorAction SilentlyContinue }
+  Assert ($code -eq 1) 'T21 unsafe target still fails the run'
+  Assert ((((Get-Item -LiteralPath $junc -Force).Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0)) 'T21 fixture linked the target during generate'
+  Assert (((Get-Content -LiteralPath (Join-Path $fakeHome '.codex\AGENTS.md') -Raw -Encoding UTF8).Trim()) -ceq 'fake-codex-agents') 'T21 safe target restored after the link failure'
+  Assert (((Get-Content -LiteralPath (Join-Path $linkDir 'AGENTS.md') -Raw -Encoding UTF8).Trim()) -ceq 'sentinel-opencode-agents') 'T21 link target content untouched'
+  Assert ((Get-Logs).Contains('rollback also failed')) 'T21 link failure reported explicitly'
+  Assert ((Get-Logs).Contains('opencode')) 'T21 rollback error names the refused target'
+  $juncGone = $true
+  cmd /c rmdir "$junc" > $null 2>&1
+  if (Test-Path -LiteralPath $junc) { $juncGone = $false }
+  Assert ($juncGone) 'T21 test link removed without touching its target'
 
   Assert (((Get-Location).Path) -eq $initCwd) 'T15 cwd restored at end'
   Assert ($env:HOME_DIR -eq $fakeHome) 'T15 HOME_DIR kept for harness restore'

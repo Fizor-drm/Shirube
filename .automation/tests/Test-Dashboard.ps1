@@ -66,6 +66,22 @@ try {
   Set-Content -LiteralPath (Join-Path $auto 'projects.json') '[]' -Encoding Ascii
   $env:DASHBOARD_AUTODIR = $auto
 
+  # R8: quoted Start-Process arguments must survive trailing separators, and the
+  # import preview must render each interval change exactly once.
+  if (Get-Command ConvertTo-DashboardQuotedArg -ErrorAction SilentlyContinue) {
+    Assert ((ConvertTo-DashboardQuotedArg 'C:\') -ceq '"C:\\"') 'R8 drive root keeps its separator when quoted'
+    Assert ((ConvertTo-DashboardQuotedArg '\\server\share\') -ceq '"\\server\share\\"') 'R8 UNC share trailing separator is doubled'
+    Assert ((ConvertTo-DashboardQuotedArg 'C:\dir') -ceq '"C:\dir"') 'R8 plain path is quoted as-is'
+    Assert ((ConvertTo-DashboardQuotedArg 'a "b"') -ceq '"a \"b\""') 'R8 embedded quote is escaped'
+  } else { Assert $false 'R8 quoted-argument helper exists' }
+  $prevAutoEnv = $env:DASHBOARD_AUTODIR
+  $env:DASHBOARD_AUTODIR = ($auto.TrimEnd('\') + '\')
+  Assert ((Get-DashboardAutoDir) -ceq $auto) 'R8 AutoDir trailing separator is trimmed'
+  $env:DASHBOARD_AUTODIR = 'C:\'
+  Assert ((Get-DashboardAutoDir) -ceq 'C:\') 'R8 drive-root AutoDir keeps its separator'
+  $env:DASHBOARD_AUTODIR = $prevAutoEnv
+  Assert (([regex]::Matches($srvTxt0, [regex]::Escape('{current:esc(String(v.interval.current))')).Count -eq 1)) 'R8 import preview renders the interval change once'
+
   # R7 機能検証(scratchのみ): 私的ACL実効・トークン/状態/要求の権限制限・secret非出力
   $aclFile = Join-Path $auto 'acl-dummy.txt'
   Set-Content -LiteralPath $aclFile 'dummy' -Encoding Ascii

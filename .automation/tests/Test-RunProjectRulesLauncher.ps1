@@ -20,7 +20,9 @@ function Test-Contained([string]$Candidate, [string]$Root) {
   return $c.StartsWith($r, [System.StringComparison]::OrdinalIgnoreCase)
 }
 function Invoke-Launcher([string]$Vbs) {
-  return (Start-Process -FilePath 'C:\Windows\System32\wscript.exe' -ArgumentList '//B', '//Nologo', $Vbs -WindowStyle Hidden -Wait -PassThru)
+  # One pre-quoted argument string: Start-Process joins ArgumentList with spaces
+  # without quoting, so a path containing spaces must carry its own quotes.
+  return (Start-Process -FilePath 'C:\Windows\System32\wscript.exe' -ArgumentList ('//B //Nologo "{0}"' -f $Vbs) -WindowStyle Hidden -Wait -PassThru)
 }
 
 try {
@@ -40,7 +42,7 @@ try {
 
   $testBase = Join-Path ([System.IO.Path]::GetTempPath()) 'RunProjectRulesLauncherTest'
   New-Item -ItemType Directory -Force -Path $testBase | Out-Null
-  $scratch = Join-Path $testBase ('run-' + [System.Guid]::NewGuid().ToString('N'))
+  $scratch = Join-Path $testBase ('run ' + [System.Guid]::NewGuid().ToString('N'))
   New-Item -ItemType Directory -Force -Path $scratch | Out-Null
   Assert (Test-Contained $scratch $testBase) 'L0 GUID scratch contained in base'
 

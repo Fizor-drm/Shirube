@@ -14,7 +14,11 @@ function Read-ShirubeSettingsFile {
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { return $null }
     $txt = Get-Content -LiteralPath $path -Raw -Encoding UTF8
     if (-not $txt) { return $null }
-    return (ConvertFrom-Json $txt)
+    $o = ConvertFrom-Json $txt
+    # An array root (even one element) is not a settings object; ConvertFrom-Json
+    # would otherwise unroll it into a usable-looking single object.
+    if (($o -is [array]) -or ($o -isnot [System.Management.Automation.PSCustomObject])) { return $null }
+    return $o
   }
   catch { return $null }
 }

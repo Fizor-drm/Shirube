@@ -111,6 +111,17 @@ if defined DUMMY_EXPECT_TOKEN (
   )
 )
 set /p N=<"%D%\counter.txt"
+if defined DUMMY_MAKE_LOCAL (
+  if "%N%"=="1" (
+    if not exist "%DUMMY_MAKE_LOCAL%\project-local.md" (
+      > "%DUMMY_MAKE_LOCAL%\project-local.md" echo ---
+      >> "%DUMMY_MAKE_LOCAL%\project-local.md" echo localRoot: true
+      >> "%DUMMY_MAKE_LOCAL%\project-local.md" echo targets: ["codexcli", "opencode"]
+      >> "%DUMMY_MAKE_LOCAL%\project-local.md" echo ---
+      >> "%DUMMY_MAKE_LOCAL%\project-local.md" echo appeared-late
+    )
+  )
+)
 set F=%D%\exit_!N!.txt
 set CODE=0
 if exist "!F!" set /p CODE=<"!F!"
@@ -570,6 +581,28 @@ exit /b 0
   $retParam = [SyncProjectRulesTest.Native].GetMethod('CreateSymbolicLink').ReturnParameter
   $masAttr = @($retParam.GetCustomAttributes([System.Runtime.InteropServices.MarshalAsAttribute], $false))
   Assert ($masAttr.Count -eq 1 -and $masAttr[0].Value -eq [System.Runtime.InteropServices.UnmanagedType]::U1) 'T13d native BOOLEAN return marshalled as U1'
+
+  # T14: a local rule that appears after the snapshot must not be read from a
+  # path the snapshot never copied (a scheduled run has no snapshot at all).
+  New-Item -ItemType Directory -Force -Path (Join-Path $projB '.rulesync\rules') | Out-Null
+  Reset-Case @(0, 1, 0, 0, 0)
+  $env:DUMMY_MAKE_LOCAL = Join-Path $projB '.rulesync\rules'
+  try {
+    Set-Stdout 2 ('Would write: ' + (Join-Path $projB 'AGENTS.md'))
+    $code = Invoke-ProjectSync -ProjectNames @('projB')
+  } finally {
+    Remove-Item Env:DUMMY_MAKE_LOCAL -ErrorAction SilentlyContinue
+  }
+  Assert ($code -eq 0) 'T14 local rule appearing during the run does not fail the project'
+  Assert (Test-Path -LiteralPath (Join-Path $projB '.rulesync\rules\project-local.md')) 'T14 the late local rule is left in place'
+  $bdirs = @()
+  if (Test-Path -LiteralPath (Join-Path $auto 'backups')) { $bdirs = @(Get-ChildItem -LiteralPath (Join-Path $auto 'backups') -Directory) }
+  Assert ($bdirs.Count -eq 1) 'T14 one backup dir'
+  if ($bdirs.Count -eq 1) {
+    $mf14 = Get-Content -LiteralPath (Join-Path $bdirs[0].FullName 'manifest.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+    Assert (([bool]$mf14.localPresent -eq $false) -and (-not (Test-Path -LiteralPath (Join-Path $bdirs[0].FullName 'project-local.md')))) 'T14 late local rule is not claimed in the backup'
+  }
+  Remove-Item -LiteralPath (Join-Path $projB '.rulesync\rules\project-local.md') -Force -ErrorAction SilentlyContinue
 
   # T12: own snapshot root leaks nothing; other-run TEMP sentinel survives (no shared-TEMP sweep).
   # Only own GUID scratch is inspected, so parallel runs cannot cause false failures.

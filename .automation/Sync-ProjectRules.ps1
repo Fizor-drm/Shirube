@@ -336,6 +336,9 @@ function Invoke-ProjectSync {
       # Snapshot only the single local rule file; never read repo configs or cwd.
       $Roots = @((Get-NormPath $script:CommonRoot))
       $LocalFile = Join-Path $RepoFull '.rulesync\rules\project-local.md'
+      # The snapshot copy decides the backup source: a local rule that appears
+      # later (dashboard import or save) must never be read from a missing path.
+      $snapLocal = ''
       if (Test-Path -LiteralPath $LocalFile) {
         if ((Get-Item -LiteralPath $LocalFile -Force).PSIsContainer) { throw ("local rule is a directory: " + $Name) }
         if (Test-Reparse $LocalFile) { throw ("refusing reparse local rule: " + $Name) }
@@ -357,6 +360,7 @@ function Invoke-ProjectSync {
         if (Test-Reparse $snap) { throw 'snapshot is a reparse point.' }
         $snapCreated = $true
         Copy-Item -LiteralPath $LocalFile -Destination (Join-Path $snap 'rules\project-local.md') -Force
+        $snapLocal = Join-Path $snap 'rules\project-local.md'
         $Roots += (Get-NormPath $snap)
       }
 
@@ -527,10 +531,10 @@ function Invoke-ProjectSync {
       [System.IO.Directory]::CreateDirectory($bdir, $dirSec) | Out-Null
       if (Test-Reparse $bdir) { throw 'backup is a reparse point.' }
       $backupId = Split-Path $bdir -Leaf
-      $localPresent = Test-Path -LiteralPath $LocalFile -PathType Leaf
+      $localPresent = [bool](($snapLocal -ne '') -and (Test-Path -LiteralPath $snapLocal -PathType Leaf))
       $agentsPresent = Test-Path -LiteralPath $AgentsPath -PathType Leaf
       $localBytes = $null
-      if ($localPresent) { $localBytes = [System.IO.File]::ReadAllBytes((Join-Path $snap 'rules\project-local.md')) }
+      if ($localPresent) { $localBytes = [System.IO.File]::ReadAllBytes($snapLocal) }
       $agentsBytes = $null
       if ($agentsPresent) { $agentsBytes = [System.IO.File]::ReadAllBytes($AgentsPath) }
       $agentsHashVal = $null

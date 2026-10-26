@@ -659,34 +659,52 @@ function Invoke-GlobalSync {
             # stay a private precaution and are never written back.
             Global-AssertNoLinkChain $bdir $AutoDir 'バックアップ先'
             $agentsRels = @{}
+            $rbErrs = @()
+            $unsafeTargets = @{}
             foreach ($t in $EffArr) {
-              Global-AssertNoLinkChain ([string]$ContentPaths[$t]) $HomeBase $t
-              try { $agentsRels[([string]$ContentPaths[$t]).Substring($HomeBase.Length).TrimStart('\', '/') -replace '[\\/:]', '_'] = $true } catch {}
+              $cp = [string]$ContentPaths[$t]
+              try {
+                Global-AssertNoLinkChain $cp $HomeBase $t
+                try { $agentsRels[$cp.Substring($HomeBase.Length).TrimStart('\', '/') -replace '[\\/:]', '_'] = $true } catch {}
+              } catch {
+                $unsafeTargets[[string]$t] = $true
+                $rbErrs += $_.Exception.Message
+              }
             }
-            foreach ($rel in @($anchorHashes.Keys)) {
+            # Collect per-target failures and keep going: returning on the first
+            # error would leave the remaining targets with unapproved content.
+            # The ordinal order keeps the rollback sequence reproducible.
+            $rbRels = [string[]]@($anchorHashes.Keys)
+            [Array]::Sort($rbRels, [System.StringComparer]::Ordinal)
+            foreach ($rel in $rbRels) {
               if (-not $agentsRels.ContainsKey($rel)) { continue }
               $dst = $null
               foreach ($bt in $BackupTargets) {
                 $btRel = $bt.Substring($HomeBase.Length).TrimStart('\', '/') -replace '[\\/:]', '_'
                 if ($btRel -ceq $rel) { $dst = $bt; break }
               }
-              if ($null -eq $dst) { return ('unknown backup entry: ' + $rel) }
+              if ($null -eq $dst) { $rbErrs += ('unknown backup entry: ' + $rel); continue }
               $srcRb = Join-Path $bdir $rel
-              if (-not (Test-ContainedLocal $srcRb $bdir)) { return ('巻戻し元を確認できません: ' + $rel) }
-              try { Global-AssertNoLinkChain $srcRb $AutoDir 'バックアップ' } catch { return $_.Exception.Message }
-              try { Global-AssertNoLinkChain $dst $HomeBase '巻戻し' } catch { return $_.Exception.Message }
-              try { Copy-GlobalExpectedBytes $srcRb $dst ([string]$anchorHashes[$rel]) (Split-Path $dst -Leaf) $AutoDir $HomeBase } catch { return $_.Exception.Message }
+              if (-not (Test-ContainedLocal $srcRb $bdir)) { $rbErrs += ('巻戻し元を確認できません: ' + $rel); continue }
+              try {
+                Global-AssertNoLinkChain $srcRb $AutoDir 'バックアップ'
+                Global-AssertNoLinkChain $dst $HomeBase '巻戻し'
+                Copy-GlobalExpectedBytes $srcRb $dst ([string]$anchorHashes[$rel]) (Split-Path $dst -Leaf) $AutoDir $HomeBase
+              } catch { $rbErrs += $_.Exception.Message }
             }
             # Files absent before generate but created by it are removed again.
             foreach ($ae in $anchorFiles) {
               if ((-not [bool]$ae.present) -and ([string]$ae.kind -ceq 'agents')) {
+                if ($unsafeTargets.ContainsKey([string]$ae.target)) { continue }
                 $ap2 = [string]$ContentPaths[[string]$ae.target]
-                try { Global-AssertNoLinkChain $ap2 $HomeBase '巻戻し' } catch { return $_.Exception.Message }
-                try { Global-AssertNoLinkChain $ap2 $HomeBase '巻戻し' } catch { return $_.Exception.Message }
-                if ((Test-Path -LiteralPath $ap2) -and (-not (Test-ReparseLocal $ap2))) { Remove-Item -LiteralPath $ap2 -Force }
-                if (Test-Path -LiteralPath $ap2) { return ('unapproved file not removed: ' + [string]$ae.target) }
+                try {
+                  Global-AssertNoLinkChain $ap2 $HomeBase '巻戻し'
+                  if ((Test-Path -LiteralPath $ap2) -and (-not (Test-ReparseLocal $ap2))) { Remove-Item -LiteralPath $ap2 -Force }
+                  if (Test-Path -LiteralPath $ap2) { $rbErrs += ('unapproved file not removed: ' + [string]$ae.target) }
+                } catch { $rbErrs += $_.Exception.Message }
               }
             }
+            if ($rbErrs.Count -gt 0) { return ($rbErrs -join '; ') }
             return $null
           } catch { return $_.Exception.Message }
         }

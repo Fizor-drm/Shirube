@@ -54,6 +54,9 @@ try {
   Assert ((Get-ShirubeSetting -Name 'taskNameGlobal' -Default 'Shirube Global Auto Sync') -ceq 'Shirube Global Auto Sync') 'S4 missing key falls back'
   Set-Settings '["a","b"]'
   Assert ((Get-ShirubeSetting -Name 'taskNameGlobal' -Default 'Shirube Global Auto Sync') -ceq 'Shirube Global Auto Sync') 'S4 non-object JSON falls back'
+  # ConvertFrom-Json unrolls a one-element array root into a usable-looking object.
+  Set-Settings '[{"taskNameGlobal":"Other Task"}]'
+  Assert ((Get-ShirubeSetting -Name 'taskNameGlobal' -Default 'Shirube Global Auto Sync') -ceq 'Shirube Global Auto Sync') 'S4 single-element array root falls back'
 
   # S5: 既定値は現行値のまま (設定ファイル無しで評価)
   Remove-Item -LiteralPath $settingsPath -Force

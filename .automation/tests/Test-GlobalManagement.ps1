@@ -168,9 +168,10 @@ try {
   Assert ((@($bd.lines).Count -le 300)) 'G9 diff bounded'
   $script:pauseCalls = @()
   function Get-ScheduledTask { param([string]$TaskName) return [pscustomobject]@{ TaskName = $TaskName; State = 'Ready'; Triggers = @() } }
-  function Disable-ScheduledTask { param([string]$TaskName) $script:pauseCalls += ('disable:' + [string]$TaskName) }
+  function Disable-ScheduledTask { param([string]$TaskName) $script:pauseCalls += ('disable:' + [string]$TaskName); return [pscustomobject]@{ TaskName = $TaskName; State = 'Disabled' } }
   $cfG9 = New-GlobalRestoreConfirm $auto (Split-Path $bk -Leaf) $fakeHome
   $rs = Restore-GlobalBackup $auto (Split-Path $bk -Leaf) $true $fakeHome $cfG9
+  Assert ($rs -is [hashtable]) 'G9 restore returns one response without scheduler objects'
   Assert ((($rs.ok -eq $true) -and (@($script:pauseCalls).Count -eq 1) -and ([string]$script:pauseCalls[0] -ceq 'disable:Shirube Global Auto Sync'))) 'G9 restore pauses global sync first (task disable)'
   Assert (((Get-Content -LiteralPath (Join-Path $fakeHome '.codex\AGENTS.md') -Raw).Contains('codex-body-AAA'))) 'G9 restore brings back backup content'
   Remove-Item -Path 'function:Disable-ScheduledTask' -Force -ErrorAction SilentlyContinue
@@ -235,6 +236,27 @@ try {
   try { New-GlobalRestoreConfirm $auto (Split-Path $bk13 -Leaf) $fakeHome | Out-Null; $bad13 = $false } catch { $bad13 = ($_.Exception.Message.Contains('信頼')) }
   Assert ($bad13) 'G13 unknown manifest target refused'
   Set-GlobalTargets $auto (Get-GlobalDefaultTargets) | Out-Null
+
+  # G15: a shelter failure before any home change re-enables the auto sync task
+  # (a disabled task must never be left behind silently).
+  $bk15 = New-GlobalBackup $auto $fakeHome @('codexcli', 'opencode')
+  $cf15 = New-GlobalRestoreConfirm $auto (Split-Path $bk15 -Leaf) $fakeHome
+  $script:pauseCalls = @()
+  function Disable-ScheduledTask { param([string]$TaskName) $script:pauseCalls += ('disable:' + [string]$TaskName) }
+  function Enable-ScheduledTask { param([string]$TaskName) $script:pauseCalls += ('enable:' + [string]$TaskName) }
+  $copyVerifiedFn = (Get-Item function:Copy-GlobalVerified).ScriptBlock
+  function Copy-GlobalVerified { param([string]$Src, [string]$Dst, [string]$SrcRoot = "", [string]$DstRoot = "") throw 'injected-shelter-fail' }
+  $shelterFail = $false
+  $shelterMsg = ''
+  try { Restore-GlobalBackup $auto (Split-Path $bk15 -Leaf) $true $fakeHome $cf15 | Out-Null }
+  catch { $shelterFail = $true; $shelterMsg = $_.Exception.Message }
+  Set-Item -Path function:Copy-GlobalVerified -Value $copyVerifiedFn -Force
+  Assert ($shelterFail) 'G15 shelter failure refuses the restore'
+  Assert ((@($script:pauseCalls | Where-Object { $_ -like 'disable:*' }).Count -eq 1)) 'G15 task is paused before the shelter phase'
+  Assert ((@($script:pauseCalls | Where-Object { $_ -like 'enable:*' }).Count -eq 1)) 'G15 shelter failure re-enables the auto sync task'
+  Assert ($shelterMsg.Contains('元の有効状態に戻しました')) 'G15 re-enable is reported honestly'
+  Remove-Item -Path 'function:Disable-ScheduledTask' -Force -ErrorAction SilentlyContinue
+  Remove-Item -Path 'function:Enable-ScheduledTask' -Force -ErrorAction SilentlyContinue
 
   # G14: per-provider history is persisted independently of the selected
   # targets; later selection changes and saves must not delete other rows.

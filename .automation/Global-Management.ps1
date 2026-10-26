@@ -1254,51 +1254,71 @@ function Restore-GlobalBackup([string]$AutoDir, [string]$BackupId, [bool]$Confir
       if (Test-Path -LiteralPath $dst) { $steps += @{ kind = 'delete'; dst = $dst; which = $t; target = $t; ckind = 'agents' } }
     }
   }
-  # Pause the Global auto sync BEFORE updating files so a scheduled run can
-  # never overwrite a half-restored home. A pause failure refuses the restore.
-  try { Disable-ScheduledTask -TaskName ((Get-GlobalScheduledTask).name) }
-  catch { throw ('自動同期の休止に失敗したため復元しません: ' + $_.Exception.Message) }
-  # Shelter current state (lossless) for rollback and history.
+  # Validate the shelter root before pausing: a linked backups folder must not
+  # leave automatic sync disabled.
   $broot = Join-Path $AutoDir 'backups'
   if (Global-Reparse $AutoDir) { throw 'バックアップ先を確認できませんでした。' }
   if (Global-Reparse $broot) { throw 'バックアップ先を確認できませんでした。' }
   if (Global-ParentReparse $broot $AutoDir) { throw 'バックアップ先の親フォルダがリンクになっています。' }
-  $ts = Get-Date -Format 'yyyyMMdd-HHmmss'
-  $pre = Join-Path $broot ($ts + '-global-before-restore')
-  $n = 0
-  while (Test-Path -LiteralPath $pre) { $n++; $pre = Join-Path $broot ($ts + '-global-before-restore-' + $n) }
-  if (-not (Global-Contained $pre $broot)) { throw 'バックアップ先を確認できませんでした。' }
-  New-Item -ItemType Directory -Force -Path $pre | Out-Null
-  if (Global-Reparse $pre) { throw 'バックアップ先を確認できませんでした。' }
-  Global-AssertNoLinkChain $pre $AutoDir 'バックアップ先'
-  # Trust anchors for every mutation target (copies AND deletes): hash current
-  # bytes before sheltering so rollback restores exactly the pre-restore state.
-  $origH = @{}
-  $preFiles = @()
-  foreach ($st in $steps) {
-    $dst = [string]$st.dst
-    if (Test-Path -LiteralPath $dst -PathType Leaf) {
-      Global-AssertNoLinkChain $dst $HomeBase ([string]$st.which)
-      $rel2 = Get-GlobalBackupRel $HomeBase $dst
-      $dstPre = Join-Path $pre $rel2
-      if (-not (Global-Contained $dstPre $pre)) { throw 'バックアップ先を確認できませんでした。' }
-      Global-AssertNoLinkChain $dstPre $AutoDir 'バックアップ先'
-      Copy-GlobalVerified $dst $dstPre $HomeBase $AutoDir
-      $hh = Global-FileHashHex $dst
-      if ([string]::IsNullOrWhiteSpace([string]$hh)) { throw '退避の検証に失敗しました。復元しません。' }
-      if ((Global-FileHashHex $dstPre) -cne $hh) { throw '退避の検証に失敗しました。復元しません。' }
-      $origH[$dst] = [string]$hh
-      $preFiles += @{ target = ([string]$st.target); kind = ([string]$st.ckind); rel = $rel2; present = $true; hash = ([string]$hh) }
+  # Pause the Global auto sync BEFORE updating files so a scheduled run can
+  # never overwrite a half-restored home. A pause failure refuses the restore.
+  $taskInfo = $null
+  try { $taskInfo = Get-GlobalScheduledTask }
+  catch { throw ('自動同期の休止に失敗したため復元しません: ' + $_.Exception.Message) }
+  $taskName = [string]$taskInfo.name
+  $wasEnabled = ([string]$taskInfo.task.State -cne 'Disabled')
+  try { Disable-ScheduledTask -TaskName $taskName -ErrorAction Stop | Out-Null }
+  catch { throw ('自動同期の休止に失敗したため復元しません: ' + $_.Exception.Message) }
+  # Shelter current state (lossless) for rollback and history. Nothing in home
+  # changes here, so a failure restores the recorded task state instead of
+  # leaving automatic sync silently paused.
+  try {
+    $ts = Get-Date -Format 'yyyyMMdd-HHmmss'
+    $pre = Join-Path $broot ($ts + '-global-before-restore')
+    $n = 0
+    while (Test-Path -LiteralPath $pre) { $n++; $pre = Join-Path $broot ($ts + '-global-before-restore-' + $n) }
+    if (-not (Global-Contained $pre $broot)) { throw 'バックアップ先を確認できませんでした。' }
+    New-Item -ItemType Directory -Force -Path $pre | Out-Null
+    if (Global-Reparse $pre) { throw 'バックアップ先を確認できませんでした。' }
+    Global-AssertNoLinkChain $pre $AutoDir 'バックアップ先'
+    # Trust anchors for every mutation target (copies AND deletes): hash current
+    # bytes before sheltering so rollback restores exactly the pre-restore state.
+    $origH = @{}
+    $preFiles = @()
+    foreach ($st in $steps) {
+      $dst = [string]$st.dst
+      if (Test-Path -LiteralPath $dst -PathType Leaf) {
+        Global-AssertNoLinkChain $dst $HomeBase ([string]$st.which)
+        $rel2 = Get-GlobalBackupRel $HomeBase $dst
+        $dstPre = Join-Path $pre $rel2
+        if (-not (Global-Contained $dstPre $pre)) { throw 'バックアップ先を確認できませんでした。' }
+        Global-AssertNoLinkChain $dstPre $AutoDir 'バックアップ先'
+        Copy-GlobalVerified $dst $dstPre $HomeBase $AutoDir
+        $hh = Global-FileHashHex $dst
+        if ([string]::IsNullOrWhiteSpace([string]$hh)) { throw '退避の検証に失敗しました。復元しません。' }
+        if ((Global-FileHashHex $dstPre) -cne $hh) { throw '退避の検証に失敗しました。復元しません。' }
+        $origH[$dst] = [string]$hh
+        $preFiles += @{ target = ([string]$st.target); kind = ([string]$st.ckind); rel = $rel2; present = $true; hash = ([string]$hh) }
+      }
+      else {
+        $origH[$dst] = $null
+        $preFiles += @{ target = ([string]$st.target); kind = ([string]$st.ckind); rel = ''; present = $false; hash = $null }
+      }
     }
-    else {
-      $origH[$dst] = $null
-      $preFiles += @{ target = ([string]$st.target); kind = ([string]$st.ckind); rel = ''; present = $false; hash = $null }
-    }
+    $mfTargets = @()
+    try { $mfTargets = @($mf.targets | ForEach-Object { [string]$_ }) } catch {}
+    Global-AssertNoLinkChain (Join-Path $pre 'manifest.json') $AutoDir 'バックアップの記録'
+    Write-GlobalPrivateJson (Join-Path $pre 'manifest.json') @{ schemaVersion = 1; scope = 'global'; createdAt = ([DateTime]::UtcNow.ToString('o')); homeBase = $HomeBase; targets = $mfTargets; restoredFrom = $BackupId; files = $preFiles } $AutoDir
   }
-  $mfTargets = @()
-  try { $mfTargets = @($mf.targets | ForEach-Object { [string]$_ }) } catch {}
-  Global-AssertNoLinkChain (Join-Path $pre 'manifest.json') $AutoDir 'バックアップの記録'
-  Write-GlobalPrivateJson (Join-Path $pre 'manifest.json') @{ schemaVersion = 1; scope = 'global'; createdAt = ([DateTime]::UtcNow.ToString('o')); homeBase = $HomeBase; targets = $mfTargets; restoredFrom = $BackupId; files = $preFiles } $AutoDir
+  catch {
+    $shelterErr = $_.Exception.Message
+    if ($wasEnabled) {
+      try { Enable-ScheduledTask -TaskName $taskName -ErrorAction Stop | Out-Null }
+      catch { throw ('復元前の準備に失敗し、自動同期の再開にも失敗しました（休止中のままです）: ' + $shelterErr + ' / ' + $_.Exception.Message) }
+      throw ('復元前の準備に失敗しました。自動同期は元の有効状態に戻しました: ' + $shelterErr)
+    }
+    throw ('復元前の準備に失敗しました。自動同期は休止中のままです: ' + $shelterErr)
+  }
   $applied = @()
   try {
     foreach ($st in $steps) {

@@ -242,6 +242,9 @@ try {
     Assert ($text.Contains('```mermaid')) ('R9 Mermaid diagram kept: ' + $name)
     Assert ($text.Contains('https://github.com/Fizor-drm/Shirube.git')) ('R9 public clone URL kept: ' + $name)
     Assert (($text.Contains('%LOCALAPPDATA%\Shirube') -and ($text.Contains('%LOCALAPPDATA%\Rulesync')) -and ($text.Contains('projects.json')))) ('R9 migration paths and registry kept: ' + $name)
+    # git clone does not change the working directory; the next steps assume it.
+    $cloneAt = $text.IndexOf('git clone https://github.com/Fizor-drm/Shirube.git')
+    Assert (($cloneAt -ge 0) -and ($text.IndexOf('Set-Location Shirube', $cloneAt) -gt $cloneAt)) ('R9 clone step enters the repository: ' + $name)
   }
   Assert (-not $readme.Contains('英語版 README | 未作成です。')) 'R9 Japanese README no longer claims the English edition is missing'
   Assert (($readmeEn.Contains('## Migrating from the old environment')) -and ($readmeEn.Contains('Task Scheduler')) -and ($readmeEn.Contains('protected isolated copy')) -and ($readmeEn.Contains('recorded enabled/disabled state'))) 'R9 English README keeps the migration safety steps'

@@ -23,6 +23,26 @@ try {
   . (Join-Path $devAuto 'Project-Management.ps1')
   Assert ((Get-Command Get-MgmtBackupList -ErrorAction SilentlyContinue) -ne $null) 'M0 module dot-sourced (no listen)'
 
+  # F9 isolation: shadow the scheduler cmdlets for this whole run so the suite
+  # never reads or writes the real Project/Global tasks (scratch-only header).
+  $script:mockTaskInterval = 'PT17M'
+  $script:mockTaskCalls = @()
+  $script:mockTaskState = 'Ready'
+  $mockProjectTask = Get-MgmtProjectTaskName
+  function Get-ScheduledTask { [CmdletBinding()] param([string]$TaskName)
+    $script:mockTaskCalls += ('get:' + [string]$TaskName)
+    if ($TaskName -cne $script:mockProjectTask) { throw ('task not found: ' + [string]$TaskName) }
+    $tr = [pscustomobject]@{ CimClass = [pscustomobject]@{ CimClassName = 'MSFT_TaskTimeTrigger' }; Repetition = [pscustomobject]@{ Interval = $script:mockTaskInterval } }
+    return [pscustomobject]@{ TaskName = $script:mockProjectTask; State = $script:mockTaskState; Triggers = @($tr) }
+  }
+  function Set-ScheduledTask { [CmdletBinding()] param([string]$TaskName, $Trigger)
+    $script:mockTaskCalls += ('set:' + [string]$TaskName)
+    $script:mockTaskInterval = [string]$Trigger[0].Repetition.Interval
+    return [pscustomobject]@{ TaskName = [string]$TaskName }
+  }
+  function Disable-ScheduledTask { [CmdletBinding()] param([string]$TaskName) $script:mockTaskCalls += ('disable:' + [string]$TaskName); $script:mockTaskState = 'Disabled' }
+  function Enable-ScheduledTask { [CmdletBinding()] param([string]$TaskName) $script:mockTaskCalls += ('enable:' + [string]$TaskName); $script:mockTaskState = 'Ready' }
+
   $base = Join-Path ([System.IO.Path]::GetTempPath()) 'Mgmt15Test'
   New-Item -ItemType Directory -Force -Path $base | Out-Null
   $scratch = Join-Path $base ('run-' + [System.Guid]::NewGuid().ToString('N'))
@@ -67,6 +87,11 @@ try {
   Write-RegistryAtomicLocked $auto @([pscustomobject]@{ name = 'RepoE'; path = $repoE; displayName = 'RepoE2' }, [pscustomobject]@{ name = 'Other'; path = (New-Repo 'Other'); displayName = 'Other' })
   try { Rename-MgmtProject $auto 'RepoE' 'Other'; $rnDup = $false } catch { $rnDup = ($_.Exception.Message.Contains('競合')) }
   Assert ($rnDup) 'F3 duplicate display refused'
+  # The internal name is a valid target: it restores the default label.
+  $rnBack = $true
+  try { Rename-MgmtProject $auto 'RepoE' 'RepoE' } catch { $rnBack = $false }
+  $e3b = @((Get-Registry $auto) | Where-Object { [string]$_.name -ceq 'RepoE' })[0]
+  Assert (($rnBack) -and ([string]$e3b.name -ceq 'RepoE') -and ([string]$e3b.displayName -ceq 'RepoE')) 'F3 rename back to the internal name restores the default label'
 
   # F6: move path re-designation
   $repoMove = New-Repo 'MoveDst'
@@ -161,7 +186,8 @@ try {
   try { Set-MgmtProjectInterval 'Shirube Global Auto Sync' 30; $gGuard = $false } catch { $gGuard = ($_.Exception.Message.Contains('Project')) }
   Assert ($gGuard) 'F9 Global task interval change refused (Project only)'
   $ivCur = Get-MgmtProjectInterval
-  Assert (($ivCur -ge 5) -and ($ivCur -le 1440)) 'F9 current Project interval reads in range (read-only)'
+  Assert (($ivCur -eq 17) -and (@($script:mockTaskCalls | Where-Object { $_ -like 'get:*' }).Count -ge 1)) 'F9 current Project interval reads the mocked task (no real task dependency)'
+  Assert ((@($script:mockTaskCalls | Where-Object { $_ -like 'set:*' }).Count -eq 0)) 'F9 read-only interval checks never write the scheduler'
 
   # F15: export (no secrets) / import preview merge / import adds only
   $exp = Get-MgmtExport $auto
@@ -264,7 +290,7 @@ exit /b 0
     Set-Content -LiteralPath (Join-Path $scratch 'counter.txt') '0' -Encoding Ascii
     $codeReq = Invoke-ProjectSync -RequestPath $reqFile
     $callsReq = @(Get-Content -LiteralPath (Join-Path $scratch 'calls.log') -ErrorAction SilentlyContinue)
-    Assert (($codeReq -eq 0) -and ($callsReq.Count -eq 2) -and ((($callsReq | Where-Object { $_ -like '*syncB*' }) | Measure-Object).Count -ge 0)) 'F8 backend request file filters to syncB'
+    Assert (($codeReq -eq 0) -and ($callsReq.Count -eq 2) -and (@($callsReq | Where-Object { $_ -like '*syncB*' }).Count -ge 1) -and (@($callsReq | Where-Object { $_ -like '*syncA*' }).Count -eq 0)) 'F8 backend request file filters to syncB'
     Assert (((Get-Location).Path) -eq $c0) 'F8 backend cwd restored'
   } finally {
     $env:PATH = $oPath
@@ -313,9 +339,24 @@ exit /b 0
     Assert (($pe2.Count -eq 0)) 'M0 dashboard PS syntax ok'
   } catch { Assert ($false) 'M0 PS syntax check ran' }
 
-  # Live server on scratch port: end-to-end through HTTP
+  # Live server on scratch port: end-to-end through HTTP. The scratch launcher
+  # installs the same scheduler shadows, so the server process never reads the
+  # real Project task either.
+  $srvStub = Join-Path $scratch 'dashboard-stub.ps1'
+  $srvStubText = @'
+$ErrorActionPreference = 'Stop'
+function Get-ScheduledTask { [CmdletBinding()] param([string]$TaskName)
+  $tr = [pscustomobject]@{ CimClass = [pscustomobject]@{ CimClassName = 'MSFT_TaskTimeTrigger' }; Repetition = [pscustomobject]@{ Interval = 'PT17M' } }
+  return [pscustomobject]@{ TaskName = [string]$TaskName; State = 'Ready'; Triggers = @($tr) }
+}
+function Set-ScheduledTask { [CmdletBinding()] param([string]$TaskName, $Trigger) return [pscustomobject]@{ TaskName = [string]$TaskName } }
+function Disable-ScheduledTask { [CmdletBinding()] param([string]$TaskName) }
+function Enable-ScheduledTask { [CmdletBinding()] param([string]$TaskName) }
+& '__SERVER__'
+'@
+  Set-Content -LiteralPath $srvStub ($srvStubText.Replace('__SERVER__', (Join-Path $devAuto 'Dashboard-Server.ps1'))) -Encoding UTF8
   $env:DASHBOARD_PORT = '18797'
-  $srv = Start-Process -FilePath 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe' -ArgumentList '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $devAuto 'Dashboard-Server.ps1') -WindowStyle Hidden -PassThru
+  $srv = Start-Process -FilePath 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe' -ArgumentList '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', ('"' + $srvStub + '"') -WindowStyle Hidden -PassThru
   try {
     $ok = $false
     for ($i = 0; $i -lt 20; $i++) {
@@ -381,7 +422,7 @@ exit 0
       # F9 interval-get via HTTP (read-only)
       $ivResp = Invoke-WebRequest -UseBasicParsing -TimeoutSec 8 -Headers $hdrs 'http://127.0.0.1:18797/api/interval-get'
       $ivJ = ($ivResp.Content | ConvertFrom-Json)
-      Assert (([int]$ivJ.minutes -ge 5)) 'L9 interval-get returns minutes'
+      Assert (([int]$ivJ.minutes -eq 17)) 'L9 interval-get returns the mocked interval (no real task)'
       $ivPut = $true; $ivCode = 0
       # minutes=3 fails validation before any scheduler write (production untouched).
       try { Post '/api/interval-set' @{ minutes = 3; confirm = $true } | Out-Null } catch { $ivPut = $false; $ivCode = $_.Exception.Response.StatusCode.value__ }
