@@ -103,7 +103,7 @@ function Invoke-GlobalSync {
 
   $ErrorActionPreference = 'Stop'
   # One version per run: install, check, dry-run and generate all use this value.
-  $ShirubeVersion = [string](Get-ShirubeSetting -Name 'rulesyncVersion' -Default '32.0.0')
+  $ShirubeVersion = [string](Get-ShirubeSetting -Name 'rulesyncVersion' -Default '42.0.0')
   $Pkg = 'rulesync@' + $ShirubeVersion
 
   $script:GblHaveTargets = $false
@@ -272,7 +272,7 @@ function Invoke-GlobalSync {
     $Targets = ($EffArr -join ',')
     # Provider env overrides are checked before ANY CLI process or home write.
     Assert-GlobalProviderEnvironment $EffArr
-    # rulesync 32 also patches a top-level language into Claude's shared
+    # rulesync 42 also patches a top-level language into Claude's shared
     # ~/.claude/settings.json under --features rules. That file is outside the
     # reviewed/backed-up fixed rule paths, so refuse rather than write it
     # unpreviewed. Only the selected target matters, and both config files

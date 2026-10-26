@@ -76,7 +76,7 @@ try {
 
   # T1: Set-GlobalInterval reads the task name once; a settings change between
   # Get-ScheduledTask and Set-ScheduledTask must not retarget the task.
-  Set-TestSettings 'Shirube Global Auto Sync' 'Shirube Project Auto Sync' '32.0.0'
+  Set-TestSettings 'Shirube Global Auto Sync' 'Shirube Project Auto Sync' '42.0.0'
   $script:taskCalls = @()
   $script:setCalls = @()
   $script:settingReads = @()
@@ -89,7 +89,7 @@ try {
 
   # T2: Set-MgmtProjectInterval enables exactly one task-name read per call and
   # keeps Get-ScheduledTask and Set-ScheduledTask on the same name.
-  Set-TestSettings 'Shirube Global Auto Sync' 'Shirube Project Auto Sync' '32.0.0'
+  Set-TestSettings 'Shirube Global Auto Sync' 'Shirube Project Auto Sync' '42.0.0'
   $script:taskCalls = @()
   $script:setCalls = @()
   $script:settingReads = @()
@@ -112,13 +112,13 @@ try {
   $versionReads = @($script:settingReads | Where-Object { $_ -ceq 'rulesyncVersion' }).Count
   $ok = (($argvDefault -contains 'rulesync@9.9.9') -and ($versionReads -eq 1))
   Assert $ok 'T3 omitted version still reads settings once (existing behavior)'
-  Set-TestSettings 'Shirube Global Auto Sync' 'Shirube Project Auto Sync' '32.0.0'
+  Set-TestSettings 'Shirube Global Auto Sync' 'Shirube Project Auto Sync' '42.0.0'
   $argvFallback = @(Get-GlobalGenerateArgv 'codexcli,opencode' 'dry-run')
-  Assert ($argvFallback -contains 'rulesync@32.0.0') 'T3 default version is unchanged'
+  Assert ($argvFallback -contains 'rulesync@42.0.0') 'T3 default version is unchanged'
 
   # T4: one operation resolves the version once; later settings edits do not
   # leak into check/dry-run/generate argv.
-  $runVersion = [string](Get-ShirubeSetting -Name 'rulesyncVersion' -Default '32.0.0')
+  $runVersion = [string](Get-ShirubeSetting -Name 'rulesyncVersion' -Default '42.0.0')
   Set-TestSettings 'Shirube Global Auto Sync' 'Shirube Project Auto Sync' '9.9.9'
   $versions = @()
   foreach ($mode in @('', 'check', 'dry-run')) {
@@ -127,7 +127,7 @@ try {
       if ($m.Success) { $versions += $m.Groups[1].Value }
     }
   }
-  $ok = ((@($versions | Select-Object -Unique).Count -eq 1) -and ($versions[0] -ceq '32.0.0'))
+  $ok = ((@($versions | Select-Object -Unique).Count -eq 1) -and ($versions[0] -ceq '42.0.0'))
   Assert $ok 'T4 one operation keeps a single generate version'
 
   # T5: the sync entry points pin that version for every generate call.
@@ -142,7 +142,7 @@ try {
   # T6: an import pins the Project task for preview, apply, verification and
   # rollback. If settings switch A->B mid-apply, B's interval must never be the
   # reason to skip the rollback check on A (review repro: A=15, B=15, apply 30).
-  Set-TestSettings 'Shirube Global Auto Sync' 'TaskA' '32.0.0'
+  Set-TestSettings 'Shirube Global Auto Sync' 'TaskA' '42.0.0'
   $script:intervals = @{ TaskA = 15; TaskB = 15 }
   $script:taskCalls = @()
   $script:setCalls = @()
@@ -152,7 +152,7 @@ try {
   $script:onSet = {
     param([string]$TaskName)
     if (($TaskName -ceq 'TaskA') -and ([int]$script:intervals['TaskA'] -eq 30)) {
-      Set-TestSettings 'Shirube Global Auto Sync' 'TaskB' '32.0.0'
+      Set-TestSettings 'Shirube Global Auto Sync' 'TaskB' '42.0.0'
     }
   }
   $impErr = $null
@@ -167,6 +167,17 @@ try {
   Assert $ok 'T6 a mid-apply switch to B never hides the uncompensated A interval'
   Assert ([int]$script:intervals['TaskA'] -eq 30) 'T6 the A write is the only scheduler change'
   Assert ([int]$script:intervals['TaskB'] -eq 15) 'T6 B stays untouched by the import'
+
+  # T7: the shipped fallback is the exact pinned 42.0.0 (never a floating
+  # range), and the example settings use the same value.
+  $versionPattern = "Get-ShirubeSetting -Name 'rulesyncVersion' -Default '42\.0\.0'"
+  foreach ($rel in @('Global-Management.ps1', 'Sync-GlobalRules.ps1', 'Sync-ProjectRules.ps1')) {
+    $txt = Get-Content -LiteralPath (Join-Path $devAuto $rel) -Raw
+    Assert ([regex]::IsMatch($txt, $versionPattern)) ('T7 ' + $rel + ' falls back to exact 42.0.0')
+    Assert (-not [regex]::IsMatch($txt, "rulesyncVersion' -Default '32\.0\.0'")) ('T7 ' + $rel + ' has no 32.0.0 fallback')
+  }
+  $example = Get-Content -LiteralPath (Join-Path $devAuto 'settings.example.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+  Assert ([string]$example.rulesyncVersion -ceq '42.0.0') 'T7 settings.example.json pins 42.0.0'
 }
 finally {
   if (Test-Path -LiteralPath $scratch) {

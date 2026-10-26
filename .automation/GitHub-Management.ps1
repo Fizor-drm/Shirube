@@ -619,24 +619,24 @@ function Set-GitHubFile([string]$AutoDir, [string]$RelPath, [string]$Text, [stri
   return @{ ok = $true; sha = $newSha; path = $rel }
 }
 
-# rulesync 32.0.0 ToolTarget enum (dist/index.d.ts). A target outside this list
+# rulesync 42.0.0 ToolTarget enum (dist/index.d.ts). A target outside this list
 # (for example `claude-code`; the canonical slug is `claudecode`) makes the
 # pinned CLI reject the rule, so the editor refuses it before the PUT.
-# shortcut: pinned to 32.0.0; refresh when rulesyncVersion moves past 32.
+# shortcut: pinned to 42.0.0; refresh when rulesyncVersion moves past 42.
 $script:GitHubRuleTargets = @(
-  'agentsmd', 'agentsskills', 'aiassistant', 'amp',
+  'agentsmd', 'agentsskills', 'aiassistant', 'amp', 'androidstudio',
   'antigravity-cli', 'antigravity-ide', 'antigravity-plugin',
   'augmentcode', 'augmentcode-legacy', 'augmentcode-plugin', 'bob',
   'claudecode', 'claudecode-legacy', 'claudecode-plugin', 'cline',
   'codebuddy', 'codebuff', 'codewhale', 'codexcli', 'commandcode',
   'continue', 'copilot', 'copilotcli', 'cortexcode', 'crush', 'cursor',
   'deepagents', 'devin', 'devin-plugin', 'dsh', 'factorydroid',
-  'gitlabduo', 'goose', 'grokcli', 'hermesagent', 'junie', 'kilo',
+  'firebender', 'gitlabduo', 'goose', 'grokcli', 'hermesagent', 'junie', 'kilo',
   'kimi-code', 'kimi-code-plugin', 'kiro', 'kiro-cli', 'kiro-ide',
   'lettacode', 'mimocode', 'musecode', 'omp', 'openclaw', 'opencode',
-  'pi', 'pool', 'qoder', 'qwencode', 'reasonix', 'replit', 'roo',
+  'opencodev1', 'pi', 'pool', 'qoder', 'qwencode', 'reasonix', 'replit', 'roo',
   'rovodev', 'tabnine', 'takt', 'trae', 'vibe', 'vibe-plugin', 'warp',
-  'warpcli', 'zcode', 'zcode-plugin', 'zed', 'zoocode'
+  'warpcli', 'xum', 'zcode', 'zcode-plugin', 'zed', 'zoocode'
 )
 
 # Rule editor frontmatter contract: the same strict line gate as

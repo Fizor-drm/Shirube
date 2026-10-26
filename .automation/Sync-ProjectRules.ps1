@@ -22,7 +22,7 @@ function Invoke-ProjectSync {
 
   $ErrorActionPreference = 'Stop'
   $Targets = 'codexcli,opencode'
-  $Pkg = 'rulesync@' + (Get-ShirubeSetting -Name 'rulesyncVersion' -Default '32.0.0')
+  $Pkg = 'rulesync@' + (Get-ShirubeSetting -Name 'rulesyncVersion' -Default '42.0.0')
 
   $AutoDir = $PSScriptRoot
   $PreviewDir = Join-Path (Split-Path $AutoDir -Parent) 'project-common-preview'

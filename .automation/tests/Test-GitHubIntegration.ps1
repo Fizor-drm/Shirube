@@ -324,11 +324,12 @@ try {
   Assert (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + 'description: "common"  ' + $nl + '---' + $nl) 'project') 'T6b description trailing whitespace accepted'
   Assert (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["*"]  ' + $nl + '---' + $nl) 'global') 'T6b wildcard trailing whitespace accepted'
   Assert (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true  # comment  ' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + '---' + $nl) 'project') 'T6b whitespace around a comment accepted'
-  # rulesync 32.0.0 accepts only its ToolTarget enum: `claude-code` is not a
+  # rulesync 42.0.0 accepts only its ToolTarget enum: `claude-code` is not a
   # target (the canonical slug is `claudecode`) and breaks the next sync.
   Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode", "claude-code"]' + $nl + '---' + $nl) 'project')) 'T6b unsupported project target rejected'
   Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["claude-code"]' + $nl + '---' + $nl) 'global')) 'T6b unsupported global target rejected'
   Assert (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode", "claudecode"]' + $nl + '---' + $nl) 'project') 'T6b canonical claudecode target accepted'
+  Assert (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode", "androidstudio", "firebender", "opencodev1", "xum"]' + $nl + '---' + $nl) 'project') 'T6b rulesync 42 targets accepted'
 
   # T6c: read and write one rule file through the shared helpers.
   Save-GitHubSettings $auto 'Fizor-drm/ai-agent-rules' 'dev' 'rules' | Out-Null
