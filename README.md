@@ -241,7 +241,15 @@ description: "このプロジェクト固有のルール"
 
 Project の frontmatter は決まった形式だけを受け付けます。3 つのキーを 1 行ずつ、インデントなしで書いてください。キーの引用、ブロック形式（`|` / `>`）、未知のキー、`root` と `localRoot` の混在は拒否されます。`targets` は `["codexcli", "opencode"]` のままにし、`description` は二重引用符で囲みます。本文には Markdown でルールを書きます。Global の frontmatter は rulesync の YAML 形式に従い、`root: true` と `description` を書き、`targets` は固定しません。
 
-ルールエディターは保存前に、`settings.json` の `rulesyncVersion` と `targets` の互換性を検証します。既定の `42.0.0` は rulesync 42 の全ターゲットを許可します。`32.0.0` 以上 `42.0.0` 未満は 32.0.0 で確認済みのターゲットだけを許可するため、42 で追加された `androidstudio`、`firebender`、`opencodev1`、`xum` は保存できません。それ以外のバージョン（範囲指定・タグ・31 以前・42.0 系より後の版）は互換性を確認できないため、保存を拒否します。新しいターゲットを使うときは `rulesyncVersion` を `42.0.0` に上げてください。
+ルールエディターは保存前に、`settings.json` の `rulesyncVersion` に応じて `targets` を検証します。
+
+| 指定版 | 保存時の許可範囲 |
+| --- | --- |
+| `42.0.x`（既定 `42.0.0`） | 42.0.0で確認済みの71名 |
+| `32.0.0`～`41.x` | 32.0.0で確認済みの67名に保守的に制限。中間版で追加済みでも、`androidstudio`、`firebender`、`opencodev1`、`xum` は拒否 |
+| その他・範囲指定・タグ | 未検証のため保存を拒否 |
+
+新しいターゲットを使うときは `42.0.0` に固定してください。この許可範囲は、Globalの同期対象18種やProjectの生成対象2種を増やすものではありません。Projectルールは `codexcli` と `opencode` が必須で、追加の許可済みターゲットを記述しても本アプリのProject同期対象は変わりません。
 
 共通ルールを変えた場合は、GitHub へ反映した内容が次の同期で取得されます。プロジェクト固有ルールはローカルファイルの変更がそのまま次の同期で反映されます。`AGENTS.md` は生成物なので編集しないでください。
 
@@ -260,7 +268,7 @@ Project の frontmatter は決まった形式だけを受け付けます。3 つ
 
 ## 設定
 
-自動同期のタスク名と、使う rulesync のバージョンは `settings.json` で変更できます。置き場所は `Settings.ps1` と同じフォルダ（コードと同一ディレクトリ）です。保護コピーでは `%LOCALAPPDATA%\Shirube\.automation\settings.json` になります。
+自動同期のタスク名と、使う rulesync のバージョンは `settings.json` で変更できます。通常の置き場所は `Settings.ps1` と同じフォルダです。保護コピーでは `%LOCALAPPDATA%\Shirube\.automation\settings.json` になります。`DASHBOARD_AUTODIR` で管理先を変えた場合、ルール保存の版互換性検証はその管理先の `settings.json` を参照します。
 
 | キー | 意味 | 既定値 |
 | --- | --- | --- |

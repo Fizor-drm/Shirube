@@ -241,7 +241,15 @@ description: "Rules specific to this project"
 
 Project frontmatter accepts only the fixed format. Write the three keys one per line with no indentation. Quoted keys, block scalars (`|` / `>`), unknown keys, and mixing `root` with `localRoot` are rejected. Keep `targets` as `["codexcli", "opencode"]` and wrap `description` in double quotes. Write the rules themselves as Markdown in the body. Global frontmatter follows rulesync's YAML format: include `root: true` and `description`, and do not pin `targets`.
 
-The rule editor validates `targets` against the `rulesyncVersion` in `settings.json` before saving. The default `42.0.0` allows every rulesync 42 target. Versions from `32.0.0` up to (but not including) `42.0.0` allow only the targets verified in 32.0.0, so the four slugs added in 42 (`androidstudio`, `firebender`, `opencodev1`, `xum`) cannot be saved there. Other versions (ranges, tags, 31 and earlier, or releases after the 42.0 line) are refused because their target list is unverified. Raise `rulesyncVersion` to `42.0.0` to use the new targets.
+Before saving, the rule editor validates `targets` using the `rulesyncVersion` in `settings.json`.
+
+| Configured version | Targets accepted for saving |
+| --- | --- |
+| `42.0.x` (default `42.0.0`) | The 71 names verified in 42.0.0 |
+| `32.0.0`–`41.x` | Conservatively limited to the 67 names verified in 32.0.0. `androidstudio`, `firebender`, `opencodev1`, and `xum` are rejected even if an intermediate release supports them |
+| Other versions, ranges, or tags | Saving is refused because compatibility is unverified |
+
+Pin `42.0.0` to use the newer targets. This validation does not expand the 18 Global sync providers or the two Project generation targets. Project rules must include `codexcli` and `opencode`; additional accepted names do not expand this application's Project sync scope.
 
 Changes to shared rules are picked up from GitHub on the next sync. For project-specific rules, local file changes take effect on the next sync. `AGENTS.md` is generated, so do not edit it.
 
@@ -260,7 +268,7 @@ Registering and unregistering projects changes only `projects.json`; sync genera
 
 ## Settings
 
-You can change the automatic sync task names and the rulesync version in `settings.json`. It lives in the same folder as `Settings.ps1` (the same directory as the code); in the protected copy that is `%LOCALAPPDATA%\Shirube\.automation\settings.json`.
+You can change the automatic sync task names and rulesync version in `settings.json`, normally beside `Settings.ps1`. In the protected copy that is `%LOCALAPPDATA%\Shirube\.automation\settings.json`. If `DASHBOARD_AUTODIR` points elsewhere, rule-save version validation reads `settings.json` from that managed directory.
 
 | Key | Meaning | Default |
 | --- | --- | --- |

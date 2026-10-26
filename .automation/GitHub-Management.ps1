@@ -648,9 +648,9 @@ $script:GitHubRuleTargets42 = @(
   'rovodev', 'tabnine', 'takt', 'trae', 'vibe', 'vibe-plugin', 'warp',
   'warpcli', 'xum', 'zcode', 'zcode-plugin', 'zed', 'zoocode'
 )
-# The four slugs added in 42.0.0. The 32.0.0 enum (kept as the compatibility
-# fixture) is the 42 list without them, so 32.0.0 through 41.x reuse the 67
-# targets that are known to exist there.
+# These slugs exist in 42.0.0 but not 32.0.0. Intermediate releases may
+# already support some of them; older pins conservatively use the verified
+# 32.0.0 baseline rather than an unverified intermediate schema.
 $script:GitHubRuleTargets42Only = @('androidstudio', 'firebender', 'opencodev1', 'xum')
 $script:GitHubRuleTargets32 = @($script:GitHubRuleTargets42 | Where-Object { $script:GitHubRuleTargets42Only -cnotcontains $_ })
 # Default for direct validator callers that do not pass a configured version.
