@@ -1918,7 +1918,7 @@ exit $c
   . $MgmtModule
 
   # R7 (r7 #3): staged CLI runs from the directory containing UseConfig.
-  # The guard shim mirrors the installed rulesync32 resolver: --config must be
+  # The guard shim mirrors the installed rulesync42 resolver: --config must be
   # contained in the process cwd (path-traversal guard). Staged preview/apply
   # runs from the install cwd are rejected; runs from the config dir succeed.
   # Literal .Replace (never -replace) carries the $env:/$c/$r/$s batch text.
@@ -2025,11 +2025,11 @@ exit $c
   Assert (-not (([string]$row7fA.error).Contains('dummy-pre-token-AAA'))) 'R7 failure detail carries no raw secret'
   $row7fB = @($plan7f.projects | Where-Object { [string]$_.name -ceq 'projB' })[0]
   Assert (([string]$row7fB.result -ceq 'success')) 'R7 sibling project still succeeds after failure'
-  # R7e: installed rulesync32 offline fixture (direct node, no npx/network).
+  # R7e: installed rulesync42 offline fixture (direct node, no npx/network).
   # Same-drive non-ancestor cwd must fail the config guard; the config dir
   # must dry-run, generate one AGENTS artifact, and parse both markers.
-  # Resolve node and the rulesync 32 package from this machine so the checkout
-  # is not tied to one user profile. One `npx --yes rulesync@32.0.0` populates the cache.
+  # Resolve node and the rulesync 42 package from this machine so the checkout
+  # is not tied to one user profile. One `npx --yes rulesync@42.0.0` populates the cache.
   $nodeCmd7 = Get-Command node -ErrorAction SilentlyContinue
   $nodeExe7 = ''
   if ($null -ne $nodeCmd7) { $nodeExe7 = [string]$nodeCmd7.Source }
@@ -2060,13 +2060,13 @@ exit $c
       if (-not ((Test-Path -LiteralPath $js7 -PathType Leaf) -and (Test-Path -LiteralPath $json7 -PathType Leaf))) { continue }
       $ver7 = ''
       try { $ver7 = [string](Get-Content -LiteralPath $json7 -Raw -Encoding UTF8 | ConvertFrom-Json).version } catch { $ver7 = '' }
-      if ($ver7 -like '32.*') { $cliJs7 = $js7; break }
+      if ($ver7 -ceq '42.0.0') { $cliJs7 = $js7; break }
     }
     if ($cliJs7) { break }
   }
   $have7 = (($nodeExe7.Length -gt 0) -and (Test-Path -LiteralPath $nodeExe7 -PathType Leaf) -and ($cliJs7.Length -gt 0) -and (Test-Path -LiteralPath $cliJs7 -PathType Leaf))
-  if ($have7) { Assert $have7 'R7e installed rulesync32 tool present (offline)' }
-  else { Write-Host 'SKIP: R7e installed rulesync32 tool present (offline) - node is not on PATH or rulesync 32 is not in the npx cache (run `npx --yes rulesync@32.0.0` once)' }
+  if ($have7) { Assert $have7 'R7e installed rulesync42 tool present (offline)' }
+  else { Write-Host 'SKIP: R7e installed rulesync42 tool present (offline) - node is not on PATH or rulesync 42 is not in the npx cache (run `npx --yes rulesync@42.0.0` once)' }
   if ($have7) {
     $fx7 = Join-Path $scratch ('cli32-' + [System.Guid]::NewGuid().ToString('N'))
     $st7 = Join-Path $fx7 'staged'

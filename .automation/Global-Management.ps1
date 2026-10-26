@@ -415,7 +415,7 @@ function Get-GlobalTargetsArg([string[]]$Targets) { return ($Targets -join ',') 
 # Shared generate argv so sync and preview never duplicate fetch/generate logic.
 # Version is resolved once per operation and passed in; omitted means read settings.
 function Get-GlobalGenerateArgv([string]$TargetsArg, [string]$Mode, [string]$Version = '') {
-  if (-not $Version) { $Version = [string](Get-ShirubeSetting -Name 'rulesyncVersion' -Default '32.0.0') }
+  if (-not $Version) { $Version = [string](Get-ShirubeSetting -Name 'rulesyncVersion' -Default '42.0.0') }
   $Pkg = 'rulesync@' + $Version
   $base = @('--yes', $Pkg, 'generate', '--global', '--targets', $TargetsArg, '--features', 'rules')
   if ($Mode -ceq 'check') { return ($base + @('--check')) }
@@ -443,7 +443,7 @@ function Resolve-GlobalHomeBase([string]$NodeExe = '') {
   return $hb
 }
 
-# rulesync 32.0.0 resolves KIMI_CODE_HOME before HOME_DIR for global kimi-code
+# rulesync 42.0.0 resolves KIMI_CODE_HOME before HOME_DIR for global kimi-code
 # output, so a set override would write outside the confirmed home. Fail closed
 # before any CLI or preview write; whitespace is ignored by rulesync itself.
 function Assert-GlobalProviderEnvironment([string[]]$Targets = @()) {

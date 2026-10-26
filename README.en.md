@@ -6,7 +6,7 @@ Shirube generates the `AGENTS.md` files that Codex, OpenCode and 16 other suppor
 
 ![Windows 10 / 11](https://img.shields.io/badge/OS-Windows%2010%20%2F%2011-0078D4?logo=windows&logoColor=white)
 ![Windows PowerShell 5.1](https://img.shields.io/badge/PowerShell-5.1-5391FE?logo=powershell&logoColor=white)
-![rulesync 32.0.0](https://img.shields.io/badge/rulesync-32.0.0-2F6F44)
+![rulesync 42.0.0](https://img.shields.io/badge/rulesync-42.0.0-2F6F44)
 ![Global 18 CLIs / Project 2](https://img.shields.io/badge/targets-Global%2018%20CLIs%20%2F%20Project%202-111827)
 [![MIT License](https://img.shields.io/badge/license-MIT-2EA043)](LICENSE)
 
@@ -77,9 +77,9 @@ The dashboard runs as a separate process from this flow and handles preview, app
 | --- | --- |
 | OS | Windows 10 / 11 |
 | PowerShell | Windows PowerShell 5.1 (`powershell.exe`) |
-| Node.js | `npx` and `node` can be run from PATH |
+| Node.js | 22.0.0 or later (`npx` and `node` can be run from PATH) |
 | GitHub CLI | `gh` is on PATH and `gh auth login` has been completed |
-| rulesync | `rulesyncVersion` in `settings.json` (default `32.0.0`) |
+| rulesync | `rulesyncVersion` in `settings.json` (default `42.0.0`) |
 | Git | For cloning the repository |
 | Rules repository | One GitHub repository containing `rules/global.md` and `rules/project.md` |
 
@@ -241,6 +241,16 @@ description: "Rules specific to this project"
 
 Project frontmatter accepts only the fixed format. Write the three keys one per line with no indentation. Quoted keys, block scalars (`|` / `>`), unknown keys, and mixing `root` with `localRoot` are rejected. Keep `targets` as `["codexcli", "opencode"]` and wrap `description` in double quotes. Write the rules themselves as Markdown in the body. Global frontmatter follows rulesync's YAML format: include `root: true` and `description`, and do not pin `targets`.
 
+Before saving, the rule editor validates `targets` using the `rulesyncVersion` in `settings.json`.
+
+| Configured version | Targets accepted for saving |
+| --- | --- |
+| `42.0.x` (default `42.0.0`) | The 71 names verified in 42.0.0 |
+| `32.0.0`–`41.x` | Conservatively limited to the 67 names verified in 32.0.0. `androidstudio`, `firebender`, `opencodev1`, and `xum` are rejected even if an intermediate release supports them |
+| Other versions, ranges, or tags | Saving is refused because compatibility is unverified |
+
+Pin `42.0.0` to use the newer targets. This validation does not expand the 18 Global sync providers or the two Project generation targets. Project rules must include `codexcli` and `opencode`; additional accepted names do not expand this application's Project sync scope.
+
 Changes to shared rules are picked up from GitHub on the next sync. For project-specific rules, local file changes take effect on the next sync. `AGENTS.md` is generated, so do not edit it.
 
 ## Dashboard
@@ -258,13 +268,13 @@ Registering and unregistering projects changes only `projects.json`; sync genera
 
 ## Settings
 
-You can change the automatic sync task names and the rulesync version in `settings.json`. It lives in the same folder as `Settings.ps1` (the same directory as the code); in the protected copy that is `%LOCALAPPDATA%\Shirube\.automation\settings.json`.
+You can change the automatic sync task names and rulesync version in `settings.json`, normally beside `Settings.ps1`. In the protected copy that is `%LOCALAPPDATA%\Shirube\.automation\settings.json`. If `DASHBOARD_AUTODIR` points elsewhere, rule-save version validation reads `settings.json` from that managed directory.
 
 | Key | Meaning | Default |
 | --- | --- | --- |
 | `taskNameGlobal` | Windows task name for Global automatic sync | `Shirube Global Auto Sync` |
 | `taskNameProject` | Windows task name for Project automatic sync | `Shirube Project Auto Sync` |
-| `rulesyncVersion` | rulesync version to use | `32.0.0` |
+| `rulesyncVersion` | rulesync version to use | `42.0.0` |
 
 If you rename a task, use the same name for the task in Windows Task Scheduler. If the names differ, the task cannot be found, and interval changes, enable/disable changes, and the pause before a restore fail.
 
@@ -348,7 +358,7 @@ node .automation\tests\Test-DashboardGenerationRace.mjs
 
 T13a / T13b in `Test-SyncProjectRules.ps1` pass only where you have permission to create symbolic links (Developer Mode or an administrator). Without that permission they are recorded as failures; skipping is not treated as success.
 
-R7e in `Test-ReviewFixes.ps1` resolves `node` from PATH and rulesync 32 from the npx package cache. If either is missing it is shown as skipped, not as a failure. Running `npx --yes rulesync@32.0.0` once makes it verifiable.
+R7e in `Test-ReviewFixes.ps1` resolves `node` from PATH and rulesync 42 from the npx package cache. If either is missing it is shown as skipped, not as a failure. Running `npx --yes rulesync@42.0.0` once makes it verifiable. The npx cache is shared per user, so only the first run needs network access.
 
 </details>
 

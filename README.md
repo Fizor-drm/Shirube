@@ -6,7 +6,7 @@ GitHub のルールリポジトリと各プロジェクトのローカルルー�
 
 ![Windows 10 / 11](https://img.shields.io/badge/OS-Windows%2010%20%2F%2011-0078D4?logo=windows&logoColor=white)
 ![Windows PowerShell 5.1](https://img.shields.io/badge/PowerShell-5.1-5391FE?logo=powershell&logoColor=white)
-![rulesync 32.0.0](https://img.shields.io/badge/rulesync-32.0.0-2F6F44)
+![rulesync 42.0.0](https://img.shields.io/badge/rulesync-42.0.0-2F6F44)
 ![Global 18 CLIs / Project 2](https://img.shields.io/badge/targets-Global%2018%20CLIs%20%2F%20Project%202-111827)
 [![MIT License](https://img.shields.io/badge/license-MIT-2EA043)](LICENSE)
 
@@ -77,9 +77,9 @@ rulesync は `--features rules` で `AGENTS.md` を生成します。Global は 
 | --- | --- |
 | OS | Windows 10 / 11 |
 | PowerShell | Windows PowerShell 5.1（`powershell.exe`） |
-| Node.js | `npx` と `node` が PATH から実行できること |
+| Node.js | 22.0.0 以上（`npx` と `node` が PATH から実行できること） |
 | GitHub CLI | `gh` が PATH にあり、`gh auth login` 済みであること |
-| rulesync | `settings.json` の `rulesyncVersion`（既定 `32.0.0`） |
+| rulesync | `settings.json` の `rulesyncVersion`（既定 `42.0.0`） |
 | Git | リポジトリのクローン用 |
 | ルール保管用リポジトリ | GitHub 上の 1 リポジトリ（`rules/global.md` と `rules/project.md`） |
 
@@ -241,6 +241,16 @@ description: "このプロジェクト固有のルール"
 
 Project の frontmatter は決まった形式だけを受け付けます。3 つのキーを 1 行ずつ、インデントなしで書いてください。キーの引用、ブロック形式（`|` / `>`）、未知のキー、`root` と `localRoot` の混在は拒否されます。`targets` は `["codexcli", "opencode"]` のままにし、`description` は二重引用符で囲みます。本文には Markdown でルールを書きます。Global の frontmatter は rulesync の YAML 形式に従い、`root: true` と `description` を書き、`targets` は固定しません。
 
+ルールエディターは保存前に、`settings.json` の `rulesyncVersion` に応じて `targets` を検証します。
+
+| 指定版 | 保存時の許可範囲 |
+| --- | --- |
+| `42.0.x`（既定 `42.0.0`） | 42.0.0で確認済みの71名 |
+| `32.0.0`～`41.x` | 32.0.0で確認済みの67名に保守的に制限。中間版で追加済みでも、`androidstudio`、`firebender`、`opencodev1`、`xum` は拒否 |
+| その他・範囲指定・タグ | 未検証のため保存を拒否 |
+
+新しいターゲットを使うときは `42.0.0` に固定してください。この許可範囲は、Globalの同期対象18種やProjectの生成対象2種を増やすものではありません。Projectルールは `codexcli` と `opencode` が必須で、追加の許可済みターゲットを記述しても本アプリのProject同期対象は変わりません。
+
 共通ルールを変えた場合は、GitHub へ反映した内容が次の同期で取得されます。プロジェクト固有ルールはローカルファイルの変更がそのまま次の同期で反映されます。`AGENTS.md` は生成物なので編集しないでください。
 
 ## 管理画面
@@ -258,13 +268,13 @@ Project の frontmatter は決まった形式だけを受け付けます。3 つ
 
 ## 設定
 
-自動同期のタスク名と、使う rulesync のバージョンは `settings.json` で変更できます。置き場所は `Settings.ps1` と同じフォルダ（コードと同一ディレクトリ）です。保護コピーでは `%LOCALAPPDATA%\Shirube\.automation\settings.json` になります。
+自動同期のタスク名と、使う rulesync のバージョンは `settings.json` で変更できます。通常の置き場所は `Settings.ps1` と同じフォルダです。保護コピーでは `%LOCALAPPDATA%\Shirube\.automation\settings.json` になります。`DASHBOARD_AUTODIR` で管理先を変えた場合、ルール保存の版互換性検証はその管理先の `settings.json` を参照します。
 
 | キー | 意味 | 既定値 |
 | --- | --- | --- |
 | `taskNameGlobal` | Global 自動同期の Windows タスク名 | `Shirube Global Auto Sync` |
 | `taskNameProject` | Project 自動同期の Windows タスク名 | `Shirube Project Auto Sync` |
-| `rulesyncVersion` | 使用する `rulesync` のバージョン | `32.0.0` |
+| `rulesyncVersion` | 使用する `rulesync` のバージョン | `42.0.0` |
 
 タスク名を変えるときは、Windows の「タスク スケジューラ」側のタスク名も同じ名前にしてください。名前が違うと対象のタスクが見つからず、間隔変更・有効/無効の切替・復元前の休止が失敗します。
 
@@ -348,7 +358,7 @@ node .automation\tests\Test-DashboardGenerationRace.mjs
 
 `Test-SyncProjectRules.ps1` の T13a / T13b は、シンボリックリンクを作成できる権限（開発者モードまたは管理者）がある環境でのみ通ります。権限がない環境では失敗として記録され、スキップは成功扱いになりません。
 
-`Test-ReviewFixes.ps1` の R7e は、`node` を PATH から、rulesync 32 を npx のパッケージキャッシュから解決します。どちらかが見つからない場合はスキップとして表示され、失敗にはなりません。`npx --yes rulesync@32.0.0` を一度実行すると検証できます。
+`Test-ReviewFixes.ps1` の R7e は、`node` を PATH から、rulesync 42 を npx のパッケージキャッシュから解決します。どちらかが見つからない場合はスキップとして表示され、失敗にはなりません。`npx --yes rulesync@42.0.0` を一度実行すると検証できます。npx のキャッシュはユーザー単位で共有されるため、初回だけネットワークが必要です。
 
 </details>
 

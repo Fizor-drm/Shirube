@@ -28,6 +28,7 @@ Set-Content -LiteralPath (Join-Path $pPrev 'rulesync.jsonc') -Value $cfgProject 
 # HTTP stub: records calls, serves canned rule files, can fail writes.
 $script:GhCalls = @()
 $script:GhFailWrites = $false
+$script:GhOnGet = $null
 $script:GhFiles = @{}
 function Invoke-RestMethod {
   [CmdletBinding()]
@@ -46,7 +47,9 @@ function Invoke-RestMethod {
     $key = (($Uri -split '\?')[0])
     if (-not $script:GhFiles.ContainsKey($key)) { throw [System.Exception]::new('404 Not Found') }
     $f = $script:GhFiles[$key]
-    return [pscustomobject]@{ sha = $f.sha; content = ($f.content + "`n"); encoding = 'base64' }
+    $resp = [pscustomobject]@{ sha = $f.sha; content = ($f.content + "`n"); encoding = 'base64' }
+    if ($script:GhOnGet) { $cb = $script:GhOnGet; $script:GhOnGet = $null; & $cb }
+    return $resp
   }
   return [pscustomobject]@{ content = @{ sha = 'new-sha' }; commit = @{ sha = 'commit-sha' } }
 }
@@ -324,11 +327,12 @@ try {
   Assert (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + 'description: "common"  ' + $nl + '---' + $nl) 'project') 'T6b description trailing whitespace accepted'
   Assert (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["*"]  ' + $nl + '---' + $nl) 'global') 'T6b wildcard trailing whitespace accepted'
   Assert (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true  # comment  ' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + '---' + $nl) 'project') 'T6b whitespace around a comment accepted'
-  # rulesync 32.0.0 accepts only its ToolTarget enum: `claude-code` is not a
+  # rulesync 42.0.0 accepts only its ToolTarget enum: `claude-code` is not a
   # target (the canonical slug is `claudecode`) and breaks the next sync.
   Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode", "claude-code"]' + $nl + '---' + $nl) 'project')) 'T6b unsupported project target rejected'
   Assert (-not (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["claude-code"]' + $nl + '---' + $nl) 'global')) 'T6b unsupported global target rejected'
   Assert (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode", "claudecode"]' + $nl + '---' + $nl) 'project') 'T6b canonical claudecode target accepted'
+  Assert (Test-GitHubRuleFrontmatter ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode", "androidstudio", "firebender", "opencodev1", "xum"]' + $nl + '---' + $nl) 'project') 'T6b rulesync 42 targets accepted'
 
   # T6c: read and write one rule file through the shared helpers.
   Save-GitHubSettings $auto 'Fizor-drm/ai-agent-rules' 'dev' 'rules' | Out-Null
@@ -396,6 +400,118 @@ try {
   $canonical = Save-GitHubRuleContent $auto 'project' ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode", "claudecode"]' + $nl + '---' + $nl) 'sha-project'
   Assert ($canonical.ok) 'T6e canonical claudecode target saves'
   Assert (@($script:GhCalls | Where-Object { $_.method -ne 'GET' }).Count -eq 1) 'T6e canonical claudecode target commits'
+
+  # T6f: the editor checks target slugs against the configured rulesync version.
+  # 32.0.0 is covered by the previous 67-target schema; the four slugs added in
+  # 42.0.0 must not reach a repository that the next 32 sync cannot read.
+  $providers18 = @('codexcli', 'opencode', 'claudecode', 'cline', 'copilotcli', 'antigravity-cli', 'continue', 'roo', 'goose', 'devin', 'zed', 'crush', 'codebuddy', 'commandcode', 'kimi-code', 'vibe', 'qoder', 'pi')
+  $settingsFile = Join-Path $auto 'settings.json'
+  function Set-TestRulesyncVersion($Version) {
+    if ([string]::IsNullOrEmpty([string]$Version)) { Remove-Item -LiteralPath $settingsFile -Force -ErrorAction SilentlyContinue; return }
+    Set-Content -LiteralPath $settingsFile -Value ('{"rulesyncVersion":"' + $Version + '"}') -Encoding UTF8
+  }
+  Save-GitHubSettings $auto 'Fizor-drm/ai-agent-rules' 'dev' 'rules' | Out-Null
+  $ruleNew4 = ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode", "androidstudio", "firebender", "opencodev1", "xum"]' + $nl + '---' + $nl + '# new targets' + $nl)
+  $script:GhFiles = @{}
+  $script:GhFiles['https://api.github.com/repos/Fizor-drm/ai-agent-rules/contents/rules/project.md'] = @{ sha = 'sha-project'; content = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($ruleNew4)) }
+  $script:GhFiles['https://api.github.com/repos/Fizor-drm/ai-agent-rules/contents/rules/global.md'] = @{ sha = 'sha-global'; content = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($ruleNew4)) }
+
+  Set-TestRulesyncVersion '32.0.0'
+  foreach ($kind in @('project', 'global')) {
+    $script:GhCalls = @()
+    $v32New = Save-GitHubRuleContent $auto $kind $ruleNew4 ('sha-' + $kind)
+    Assert (-not $v32New.ok) ('T6f 32-pinned ' + $kind + ' rejects rulesync 42 targets')
+    Assert (([string]$v32New.error -match '32\.0\.0') -and ([string]$v32New.error.Contains('42.0.0'))) ('T6f 32-pinned ' + $kind + ' failure explains the upgrade')
+    Assert (@($script:GhCalls).Count -eq 0) ('T6f 32-pinned ' + $kind + ' never touches GitHub')
+  }
+  $script:GhCalls = @()
+  $v32Canonical = Save-GitHubRuleContent $auto 'project' ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode", "claudecode"]' + $nl + '---' + $nl) 'sha-project'
+  Assert ($v32Canonical.ok) 'T6f 32-pinned canonical target saves'
+  Assert (@($script:GhCalls | Where-Object { $_.method -ne 'GET' }).Count -eq 1) 'T6f 32-pinned canonical target commits'
+
+  # The personal 40.2.0 install must keep editing rules with the 18 providers.
+  Set-TestRulesyncVersion '40.2.0'
+  $script:GhCalls = @()
+  $v402 = Save-GitHubRuleContent $auto 'global' ('---' + $nl + 'root: true' + $nl + 'targets: ["' + ($providers18 -join '", "') + '"]' + $nl + '---' + $nl) 'sha-global'
+  Assert ($v402.ok) 'T6f 40.2.0 existing 18 targets save'
+  Assert (@($script:GhCalls | Where-Object { $_.method -ne 'GET' }).Count -eq 1) 'T6f 40.2.0 existing 18 targets commit'
+
+  # A range, tag, older or future version has no verified enum: fail closed
+  # instead of implying compatibility.
+  foreach ($badVer in @('43.0.0', '42.1.0', '31.0.0', 'latest', '^42.0.0', 'v42.0.0')) {
+    Set-TestRulesyncVersion $badVer
+    $script:GhCalls = @()
+    $unverified = Save-GitHubRuleContent $auto 'global' $ruleGlobal 'sha-global'
+    Assert (-not $unverified.ok) ('T6f unverified version ' + $badVer + ' is refused')
+    Assert (@($script:GhCalls).Count -eq 0) ('T6f unverified version ' + $badVer + ' never touches GitHub')
+  }
+
+  # Missing, malformed, and array-root settings keep the Settings.ps1 fallback
+  # (the 42.0.0 default), so the editor stays usable.
+  Set-Content -LiteralPath $settingsFile -Value '{"rulesyncVersion":' -Encoding UTF8
+  $script:GhCalls = @()
+  $malformed = Save-GitHubRuleContent $auto 'global' $ruleNew4 'sha-global'
+  Assert ($malformed.ok) 'T6f malformed settings fall back to 42.0.0'
+  Assert (@($script:GhCalls | Where-Object { $_.method -ne 'GET' }).Count -eq 1) 'T6f malformed settings commit under the default'
+  Set-Content -LiteralPath $settingsFile -Value '[{"rulesyncVersion":"32.0.0"}]' -Encoding UTF8
+  $script:GhCalls = @()
+  $arrayRoot = Save-GitHubRuleContent $auto 'global' $ruleNew4 'sha-global'
+  Assert ($arrayRoot.ok) 'T6f array-root settings fall back to 42.0.0'
+  Assert (@($script:GhCalls | Where-Object { $_.method -ne 'GET' }).Count -eq 1) 'T6f array-root settings commit under the default'
+  Set-TestRulesyncVersion $null
+  $script:GhCalls = @()
+  Assert (-not (Test-Path -LiteralPath $settingsFile)) 'T6f null fixture removes the settings file'
+  $noSettings = Save-GitHubRuleContent $auto 'global' $ruleNew4 'sha-global'
+  Assert ($noSettings.ok) 'T6f missing settings use the 42.0.0 default'
+
+  # A settings edit between the read and the PUT must not bypass the check.
+  Set-TestRulesyncVersion '42.0.0'
+  $script:GhOnGet = { Set-TestRulesyncVersion '32.0.0' }
+  $script:GhCalls = @()
+  $flip = Save-GitHubRuleContent $auto 'global' $ruleNew4 'sha-global'
+  Assert ((-not $flip.ok) -and $flip.conflict) 'T6f a version change during the read stops the save'
+  Assert (@($script:GhCalls | Where-Object { $_.method -ne 'GET' }).Count -eq 0) 'T6f version change before the PUT never commits'
+  $script:GhOnGet = $null
+
+  # The add-targets path gets the same gate, before and just before each PUT.
+  Set-TestRulesyncVersion '32.0.0'
+  $script:GhCalls = @()
+  $up32New = Update-GitHubRuleTargets $auto @('xum')
+  Assert ((-not $up32New.ok) -and (@($up32New.files).Count -eq 0)) 'T6f 32-pinned target update rejects rulesync 42 targets'
+  Assert (@($script:GhCalls).Count -eq 0) 'T6f 32-pinned target update never touches GitHub'
+
+  $ruleGlobal32 = ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli"]' + $nl + '---' + $nl + '# global body' + $nl)
+  $ruleProject32 = ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "opencode"]' + $nl + '---' + $nl + '# project body' + $nl)
+  $script:GhFiles = @{}
+  $script:GhFiles['https://api.github.com/repos/Fizor-drm/ai-agent-rules/contents/rules/global.md'] = @{ sha = 'sha-global'; content = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($ruleGlobal32)) }
+  $script:GhFiles['https://api.github.com/repos/Fizor-drm/ai-agent-rules/contents/rules/project.md'] = @{ sha = 'sha-project'; content = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($ruleProject32)) }
+  $script:GhCalls = @()
+  $up32Canonical = Update-GitHubRuleTargets $auto @('pi')
+  Assert ($up32Canonical.ok) 'T6f 32-pinned canonical target update succeeds'
+  Assert (@($script:GhCalls | Where-Object { $_.method -ne 'GET' }).Count -eq 2) 'T6f 32-pinned canonical update commits both files'
+
+  # A fetched file that already lists a 42-only slug must not be rewritten and
+  # committed while the configured version cannot read it.
+  $ruleGlobalXum = ('---' + $nl + 'root: true' + $nl + 'targets: ["codexcli", "xum"]' + $nl + '---' + $nl + '# xum body' + $nl)
+  $script:GhFiles['https://api.github.com/repos/Fizor-drm/ai-agent-rules/contents/rules/global.md'] = @{ sha = 'sha-global'; content = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($ruleGlobalXum)) }
+  $script:GhCalls = @()
+  $up32Xum = Update-GitHubRuleTargets $auto @('pi')
+  Assert (-not $up32Xum.ok) 'T6f 32-pinned rewrite with an unsupported existing target fails'
+  Assert (@($script:GhCalls | Where-Object { ($_.method -ne 'GET') -and ($_.uri -like '*global.md') }).Count -eq 0) 'T6f unsupported rewritten text is never committed'
+
+  Set-TestRulesyncVersion '42.0.0'
+  $script:GhFiles['https://api.github.com/repos/Fizor-drm/ai-agent-rules/contents/rules/global.md'] = @{ sha = 'sha-global'; content = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($ruleGlobal32)) }
+  $script:GhOnGet = { Set-TestRulesyncVersion '32.0.0' }
+  $script:GhCalls = @()
+  $upFlip = Update-GitHubRuleTargets $auto @('xum')
+  Assert (-not $upFlip.ok) 'T6f a version change during an update stops the writes'
+  Assert (@($script:GhCalls | Where-Object { $_.method -ne 'GET' }).Count -eq 0) 'T6f version change before the target PUT never commits'
+  $script:GhOnGet = $null
+  Set-TestRulesyncVersion $null
+  Assert (-not (Test-Path -LiteralPath $settingsFile)) 'T6f cleanup removes the settings file'
+  Set-TestRulesyncVersion '42.0.0'
+  Set-TestRulesyncVersion ''
+  Assert (-not (Test-Path -LiteralPath $settingsFile)) 'T6f empty fixture removes the settings file'
 
   $ruleGlobalWild = ('---' + $nl + 'root: true' + $nl + 'targets: ["*"]' + $nl + '---' + $nl + '# global body' + $nl)
   foreach ($case in @(@{ name = 'without targets'; text = $ruleGlobalBare }, @{ name = 'with a wildcard target'; text = $ruleGlobalWild })) {
@@ -512,6 +628,20 @@ try {
     $env:DASHBOARD_PORT = $origPort
     $env:DASHBOARD_AUTODIR = $origAutoDirEnv
   }
+
+  # T9c: the rule version comes from the AutoDir settings, not from the folder
+  # that contains the module (they differ when DASHBOARD_AUTODIR is overridden).
+  $install = Join-Path $base 'install'
+  $otherAuto = Join-Path $base 'other-auto'
+  New-Item -ItemType Directory -Force -Path $install, $otherAuto | Out-Null
+  Copy-Item -LiteralPath (Join-Path $devAuto 'Settings.ps1') -Destination (Join-Path $install 'Settings.ps1') -Force
+  Copy-Item -LiteralPath (Join-Path $devAuto 'GitHub-Management.ps1') -Destination (Join-Path $install 'GitHub-Management.ps1') -Force
+  Set-Content -LiteralPath (Join-Path $install 'settings.json') -Value '{"rulesyncVersion":"42.0.0"}' -Encoding UTF8
+  Set-Content -LiteralPath (Join-Path $otherAuto 'settings.json') -Value '{"rulesyncVersion":"32.0.0"}' -Encoding UTF8
+  . (Join-Path $install 'Settings.ps1')
+  . (Join-Path $install 'GitHub-Management.ps1')
+  $autoDir32 = Save-GitHubRuleContent $otherAuto 'global' $ruleNew4 'sha-global'
+  Assert ((-not $autoDir32.ok) -and ([string]$autoDir32.error -match '32\.0\.0')) 'T9c AutoDir settings win over the module directory'
 
   # T10: no leftover plaintext token or settings in the test tree.
   $leak = @(Get-ChildItem -LiteralPath $base -Recurse -File | Where-Object { $c = Get-Content -LiteralPath $_.FullName -Raw -Encoding UTF8; ($null -ne $c) -and ([string]$c).Contains($tok) })

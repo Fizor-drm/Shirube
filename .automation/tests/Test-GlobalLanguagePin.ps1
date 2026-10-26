@@ -49,7 +49,7 @@ try {
   # Fake CLI: logs argv/cwd, applies queued exits, optionally adds a language to
   # the LIVE rulesync.local.jsonc, and (for a real generate) reads the config
   # path it was given plus that file's sibling local config. A language found
-  # there patches Claude settings exactly as rulesync 32 does.
+  # there patches Claude settings exactly as rulesync 42 does.
   Set-Content -LiteralPath (Join-Path $bin 'fake-npx.ps1') @'
 $D = $env:DUMMY_DIR
 $argv = @($args)

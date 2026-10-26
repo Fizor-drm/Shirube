@@ -1,9 +1,12 @@
 # Real pinned rulesync generation regression for Global rules.
-# Invokes an already cached rulesync 32.0.0 directly (never npx/network) in a
-# GUID scratch with isolated HOME_DIR/APPDATA/LOCALAPPDATA/XDG/Kimi env.
-# Proves the documented Global frontmatter (no targets or ["*"]) distributes
-# to every catalog provider, and that a language setting adds Claude's shared
-# settings write that the sync guard must refuse.
+# Invokes an already cached rulesync 42.0.0 directly (never npx/network) in a
+# GUID scratch with isolated HOME_DIR/HOME/APPDATA/LOCALAPPDATA/XDG/Kimi and
+# OpenCode env. Proves the documented Global frontmatter (no targets or ["*"])
+# distributes to every catalog provider, that OpenCode V2 `mcp.servers`, mixed
+# V1/V2, and old flat configs generate without schema errors and stay
+# byte-identical, and that a language setting adds Claude's shared settings
+# write that the sync guard must refuse. rulesync 32 is kept only as an
+# explicit compatibility fixture documenting the V2 schema rejection.
 $ErrorActionPreference = 'Stop'
 
 $failures = @()
@@ -25,7 +28,7 @@ $devAuto = Split-Path -Parent $PSScriptRoot
 $catalog = @(Get-GlobalProviderCatalog)
 $allTargets = @($catalog | ForEach-Object { [string]$_.id })
 
-function Find-CachedRulesync {
+function Find-CachedRulesync([string]$Version = '42.0.0') {
   $roots = @()
   if ($env:LOCALAPPDATA) { $roots += (Join-Path $env:LOCALAPPDATA 'npm-cache\_npx') }
   if ($env:APPDATA) { $roots += (Join-Path $env:APPDATA 'npm-cache\_npx') }
@@ -36,22 +39,23 @@ function Find-CachedRulesync {
       $cli = Join-Path $d.FullName 'node_modules\rulesync\dist\cli\index.js'
       if ((-not (Test-Path -LiteralPath $pj -PathType Leaf)) -or (-not (Test-Path -LiteralPath $cli -PathType Leaf))) { continue }
       try { $v = [string](Get-Content -LiteralPath $pj -Raw -Encoding UTF8 | ConvertFrom-Json).version } catch { continue }
-      if ($v -ceq '32.0.0') { return $cli }
+      if ($v -ceq $Version) { return $cli }
     }
   }
   return $null
 }
 
 $nodeCmd = Get-Command 'node' -ErrorAction SilentlyContinue
-$cli = Find-CachedRulesync
+$cli = Find-CachedRulesync '42.0.0'
 if ((-not $nodeCmd) -or (-not $cli)) {
-  Write-Host 'SKIP: cached rulesync 32.0.0 and/or node not found; no download attempted.'
+  Write-Host 'SKIP: cached rulesync 42.0.0 and/or node not found; no download attempted.'
   exit 77
 }
+$cli32 = Find-CachedRulesync '32.0.0'
 $nodeExe = $nodeCmd.Source
 
 $initCwd = (Get-Location).Path
-$envNames = @('HOME_DIR', 'APPDATA', 'LOCALAPPDATA', 'XDG_CONFIG_HOME', 'KIMI_CODE_HOME', 'USERPROFILE')
+$envNames = @('HOME_DIR', 'HOME', 'APPDATA', 'LOCALAPPDATA', 'XDG_CONFIG_HOME', 'KIMI_CODE_HOME', 'USERPROFILE', 'OPENCODE_CONFIG', 'OPENCODE_CONFIG_DIR', 'OPENCODE_CONFIG_CONTENT')
 $origEnv = @{}
 foreach ($n in $envNames) { $origEnv[$n] = [Environment]::GetEnvironmentVariable($n, 'Process') }
 
@@ -72,11 +76,13 @@ try {
     $xdg = Join-Path $root 'xdg'
     New-Item -ItemType Directory -Force -Path (Join-Path $preview '.rulesync\rules'), $homeDir, $appdata, $localappdata, $xdg | Out-Null
     $env:HOME_DIR = $homeDir
+    $env:HOME = $homeDir
     $env:APPDATA = $appdata
     $env:LOCALAPPDATA = $localappdata
     $env:XDG_CONFIG_HOME = $xdg
     $env:KIMI_CODE_HOME = ''
     $env:USERPROFILE = $homeDir
+    foreach ($ocn in @('OPENCODE_CONFIG', 'OPENCODE_CONFIG_DIR', 'OPENCODE_CONFIG_CONTENT')) { Remove-Item -Path ('Env:' + $ocn) -ErrorAction SilentlyContinue }
     return @{ root = $root; preview = $preview; home = $homeDir; appdata = $appdata; localappdata = $localappdata; xdg = $xdg }
   }
   function Set-CaseRule([hashtable]$Case, [string]$Frontmatter, [string]$Marker) {
@@ -87,15 +93,16 @@ try {
   function Set-CaseConfig([hashtable]$Case, [string]$Json) {
     Set-Content -LiteralPath (Join-Path $Case.preview 'rulesync.jsonc') $Json -Encoding UTF8
   }
-  function Invoke-RealRulesync([hashtable]$Case, [string[]]$Targets, [string]$ConfigPath = '') {
+  function Invoke-RealRulesyncCli([string]$Cli, [hashtable]$Case, [string[]]$Targets, [string]$ConfigPath = '', [string]$Mode = '') {
     $argv = @('generate', '--global', '--targets', ($Targets -join ','), '--features', 'rules')
     if ($ConfigPath) { $argv += @('--config', $ConfigPath) }
+    if ($Mode) { $argv += @('--' + $Mode) }
     Push-Location -LiteralPath $Case.preview
     try {
       $prevEap = $ErrorActionPreference
       $ErrorActionPreference = 'Continue'
       try {
-        $out = & $script:nodeExe $script:cli @argv 2>&1 | Out-String
+        $out = & $script:nodeExe $Cli @argv 2>&1 | Out-String
         $code = $LASTEXITCODE
       }
       finally { $ErrorActionPreference = $prevEap }
@@ -103,6 +110,9 @@ try {
     finally { Pop-Location }
     if ($null -eq $code) { $code = 1 }
     return @{ code = $code; out = $out }
+  }
+  function Invoke-RealRulesync([hashtable]$Case, [string[]]$Targets, [string]$ConfigPath = '', [string]$Mode = '') {
+    return (Invoke-RealRulesyncCli $script:cli $Case $Targets $ConfigPath $Mode)
   }
   function Get-RelFiles([string]$Root) {
     $arr = @()
@@ -145,6 +155,66 @@ try {
   Assert (@($unexpected1).Count -eq 0) 'R1 no extra home files (Claude settings untouched)'
   Assert (-not (Test-Path -LiteralPath (Join-Path $c1.home '.claude\settings.json'))) 'R1 no Claude settings side effect without language'
   Assert ((@(Get-RelFiles $c1.appdata).Count -eq 0) -and (@(Get-RelFiles $c1.localappdata).Count -eq 0) -and (@(Get-RelFiles $c1.xdg).Count -eq 0)) 'R1 no writes outside HOME_DIR'
+
+  # R1b: rulesync 42 must accept OpenCode V2 `mcp.servers`, mixed V1/V2 and old
+  # flat configs while only writing the catalog rule. Config bytes (including a
+  # dummy secret) stay identical, and check/dry-run stay clean afterward.
+  foreach ($cfgCase in @(
+    @{ name = 'v2only'; json = '{"mcp":{"servers":{"dummy":{"type":"local","command":["not-executed"],"environment":{"DUMMY_SECRET":"dummy-secret-value"}}}}}' },
+    @{ name = 'mixed'; json = '{"mcp":{"legacy":{"type":"local","command":["not-run"]},"servers":{"dummy":{"type":"local","command":["not-run"]}}}}' },
+    @{ name = 'flat'; json = '{"mcp":{"legacy":{"type":"local","command":["not-run"]}}}' }
+  )) {
+    $cm = New-IsolatedCase ('mcp-' + [string]$cfgCase.name)
+    Set-CaseRule $cm '' ('MCP42-MARKER-' + [string]$cfgCase.name)
+    Set-CaseConfig $cm $quietConfig
+    $cfgPath = Join-Path $cm.home '.config\opencode\opencode.jsonc'
+    New-Item -ItemType Directory -Force -Path (Split-Path $cfgPath -Parent) | Out-Null
+    [System.IO.File]::WriteAllText($cfgPath, [string]$cfgCase.json, (New-Object System.Text.ASCIIEncoding))
+    $mr = Invoke-RealRulesync $cm @('opencode')
+    Assert ($mr.code -eq 0) ('R1b ' + $cfgCase.name + ' MCP config generates with rulesync 42')
+    Assert ((Get-Content -LiteralPath $cfgPath -Raw -Encoding UTF8) -ceq [string]$cfgCase.json) ('R1b ' + $cfgCase.name + ' MCP config bytes unchanged')
+    if ([string]$cfgCase.name -eq 'v2only') {
+      Assert ((Get-Content -LiteralPath $cfgPath -Raw -Encoding UTF8).Contains('dummy-secret-value')) 'R1b V2 dummy secret preserved verbatim'
+    }
+    Assert ((Test-Path -LiteralPath (Join-Path $cm.home '.config\opencode\AGENTS.md') -PathType Leaf)) ('R1b ' + $cfgCase.name + ' catalog rule written')
+    Assert (@(Get-ChildItem -LiteralPath $cm.home -Recurse -File -ErrorAction SilentlyContinue).Count -eq 2) ('R1b ' + $cfgCase.name + ' no extra files')
+    $mchk = Invoke-RealRulesync $cm @('opencode') '' 'check'
+    Assert ($mchk.code -eq 0) ('R1b ' + $cfgCase.name + ' check exits 0 after generate')
+    $mdry = Invoke-RealRulesync $cm @('opencode') '' 'dry-run'
+    Assert ($mdry.code -eq 0) ('R1b ' + $cfgCase.name + ' dry-run exits 0 after generate')
+  }
+
+  # R1c: rulesync 32 stays only as an explicit compatibility fixture. It reads
+  # the V2 envelope as a single server named `servers` and fails schema
+  # validation, which is why the shipped default is 42.
+  if ($cli32) {
+    $c32 = New-IsolatedCase 'mcp-v2only-rulesync32'
+    Set-CaseRule $c32 '' 'MCP32-COMPAT-MARKER'
+    Set-CaseConfig $c32 $quietConfig
+    $cfg32 = Join-Path $c32.home '.config\opencode\opencode.jsonc'
+    New-Item -ItemType Directory -Force -Path (Split-Path $cfg32 -Parent) | Out-Null
+    $v2json = '{"mcp":{"servers":{"dummy":{"type":"local","command":["not-executed"]}}}}'
+    [System.IO.File]::WriteAllText($cfg32, $v2json, (New-Object System.Text.ASCIIEncoding))
+    $r32 = Invoke-RealRulesyncCli $script:cli32 $c32 @('opencode')
+    Assert ($r32.code -ne 0) 'R1c rulesync 32 compatibility: V2 mcp.servers is rejected'
+    Assert ($r32.out.Contains('Invalid input')) 'R1c rulesync 32 compatibility: schema error reproduced'
+    Assert ((Get-Content -LiteralPath $cfg32 -Raw -Encoding UTF8) -ceq $v2json) 'R1c rulesync 32 leaves config bytes unchanged'
+    Assert (-not (Test-Path -LiteralPath (Join-Path $c32.home '.config\opencode\AGENTS.md'))) 'R1c rulesync 32 writes no rule'
+  }
+  else { Write-Host 'SKIP: cached rulesync 32.0.0 compatibility fixture not found.' }
+
+  # R1d: 42 still redirects global kimi-code output to KIMI_CODE_HOME, so the
+  # sync-side fail-closed guard (Assert-GlobalProviderEnvironment) stays needed.
+  $ck = New-IsolatedCase 'kimi-code-override'
+  Set-CaseRule $ck '' 'KIMI42-OVERRIDE-MARKER'
+  Set-CaseConfig $ck $quietConfig
+  $otherKimi = Join-Path $ck.root 'other-kimi'
+  New-Item -ItemType Directory -Force -Path $otherKimi | Out-Null
+  $env:KIMI_CODE_HOME = $otherKimi
+  try { $kr = Invoke-RealRulesync $ck @('kimi-code') } finally { $env:KIMI_CODE_HOME = '' }
+  Assert ($kr.code -eq 0) 'R1d kimi-code generation exits 0 with KIMI_CODE_HOME'
+  Assert (Test-Path -LiteralPath (Join-Path $otherKimi 'AGENTS.md') -PathType Leaf) 'R1d KIMI_CODE_HOME redirects output (guard required)'
+  Assert (-not (Test-Path -LiteralPath (Join-Path $ck.home '.kimi-code\AGENTS.md'))) 'R1d HOME_DIR is not used for kimi-code when override is set'
 
   # R2: explicit wildcard is the documented alternative and reaches Pi/Claude.
   # The example config's pinned targets do not matter because the dashboard

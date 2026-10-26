@@ -6,7 +6,7 @@ Shirube 从 GitHub 上的规则仓库和各项目的本地规则生成 Codex、O
 
 ![Windows 10 / 11](https://img.shields.io/badge/OS-Windows%2010%20%2F%2011-0078D4?logo=windows&logoColor=white)
 ![Windows PowerShell 5.1](https://img.shields.io/badge/PowerShell-5.1-5391FE?logo=powershell&logoColor=white)
-![rulesync 32.0.0](https://img.shields.io/badge/rulesync-32.0.0-2F6F44)
+![rulesync 42.0.0](https://img.shields.io/badge/rulesync-42.0.0-2F6F44)
 ![Global 18 CLIs / Project 2](https://img.shields.io/badge/targets-Global%2018%20CLIs%20%2F%20Project%202-111827)
 [![MIT License](https://img.shields.io/badge/license-MIT-2EA043)](LICENSE)
 
@@ -77,9 +77,9 @@ rulesync 使用 `--features rules` 生成 `AGENTS.md`。Global 使用 `--global`
 | --- | --- |
 | OS | Windows 10 / 11 |
 | PowerShell | Windows PowerShell 5.1（`powershell.exe`） |
-| Node.js | 可以从 PATH 运行 `npx` 和 `node` |
+| Node.js | 22.0.0 或更高版本（可以从 PATH 运行 `npx` 和 `node`） |
 | GitHub CLI | `gh` 在 PATH 中，并且已完成 `gh auth login` |
-| rulesync | `settings.json` 中的 `rulesyncVersion`（默认 `32.0.0`） |
+| rulesync | `settings.json` 中的 `rulesyncVersion`（默认 `42.0.0`） |
 | Git | 用于克隆仓库 |
 | 规则仓库 | GitHub 上的一个仓库（包含 `rules/global.md` 和 `rules/project.md`） |
 
@@ -241,6 +241,16 @@ description: "此项目专用的规则"
 
 Project 的 frontmatter 只接受固定格式。请将 3 个键各写一行，不要缩进。带引号的键、块格式（`|` / `>`）、未知键以及同时使用 `root` 和 `localRoot` 都会被拒绝。`targets` 保持为 `["codexcli", "opencode"]`，`description` 使用双引号。正文用 Markdown 编写规则。Global 的 frontmatter 遵循 rulesync 的 YAML 格式：写 `root: true` 和 `description`，不要固定 `targets`。
 
+保存规则前，规则编辑器会根据 `settings.json` 的 `rulesyncVersion` 校验 `targets`。
+
+| 指定版本 | 保存时允许的目标 |
+| --- | --- |
+| `42.0.x`（默认 `42.0.0`） | 在 42.0.0 中确认过的71个名称 |
+| `32.0.0`～`41.x` | 保守限制为在 32.0.0 中确认过的67个名称。即使中间版本已经支持，也拒绝 `androidstudio`、`firebender`、`opencodev1`、`xum` |
+| 其他版本、范围或标签 | 未验证兼容性，因此拒绝保存 |
+
+要使用新目标，请固定为 `42.0.0`。此校验不会增加Global的18种同步目标或Project的2种生成目标。Project规则必须包含 `codexcli` 和 `opencode`；额外的允许名称不会扩大本应用的Project同步范围。
+
 修改通用规则后，GitHub 上的内容会在下次同步时获取。项目专用规则会直接使用本地文件的下次同步结果。`AGENTS.md` 是生成文件，请不要编辑。
 
 ## 管理界面
@@ -258,13 +268,13 @@ Project 的 frontmatter 只接受固定格式。请将 3 个键各写一行，�
 
 ## 设置
 
-自动同步的任务名和使用的 rulesync 版本可以在 `settings.json` 中修改。它位于与 `Settings.ps1` 相同的文件夹（与代码同一目录）。在受保护副本中为 `%LOCALAPPDATA%\Shirube\.automation\settings.json`。
+自动同步的任务名和使用的rulesync版本可以在 `settings.json` 中修改，通常位于 `Settings.ps1` 同一文件夹。受保护副本中为 `%LOCALAPPDATA%\Shirube\.automation\settings.json`。如果通过 `DASHBOARD_AUTODIR` 指向其他管理目录，规则保存的版本兼容性校验会读取该目录的 `settings.json`。
 
 | 键 | 含义 | 默认值 |
 | --- | --- | --- |
 | `taskNameGlobal` | Global 自动同步的 Windows 任务名 | `Shirube Global Auto Sync` |
 | `taskNameProject` | Project 自动同步的 Windows 任务名 | `Shirube Project Auto Sync` |
-| `rulesyncVersion` | 使用的 `rulesync` 版本 | `32.0.0` |
+| `rulesyncVersion` | 使用的 `rulesync` 版本 | `42.0.0` |
 
 修改任务名时，请让 Windows“任务计划程序”中的任务名保持一致。名称不一致时找不到目标任务，修改间隔、启用/禁用切换以及还原前的暂停都会失败。
 
@@ -348,7 +358,7 @@ node .automation\tests\Test-DashboardGenerationRace.mjs
 
 `Test-SyncProjectRules.ps1` 的 T13a / T13b 仅在拥有创建符号链接权限（开发者模式或管理员）的环境中通过。没有权限时会记录为失败，不会将跳过视为成功。
 
-`Test-ReviewFixes.ps1` 的 R7e 会从 PATH 解析 `node`，并从 npx 包缓存解析 rulesync 32。任一缺失时会显示为跳过，不会视为失败。运行一次 `npx --yes rulesync@32.0.0` 即可验证。
+`Test-ReviewFixes.ps1` 的 R7e 会从 PATH 解析 `node`，并从 npx 包缓存解析 rulesync 42。任一缺失时会显示为跳过，不会视为失败。运行一次 `npx --yes rulesync@42.0.0` 即可验证。npx 缓存按用户共享，因此只有首次运行需要网络。
 
 </details>
 
