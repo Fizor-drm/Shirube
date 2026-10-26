@@ -1267,7 +1267,7 @@ function Restore-GlobalBackup([string]$AutoDir, [string]$BackupId, [bool]$Confir
   catch { throw ('自動同期の休止に失敗したため復元しません: ' + $_.Exception.Message) }
   $taskName = [string]$taskInfo.name
   $wasEnabled = ([string]$taskInfo.task.State -cne 'Disabled')
-  try { Disable-ScheduledTask -TaskName $taskName }
+  try { Disable-ScheduledTask -TaskName $taskName -ErrorAction Stop | Out-Null }
   catch { throw ('自動同期の休止に失敗したため復元しません: ' + $_.Exception.Message) }
   # Shelter current state (lossless) for rollback and history. Nothing in home
   # changes here, so a failure restores the recorded task state instead of
@@ -1313,7 +1313,7 @@ function Restore-GlobalBackup([string]$AutoDir, [string]$BackupId, [bool]$Confir
   catch {
     $shelterErr = $_.Exception.Message
     if ($wasEnabled) {
-      try { Enable-ScheduledTask -TaskName $taskName }
+      try { Enable-ScheduledTask -TaskName $taskName -ErrorAction Stop | Out-Null }
       catch { throw ('復元前の準備に失敗し、自動同期の再開にも失敗しました（休止中のままです）: ' + $shelterErr + ' / ' + $_.Exception.Message) }
       throw ('復元前の準備に失敗しました。自動同期は元の有効状態に戻しました: ' + $shelterErr)
     }

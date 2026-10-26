@@ -168,9 +168,10 @@ try {
   Assert ((@($bd.lines).Count -le 300)) 'G9 diff bounded'
   $script:pauseCalls = @()
   function Get-ScheduledTask { param([string]$TaskName) return [pscustomobject]@{ TaskName = $TaskName; State = 'Ready'; Triggers = @() } }
-  function Disable-ScheduledTask { param([string]$TaskName) $script:pauseCalls += ('disable:' + [string]$TaskName) }
+  function Disable-ScheduledTask { param([string]$TaskName) $script:pauseCalls += ('disable:' + [string]$TaskName); return [pscustomobject]@{ TaskName = $TaskName; State = 'Disabled' } }
   $cfG9 = New-GlobalRestoreConfirm $auto (Split-Path $bk -Leaf) $fakeHome
   $rs = Restore-GlobalBackup $auto (Split-Path $bk -Leaf) $true $fakeHome $cfG9
+  Assert ($rs -is [hashtable]) 'G9 restore returns one response without scheduler objects'
   Assert ((($rs.ok -eq $true) -and (@($script:pauseCalls).Count -eq 1) -and ([string]$script:pauseCalls[0] -ceq 'disable:Shirube Global Auto Sync'))) 'G9 restore pauses global sync first (task disable)'
   Assert (((Get-Content -LiteralPath (Join-Path $fakeHome '.codex\AGENTS.md') -Raw).Contains('codex-body-AAA'))) 'G9 restore brings back backup content'
   Remove-Item -Path 'function:Disable-ScheduledTask' -Force -ErrorAction SilentlyContinue
