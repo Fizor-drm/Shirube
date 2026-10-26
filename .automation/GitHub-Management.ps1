@@ -173,7 +173,7 @@ function Find-GitHubJsoncValue([string]$Text, [string]$Key) {
         [void]$sb.Append($cj)
         $j++
       }
-      $last = $sb.ToString()
+      $last = ConvertFrom-Json $src.Substring($i, $j - $i)
       $i = $j
       continue
     }
@@ -272,18 +272,23 @@ function Find-GitHubJsoncValue([string]$Text, [string]$Key) {
 # and line endings stay as the user wrote them.
 function Set-GitHubSourceConfigText([string]$Text, $Entry) {
   $src = [string]$Text
-  if ($null -eq (ConvertFrom-GitHubJsonc $src)) { throw 'rulesync.jsonc を読み取れませんでした。' }
+  $parsed = ConvertFrom-GitHubJsonc $src
+  $root = [regex]::Match($src, '\A(?:\uFEFF|\s|//[^\r\n]*(?:\r?\n|$)|/\*[\s\S]*?\*/)*\{')
+  if (($null -eq $parsed) -or (-not $root.Success)) { throw 'rulesync.jsonc を読み取れませんでした。' }
   $nl = "`n"
   if ($src.Contains("`r`n")) { $nl = "`r`n" }
   $entryJson = (ConvertTo-Json -InputObject $Entry -Depth 6 -Compress)
   $arr = '[' + $nl + '    ' + $entryJson + $nl + '  ]'
   $span = Find-GitHubJsoncValue $src 'sources'
-  if ($span) { return ($src.Substring(0, [int]$span.start) + $arr + $src.Substring([int]$span.end)) }
-  $close = $src.LastIndexOf('}')
-  if ($close -lt 0) { throw 'rulesync.jsonc を読み取れませんでした。' }
-  $head = $src.Substring(0, $close).TrimEnd()
-  if (-not $head.EndsWith('{')) { $head = $head + ',' }
-  return ($head + $nl + '  "sources": ' + $arr + $nl + $src.Substring($close))
+  if ($span) { $result = $src.Substring(0, [int]$span.start) + $arr + $src.Substring([int]$span.end) }
+  else {
+    # Insert before existing properties so a final line comment cannot swallow the comma.
+    $comma = ''
+    if (@($parsed.PSObject.Properties).Count -gt 0) { $comma = ',' }
+    $result = $src.Insert($root.Length, $nl + '  "sources": ' + $arr + $comma + $nl)
+  }
+  if ($null -eq (ConvertFrom-GitHubJsonc $result)) { throw 'rulesync.jsonc の更新内容を確認できませんでした。' }
+  return $result
 }
 
 # Prepares both config rewrites without writing: every input is validated and
@@ -328,11 +333,11 @@ function Save-GitHubSettings([string]$AutoDir, [string]$Repo, [string]$Branch, [
   if ($settingsExisted) { $settingsOld = [System.IO.File]::ReadAllBytes($settingsPath) }
   $written = @()
   try {
-    Write-GitHubPrivateText $settingsPath (ConvertTo-Json -InputObject $o -Depth 4)
     $written += $settingsPath
+    Write-GitHubPrivateText $settingsPath (ConvertTo-Json -InputObject $o -Depth 4)
     foreach ($ch in $changes) {
-      Write-GitHubPrivateText ([string]$ch.path) ([string]$ch.text)
       $written += [string]$ch.path
+      Write-GitHubPrivateText ([string]$ch.path) ([string]$ch.text)
     }
   }
   catch {
@@ -342,7 +347,7 @@ function Save-GitHubSettings([string]$AutoDir, [string]$Repo, [string]$Branch, [
       try {
         if ($wp -ceq $settingsPath) {
           if ($settingsExisted) { [System.IO.File]::WriteAllBytes($wp, $settingsOld) }
-          else { Remove-Item -LiteralPath $wp -Force }
+          elseif (Test-Path -LiteralPath $wp) { Remove-Item -LiteralPath $wp -Force }
         }
         else {
           $oldCh = @($changes | Where-Object { [string]$_.path -ceq $wp })[0]

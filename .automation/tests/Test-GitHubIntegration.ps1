@@ -123,6 +123,20 @@ try {
   if (Get-Command ConvertFrom-GitHubJsonc -ErrorAction SilentlyContinue) { $gJ3b = ConvertFrom-GitHubJsonc $gRaw }
   Assert (($null -ne $gJ3b) -and ([string]$gJ3b.sources[0].source -ceq 'Fizor-drm/ai-agent-rules@main')) 'T3b sources repointed in a JSONC config'
 
+  foreach ($cfg in @(
+    ('{"targets":["pi"] // keep' + "`n}"),
+    '{"targets":["pi"]} // trailing }',
+    ('// leading {' + "`n" + '{ /* empty } */ }'),
+    '{"\u0073ources":[],"targets":["pi"]}'
+  )) {
+    $rewritten = Set-GitHubSourceConfigText $cfg @{ source = 'new/repo@main'; rules = @('global') }
+    $parsed = ConvertFrom-GitHubJsonc $rewritten
+    Assert (($null -ne $parsed) -and ([string]$parsed.sources[0].source -ceq 'new/repo@main')) 'T3b insertion and escaped keys produce valid JSONC'
+    if ($cfg.Contains('\u0073ources')) {
+      Assert (-not $rewritten.Contains('"sources"')) 'T3b escaped source key is replaced without adding a duplicate key'
+    }
+  }
+
   # T3c: every input is validated before the first write (all-or-nothing).
   Save-GitHubSettings $auto 'Fizor-drm/ai-agent-rules' 'main' 'rules' | Out-Null
   $settingsBefore = Get-Content -LiteralPath (Join-Path $auto 'github-settings.json') -Raw -Encoding UTF8
@@ -157,6 +171,21 @@ try {
   Assert ((Get-Content -LiteralPath (Join-Path $auto 'github-settings.json') -Raw -Encoding UTF8) -ceq $setBefore3d) 'T3d settings rolled back'
   Assert ((Get-Content -LiteralPath (Join-Path $gPrev 'rulesync.jsonc') -Raw -Encoding UTF8) -ceq $gBefore3d) 'T3d first written config rolled back'
   Assert ((Get-Content -LiteralPath (Join-Path $pPrev 'rulesync.jsonc') -Raw -Encoding UTF8) -ceq $pBefore3d) 'T3d unwritten config unchanged'
+
+  $script:ghWriteCalls = 0
+  function Write-GitHubPrivateText { param([string]$Path, [string]$Text)
+    $script:ghWriteCalls++
+    & $origWriteText $Path $Text
+    if ($script:ghWriteCalls -eq 3) { throw 'injected-after-publish-fail' }
+  }
+  $partialFail = $false
+  try { Save-GitHubSettings $auto 'Fizor-drm/ai-agent-rules' 'dev' 'other' | Out-Null }
+  catch { $partialFail = $true }
+  finally { Set-Item -Path function:Write-GitHubPrivateText -Value $origWriteText -Force }
+  Assert $partialFail 'T3d failure after publication is reported'
+  Assert ((Get-Content -LiteralPath (Join-Path $auto 'github-settings.json') -Raw -Encoding UTF8) -ceq $setBefore3d) 'T3d published failure restores settings'
+  Assert ((Get-Content -LiteralPath (Join-Path $gPrev 'rulesync.jsonc') -Raw -Encoding UTF8) -ceq $gBefore3d) 'T3d published failure restores first config'
+  Assert ((Get-Content -LiteralPath (Join-Path $pPrev 'rulesync.jsonc') -Raw -Encoding UTF8) -ceq $pBefore3d) 'T3d published failure restores the failing config too'
 
   # T4: token is encrypted at rest and never stored in plain text.
   Assert ((Get-GitHubToken $auto) -eq '') 'T4 no token by default'
