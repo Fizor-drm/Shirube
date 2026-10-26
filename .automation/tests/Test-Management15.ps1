@@ -356,7 +356,7 @@ function Enable-ScheduledTask { [CmdletBinding()] param([string]$TaskName) }
 '@
   Set-Content -LiteralPath $srvStub ($srvStubText.Replace('__SERVER__', (Join-Path $devAuto 'Dashboard-Server.ps1'))) -Encoding UTF8
   $env:DASHBOARD_PORT = '18797'
-  $srv = Start-Process -FilePath 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe' -ArgumentList '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', $srvStub -WindowStyle Hidden -PassThru
+  $srv = Start-Process -FilePath 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe' -ArgumentList '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', ('"' + $srvStub + '"') -WindowStyle Hidden -PassThru
   try {
     $ok = $false
     for ($i = 0; $i -lt 20; $i++) {
