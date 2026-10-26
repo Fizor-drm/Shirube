@@ -8,8 +8,12 @@
 function Get-ShirubeSettingsPath { return (Join-Path $PSScriptRoot 'settings.json') }
 
 # 毎回読む (キャッシュなし)。settings.json は小さく、編集後の反映漏れを避ける。
+# AutoDir は展開先の .automation。指定時はそこだけを見て、呼び出し元の
+# スクリプト配置 (PSScriptRoot) とは独立に読む。
 function Read-ShirubeSettingsFile {
+  param([string]$AutoDir = '')
   $path = Get-ShirubeSettingsPath
+  if ($AutoDir) { $path = Join-Path $AutoDir 'settings.json' }
   try {
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { return $null }
     $txt = Get-Content -LiteralPath $path -Raw -Encoding UTF8
@@ -25,9 +29,9 @@ function Read-ShirubeSettingsFile {
 
 # name に対応する設定値。無効な値は Default。
 function Get-ShirubeSetting {
-  param([string]$Name = '', $Default = $null)
+  param([string]$Name = '', $Default = $null, [string]$AutoDir = '')
   if (-not $Name) { return $Default }
-  $s = Read-ShirubeSettingsFile
+  $s = Read-ShirubeSettingsFile -AutoDir $AutoDir
   if ($null -eq $s) { return $Default }
   $pr = $null
   try { $pr = $s.PSObject.Properties[$Name] } catch { $pr = $null }

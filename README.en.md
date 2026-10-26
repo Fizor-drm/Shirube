@@ -241,6 +241,8 @@ description: "Rules specific to this project"
 
 Project frontmatter accepts only the fixed format. Write the three keys one per line with no indentation. Quoted keys, block scalars (`|` / `>`), unknown keys, and mixing `root` with `localRoot` are rejected. Keep `targets` as `["codexcli", "opencode"]` and wrap `description` in double quotes. Write the rules themselves as Markdown in the body. Global frontmatter follows rulesync's YAML format: include `root: true` and `description`, and do not pin `targets`.
 
+The rule editor validates `targets` against the `rulesyncVersion` in `settings.json` before saving. The default `42.0.0` allows every rulesync 42 target. Versions from `32.0.0` up to (but not including) `42.0.0` allow only the targets verified in 32.0.0, so the four slugs added in 42 (`androidstudio`, `firebender`, `opencodev1`, `xum`) cannot be saved there. Other versions (ranges, tags, 31 and earlier, or releases after the 42.0 line) are refused because their target list is unverified. Raise `rulesyncVersion` to `42.0.0` to use the new targets.
+
 Changes to shared rules are picked up from GitHub on the next sync. For project-specific rules, local file changes take effect on the next sync. `AGENTS.md` is generated, so do not edit it.
 
 ## Dashboard

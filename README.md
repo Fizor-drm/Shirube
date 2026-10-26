@@ -241,6 +241,8 @@ description: "このプロジェクト固有のルール"
 
 Project の frontmatter は決まった形式だけを受け付けます。3 つのキーを 1 行ずつ、インデントなしで書いてください。キーの引用、ブロック形式（`|` / `>`）、未知のキー、`root` と `localRoot` の混在は拒否されます。`targets` は `["codexcli", "opencode"]` のままにし、`description` は二重引用符で囲みます。本文には Markdown でルールを書きます。Global の frontmatter は rulesync の YAML 形式に従い、`root: true` と `description` を書き、`targets` は固定しません。
 
+ルールエディターは保存前に、`settings.json` の `rulesyncVersion` と `targets` の互換性を検証します。既定の `42.0.0` は rulesync 42 の全ターゲットを許可します。`32.0.0` 以上 `42.0.0` 未満は 32.0.0 で確認済みのターゲットだけを許可するため、42 で追加された `androidstudio`、`firebender`、`opencodev1`、`xum` は保存できません。それ以外のバージョン（範囲指定・タグ・31 以前・42.0 系より後の版）は互換性を確認できないため、保存を拒否します。新しいターゲットを使うときは `rulesyncVersion` を `42.0.0` に上げてください。
+
 共通ルールを変えた場合は、GitHub へ反映した内容が次の同期で取得されます。プロジェクト固有ルールはローカルファイルの変更がそのまま次の同期で反映されます。`AGENTS.md` は生成物なので編集しないでください。
 
 ## 管理画面

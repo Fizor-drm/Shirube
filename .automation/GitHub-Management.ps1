@@ -7,6 +7,13 @@
 # returned to the page (callers only see whether a token exists).
 $ErrorActionPreference = 'Stop'
 
+# Personal settings (settings.json) come from Settings.ps1, like the other
+# management modules. A scratch copy without Settings.ps1 falls back to the
+# shipped defaults so the module still loads on its own.
+$shirubeSettingsScript = Join-Path $PSScriptRoot 'Settings.ps1'
+if (Test-Path -LiteralPath $shirubeSettingsScript -PathType Leaf) { . $shirubeSettingsScript }
+if (-not (Get-Command Get-ShirubeSetting -ErrorAction SilentlyContinue)) { function Get-ShirubeSetting { param([string]$Name = '', $Default = $null) return $Default } }
+
 function Get-GitHubPrivateSids {
   $sids = @()
   try { $sids += [System.Security.Principal.WindowsIdentity]::GetCurrent().User } catch {}
@@ -619,11 +626,14 @@ function Set-GitHubFile([string]$AutoDir, [string]$RelPath, [string]$Text, [stri
   return @{ ok = $true; sha = $newSha; path = $rel }
 }
 
-# rulesync 42.0.0 ToolTarget enum (dist/index.d.ts). A target outside this list
-# (for example `claude-code`; the canonical slug is `claudecode`) makes the
-# pinned CLI reject the rule, so the editor refuses it before the PUT.
-# shortcut: pinned to 42.0.0; refresh when rulesyncVersion moves past 42.
-$script:GitHubRuleTargets = @(
+# Known rulesync ToolTarget schemas (dist/index.d.ts). A target outside the
+# schema of the configured rulesyncVersion makes that CLI reject the rule, so
+# the editor refuses it before the PUT. Only verified versions are mapped:
+# ranges, tags, older versions, and future versions fail closed instead of
+# assuming that the same slugs still exist. Refresh both maps when a new pin is
+# verified; the default stays at 42.0.0.
+# 42.0.0 enum.
+$script:GitHubRuleTargets42 = @(
   'agentsmd', 'agentsskills', 'aiassistant', 'amp', 'androidstudio',
   'antigravity-cli', 'antigravity-ide', 'antigravity-plugin',
   'augmentcode', 'augmentcode-legacy', 'augmentcode-plugin', 'bob',
@@ -638,6 +648,71 @@ $script:GitHubRuleTargets = @(
   'rovodev', 'tabnine', 'takt', 'trae', 'vibe', 'vibe-plugin', 'warp',
   'warpcli', 'xum', 'zcode', 'zcode-plugin', 'zed', 'zoocode'
 )
+# The four slugs added in 42.0.0. The 32.0.0 enum (kept as the compatibility
+# fixture) is the 42 list without them, so 32.0.0 through 41.x reuse the 67
+# targets that are known to exist there.
+$script:GitHubRuleTargets42Only = @('androidstudio', 'firebender', 'opencodev1', 'xum')
+$script:GitHubRuleTargets32 = @($script:GitHubRuleTargets42 | Where-Object { $script:GitHubRuleTargets42Only -cnotcontains $_ })
+# Default for direct validator callers that do not pass a configured version.
+$script:GitHubRuleTargets = @($script:GitHubRuleTargets42)
+
+# Reads rulesyncVersion from the AutoDir settings (the deployed .automation).
+# With no AutoDir, or with an older Settings.ps1 that has no AutoDir parameter,
+# it uses the module's own settings.json; both paths keep the shipped default.
+function Get-GitHubRulesyncVersion([string]$AutoDir) {
+  $default = '42.0.0'
+  $cmd = Get-Command Get-ShirubeSetting -ErrorAction SilentlyContinue
+  if (-not $cmd) { return $default }
+  $v = $null
+  if ($AutoDir -and $cmd.Parameters.ContainsKey('AutoDir')) {
+    $v = Get-ShirubeSetting -Name 'rulesyncVersion' -Default $default -AutoDir $AutoDir
+  } else {
+    $v = Get-ShirubeSetting -Name 'rulesyncVersion' -Default $default
+  }
+  if ($null -eq $v) { return $default }
+  $v = ([string]$v).Trim()
+  if ($v -eq '') { return $default }
+  return $v
+}
+
+# Exact semver only. rulesyncVersion is also used as rulesync@<version>, but a
+# range or tag does not identify a schema we can verify, so it fails closed.
+function Get-GitHubRuleTargetPolicy([string]$AutoDir) {
+  $ver = Get-GitHubRulesyncVersion $AutoDir
+  $unknown = ('rulesync ' + $ver + ' のターゲット互換性を確認できません。settings.json の rulesyncVersion を 42.0.0、または 32.0.0 以上 42.0.0 未満の検証済み版に固定してください。')
+  $m = [regex]::Match($ver, '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$')
+  if (-not $m.Success) { return @{ ok = $false; version = $ver; targets = @(); error = $unknown } }
+  $major = [int]$m.Groups[1].Value
+  $minor = [int]$m.Groups[2].Value
+  if (($major -eq 42) -and ($minor -eq 0)) {
+    return @{ ok = $true; version = $ver; targets = @($script:GitHubRuleTargets42); error = '' }
+  }
+  if (($major -ge 32) -and ($major -lt 42)) {
+    return @{ ok = $true; version = $ver; targets = @($script:GitHubRuleTargets32); error = '' }
+  }
+  return @{ ok = $false; version = $ver; targets = @(); error = $unknown }
+}
+
+# First target slug in the frontmatter that the configured version does not
+# support. Diagnostic only: it runs after the strict validator has failed.
+function Get-GitHubRuleUnsupportedTarget([string]$Text, [string[]]$AllowedTargets) {
+  foreach ($ln in ([string]$Text -split "`n")) {
+    if ($ln -match '^targets\s*:[ \t]+\[(.*)\]([ \t]+#.*)?[ \t]*$') {
+      foreach ($tm in [regex]::Matches([string]$Matches[1], '"([a-z0-9][a-z0-9-]*)"')) {
+        $v = [string]$tm.Groups[1].Value
+        if ($AllowedTargets -cnotcontains $v) { return $v }
+      }
+    }
+  }
+  return ''
+}
+
+function Format-GitHubRuleTargetError([string]$Version, [string[]]$Targets, [bool]$AfterRead) {
+  $list = (@($Targets) | Where-Object { [string]$_ -ne '' } | ForEach-Object { '"' + [string]$_ + '"' }) -join ', '
+  $msg = 'rulesync ' + $Version + ' では ' + $list + ' を使用できません。settings.json の rulesyncVersion を 42.0.0 に上げてから保存してください。'
+  if ($AfterRead) { return ('保存前に rulesyncVersion が変更されたため保存できません。再取得してください。' + $msg) }
+  return $msg
+}
 
 # Rule editor frontmatter contract: the same strict line gate as
 # Sync-ProjectRules.ps1 Test-FrontmatterFlag. root: true exactly once, no
@@ -645,8 +720,10 @@ $script:GitHubRuleTargets = @(
 # no duplicates, at most one double-quoted description, no unknown keys.
 # project.md must keep both base targets; global.md may omit targets (all
 # targets) or use the ["*"] wildcard.
-function Test-GitHubRuleFrontmatter([string]$Text, [string]$Kind) {
+function Test-GitHubRuleFrontmatter([string]$Text, [string]$Kind, [string[]]$AllowedTargets = $null) {
   $src = [string]$Text
+  $allowed = $script:GitHubRuleTargets
+  if ($null -ne $AllowedTargets) { $allowed = $AllowedTargets }
   if ($src.Length -eq 0) { return $false }
   if ([System.Text.Encoding]::UTF8.GetByteCount($src) -gt 262144) { return $false }
   if ($src[0] -eq [char]0xFEFF) { $src = $src.Substring(1) }
@@ -675,7 +752,7 @@ function Test-GitHubRuleFrontmatter([string]$Text, [string]$Kind) {
       foreach ($tm in [regex]::Matches([string]$Matches[1], '"([a-z0-9][a-z0-9-]*)"')) {
         $v = [string]$tm.Groups[1].Value
         if ($items -ccontains $v) { return $false }
-        if ($script:GitHubRuleTargets -cnotcontains $v) { return $false }
+        if ($allowed -cnotcontains $v) { return $false }
         $items += $v
       }
       if ($proj) {
@@ -723,7 +800,13 @@ function Get-GitHubRuleContent([string]$AutoDir, [string]$Kind) {
 function Save-GitHubRuleContent([string]$AutoDir, [string]$Kind, [string]$Text, [string]$ExpectedSha, [string]$ExpectedRepo = '', [string]$ExpectedBranch = '', [string]$ExpectedPath = '') {
   $k = [string]$Kind
   if (($k -cne 'project') -and ($k -cne 'global')) { return @{ ok = $false; error = '種別が不正です。' } }
-  if (-not (Test-GitHubRuleFrontmatter ([string]$Text) $k)) {
+  $policy = Get-GitHubRuleTargetPolicy $AutoDir
+  if (-not $policy.ok) { return @{ ok = $false; error = [string]$policy.error } }
+  if (-not (Test-GitHubRuleFrontmatter ([string]$Text) $k @($policy.targets))) {
+    $badTarget = Get-GitHubRuleUnsupportedTarget ([string]$Text) @($policy.targets)
+    if ($badTarget -ne '') {
+      return @{ ok = $false; error = (Format-GitHubRuleTargetError ([string]$policy.version) @($badTarget) $false) }
+    }
     return @{ ok = $false; error = 'frontmatter が不正です（root: true、1行の targets 配列（global は省略可）、rulesync が対応するターゲット、重複なしが必要です）。' }
   }
   $originConflict = @{ ok = $false; conflict = $true; error = 'GitHub連携設定（リポジトリ／ブランチ／パス）が変更されたため保存できません。再取得してください。' }
@@ -736,6 +819,19 @@ function Save-GitHubRuleContent([string]$AutoDir, [string]$Kind, [string]$Text, 
   # Re-check after the fetch: a settings change during the request must not
   # retarget the commit that Set-GitHubFile resolves from the current settings.
   if (-not (Test-GitHubRuleSaveOrigin $AutoDir $k $ExpectedRepo $ExpectedBranch $ExpectedPath)) { return $originConflict }
+  # The rulesync version can change while the editor is open. Validate the same
+  # text against the version in effect immediately before the PUT, best effort,
+  # alongside the origin and sha checks above.
+  $policyNow = Get-GitHubRuleTargetPolicy $AutoDir
+  if (-not $policyNow.ok) {
+    return @{ ok = $false; conflict = $true; error = [string]$policyNow.error }
+  }
+  if (-not (Test-GitHubRuleFrontmatter ([string]$Text) $k @($policyNow.targets))) {
+    $badNow = Get-GitHubRuleUnsupportedTarget ([string]$Text) @($policyNow.targets)
+    $msg = '保存前に rulesyncVersion が変更されたため保存できません。再取得してください。'
+    if ($badNow -ne '') { $msg = Format-GitHubRuleTargetError ([string]$policyNow.version) @($badNow) $true }
+    return @{ ok = $false; conflict = $true; error = $msg }
+  }
   $s = Get-GitHubSettings $AutoDir
   $rel = Get-GitHubRuleRelPath ([string]$s.rulesPath) $k
   $put = Set-GitHubFile $AutoDir $rel ([string]$Text) ([string]$ExpectedSha) ('chore: update ' + $k + ' rule')
@@ -754,6 +850,17 @@ function Update-GitHubRuleTargets([string]$AutoDir, [string[]]$Targets) {
   $tok = Get-GitHubSyncToken $AutoDir
   if ($tok -eq '') {
     return @{ ok = $false; skipped = $true; files = @(); error = 'GitHubのトークンが未設定です。' }
+  }
+  $policy = Get-GitHubRuleTargetPolicy $AutoDir
+  if (-not $policy.ok) { return @{ ok = $false; files = @(); error = [string]$policy.error } }
+  $want = @()
+  foreach ($t in @($Targets)) {
+    $tt = ([string]$t).Trim()
+    if (($tt -ne '') -and ($want -cnotcontains $tt)) { $want += $tt }
+  }
+  $badRequested = @($want | Where-Object { $policy.targets -cnotcontains $_ })
+  if ($badRequested.Count -gt 0) {
+    return @{ ok = $false; files = @(); error = (Format-GitHubRuleTargetError ([string]$policy.version) $badRequested $false) }
   }
   $files = @()
   $fail = ''
@@ -795,8 +902,24 @@ function Update-GitHubRuleTargets([string]$AutoDir, [string[]]$Targets) {
     }
     # The rewrite repairs quoting but must never commit a file the validator
     # rejects (duplicate/unsupported slugs in the fetched text).
-    if (-not (Test-GitHubRuleFrontmatter ([string]$upd.text) $name)) {
+    if (-not (Test-GitHubRuleFrontmatter ([string]$upd.text) $name @($policy.targets))) {
       $msg = '更新後のfrontmatterが不正です。'
+      if ($fail -eq '') { $fail = ($msg + ' (' + $name + '.md)') }
+      $files += @{ name = $name; path = $rel; added = @(); ok = $false; error = $msg }
+      continue
+    }
+    # Re-check immediately before the PUT: a settings change during the GETs
+    # must not write a target the current version cannot read.
+    $policyNow = Get-GitHubRuleTargetPolicy $AutoDir
+    if (-not $policyNow.ok) {
+      if ($fail -eq '') { $fail = ([string]$policyNow.error + ' (' + $name + '.md)') }
+      $files += @{ name = $name; path = $rel; added = @(); ok = $false; error = [string]$policyNow.error }
+      continue
+    }
+    $badNow = @($want | Where-Object { $policyNow.targets -cnotcontains $_ })
+    if (($badNow.Count -gt 0) -or (-not (Test-GitHubRuleFrontmatter ([string]$upd.text) $name @($policyNow.targets)))) {
+      $msg = '保存前に rulesyncVersion が変更されたため保存できません。再取得してください。'
+      if ($badNow.Count -gt 0) { $msg = Format-GitHubRuleTargetError ([string]$policyNow.version) $badNow $true }
       if ($fail -eq '') { $fail = ($msg + ' (' + $name + '.md)') }
       $files += @{ name = $name; path = $rel; added = @(); ok = $false; error = $msg }
       continue

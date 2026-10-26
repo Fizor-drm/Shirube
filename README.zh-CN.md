@@ -241,6 +241,8 @@ description: "此项目专用的规则"
 
 Project 的 frontmatter 只接受固定格式。请将 3 个键各写一行，不要缩进。带引号的键、块格式（`|` / `>`）、未知键以及同时使用 `root` 和 `localRoot` 都会被拒绝。`targets` 保持为 `["codexcli", "opencode"]`，`description` 使用双引号。正文用 Markdown 编写规则。Global 的 frontmatter 遵循 rulesync 的 YAML 格式：写 `root: true` 和 `description`，不要固定 `targets`。
 
+保存规则前，规则编辑器会根据 `settings.json` 的 `rulesyncVersion` 校验 `targets`。默认 `42.0.0` 允许 rulesync 42 的全部目标。`32.0.0` 以上且低于 `42.0.0` 的版本只允许在 32.0.0 中确认过的目标，因此 42 新增的 `androidstudio`、`firebender`、`opencodev1`、`xum` 无法保存。其他版本（范围、标签、31 及更早、42.0 系列之后的版本）因无法确认目标列表而拒绝保存。要使用新目标，请将 `rulesyncVersion` 提升到 `42.0.0`。
+
 修改通用规则后，GitHub 上的内容会在下次同步时获取。项目专用规则会直接使用本地文件的下次同步结果。`AGENTS.md` 是生成文件，请不要编辑。
 
 ## 管理界面
