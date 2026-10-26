@@ -6,7 +6,7 @@ Shirube 从 GitHub 上的规则仓库和各项目的本地规则生成 Codex、O
 
 ![Windows 10 / 11](https://img.shields.io/badge/OS-Windows%2010%20%2F%2011-0078D4?logo=windows&logoColor=white)
 ![Windows PowerShell 5.1](https://img.shields.io/badge/PowerShell-5.1-5391FE?logo=powershell&logoColor=white)
-![rulesync 32.0.0](https://img.shields.io/badge/rulesync-32.0.0-2F6F44)
+![rulesync 42.0.0](https://img.shields.io/badge/rulesync-42.0.0-2F6F44)
 ![Global 18 CLIs / Project 2](https://img.shields.io/badge/targets-Global%2018%20CLIs%20%2F%20Project%202-111827)
 [![MIT License](https://img.shields.io/badge/license-MIT-2EA043)](LICENSE)
 
@@ -77,9 +77,9 @@ rulesync 使用 `--features rules` 生成 `AGENTS.md`。Global 使用 `--global`
 | --- | --- |
 | OS | Windows 10 / 11 |
 | PowerShell | Windows PowerShell 5.1（`powershell.exe`） |
-| Node.js | 可以从 PATH 运行 `npx` 和 `node` |
+| Node.js | 22.0.0 或更高版本（可以从 PATH 运行 `npx` 和 `node`） |
 | GitHub CLI | `gh` 在 PATH 中，并且已完成 `gh auth login` |
-| rulesync | `settings.json` 中的 `rulesyncVersion`（默认 `32.0.0`） |
+| rulesync | `settings.json` 中的 `rulesyncVersion`（默认 `42.0.0`） |
 | Git | 用于克隆仓库 |
 | 规则仓库 | GitHub 上的一个仓库（包含 `rules/global.md` 和 `rules/project.md`） |
 
@@ -264,7 +264,7 @@ Project 的 frontmatter 只接受固定格式。请将 3 个键各写一行，�
 | --- | --- | --- |
 | `taskNameGlobal` | Global 自动同步的 Windows 任务名 | `Shirube Global Auto Sync` |
 | `taskNameProject` | Project 自动同步的 Windows 任务名 | `Shirube Project Auto Sync` |
-| `rulesyncVersion` | 使用的 `rulesync` 版本 | `32.0.0` |
+| `rulesyncVersion` | 使用的 `rulesync` 版本 | `42.0.0` |
 
 修改任务名时，请让 Windows“任务计划程序”中的任务名保持一致。名称不一致时找不到目标任务，修改间隔、启用/禁用切换以及还原前的暂停都会失败。
 
@@ -348,7 +348,7 @@ node .automation\tests\Test-DashboardGenerationRace.mjs
 
 `Test-SyncProjectRules.ps1` 的 T13a / T13b 仅在拥有创建符号链接权限（开发者模式或管理员）的环境中通过。没有权限时会记录为失败，不会将跳过视为成功。
 
-`Test-ReviewFixes.ps1` 的 R7e 会从 PATH 解析 `node`，并从 npx 包缓存解析 rulesync 32。任一缺失时会显示为跳过，不会视为失败。运行一次 `npx --yes rulesync@32.0.0` 即可验证。
+`Test-ReviewFixes.ps1` 的 R7e 会从 PATH 解析 `node`，并从 npx 包缓存解析 rulesync 42。任一缺失时会显示为跳过，不会视为失败。运行一次 `npx --yes rulesync@42.0.0` 即可验证。npx 缓存按用户共享，因此只有首次运行需要网络。
 
 </details>
 

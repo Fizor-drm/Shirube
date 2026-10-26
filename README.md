@@ -6,7 +6,7 @@ GitHub のルールリポジトリと各プロジェクトのローカルルー�
 
 ![Windows 10 / 11](https://img.shields.io/badge/OS-Windows%2010%20%2F%2011-0078D4?logo=windows&logoColor=white)
 ![Windows PowerShell 5.1](https://img.shields.io/badge/PowerShell-5.1-5391FE?logo=powershell&logoColor=white)
-![rulesync 32.0.0](https://img.shields.io/badge/rulesync-32.0.0-2F6F44)
+![rulesync 42.0.0](https://img.shields.io/badge/rulesync-42.0.0-2F6F44)
 ![Global 18 CLIs / Project 2](https://img.shields.io/badge/targets-Global%2018%20CLIs%20%2F%20Project%202-111827)
 [![MIT License](https://img.shields.io/badge/license-MIT-2EA043)](LICENSE)
 
@@ -77,9 +77,9 @@ rulesync は `--features rules` で `AGENTS.md` を生成します。Global は 
 | --- | --- |
 | OS | Windows 10 / 11 |
 | PowerShell | Windows PowerShell 5.1（`powershell.exe`） |
-| Node.js | `npx` と `node` が PATH から実行できること |
+| Node.js | 22.0.0 以上（`npx` と `node` が PATH から実行できること） |
 | GitHub CLI | `gh` が PATH にあり、`gh auth login` 済みであること |
-| rulesync | `settings.json` の `rulesyncVersion`（既定 `32.0.0`） |
+| rulesync | `settings.json` の `rulesyncVersion`（既定 `42.0.0`） |
 | Git | リポジトリのクローン用 |
 | ルール保管用リポジトリ | GitHub 上の 1 リポジトリ（`rules/global.md` と `rules/project.md`） |
 
@@ -264,7 +264,7 @@ Project の frontmatter は決まった形式だけを受け付けます。3 つ
 | --- | --- | --- |
 | `taskNameGlobal` | Global 自動同期の Windows タスク名 | `Shirube Global Auto Sync` |
 | `taskNameProject` | Project 自動同期の Windows タスク名 | `Shirube Project Auto Sync` |
-| `rulesyncVersion` | 使用する `rulesync` のバージョン | `32.0.0` |
+| `rulesyncVersion` | 使用する `rulesync` のバージョン | `42.0.0` |
 
 タスク名を変えるときは、Windows の「タスク スケジューラ」側のタスク名も同じ名前にしてください。名前が違うと対象のタスクが見つからず、間隔変更・有効/無効の切替・復元前の休止が失敗します。
 
@@ -348,7 +348,7 @@ node .automation\tests\Test-DashboardGenerationRace.mjs
 
 `Test-SyncProjectRules.ps1` の T13a / T13b は、シンボリックリンクを作成できる権限（開発者モードまたは管理者）がある環境でのみ通ります。権限がない環境では失敗として記録され、スキップは成功扱いになりません。
 
-`Test-ReviewFixes.ps1` の R7e は、`node` を PATH から、rulesync 32 を npx のパッケージキャッシュから解決します。どちらかが見つからない場合はスキップとして表示され、失敗にはなりません。`npx --yes rulesync@32.0.0` を一度実行すると検証できます。
+`Test-ReviewFixes.ps1` の R7e は、`node` を PATH から、rulesync 42 を npx のパッケージキャッシュから解決します。どちらかが見つからない場合はスキップとして表示され、失敗にはなりません。`npx --yes rulesync@42.0.0` を一度実行すると検証できます。npx のキャッシュはユーザー単位で共有されるため、初回だけネットワークが必要です。
 
 </details>
 

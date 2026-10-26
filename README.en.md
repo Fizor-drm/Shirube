@@ -6,7 +6,7 @@ Shirube generates the `AGENTS.md` files that Codex, OpenCode and 16 other suppor
 
 ![Windows 10 / 11](https://img.shields.io/badge/OS-Windows%2010%20%2F%2011-0078D4?logo=windows&logoColor=white)
 ![Windows PowerShell 5.1](https://img.shields.io/badge/PowerShell-5.1-5391FE?logo=powershell&logoColor=white)
-![rulesync 32.0.0](https://img.shields.io/badge/rulesync-32.0.0-2F6F44)
+![rulesync 42.0.0](https://img.shields.io/badge/rulesync-42.0.0-2F6F44)
 ![Global 18 CLIs / Project 2](https://img.shields.io/badge/targets-Global%2018%20CLIs%20%2F%20Project%202-111827)
 [![MIT License](https://img.shields.io/badge/license-MIT-2EA043)](LICENSE)
 
@@ -77,9 +77,9 @@ The dashboard runs as a separate process from this flow and handles preview, app
 | --- | --- |
 | OS | Windows 10 / 11 |
 | PowerShell | Windows PowerShell 5.1 (`powershell.exe`) |
-| Node.js | `npx` and `node` can be run from PATH |
+| Node.js | 22.0.0 or later (`npx` and `node` can be run from PATH) |
 | GitHub CLI | `gh` is on PATH and `gh auth login` has been completed |
-| rulesync | `rulesyncVersion` in `settings.json` (default `32.0.0`) |
+| rulesync | `rulesyncVersion` in `settings.json` (default `42.0.0`) |
 | Git | For cloning the repository |
 | Rules repository | One GitHub repository containing `rules/global.md` and `rules/project.md` |
 
@@ -264,7 +264,7 @@ You can change the automatic sync task names and the rulesync version in `settin
 | --- | --- | --- |
 | `taskNameGlobal` | Windows task name for Global automatic sync | `Shirube Global Auto Sync` |
 | `taskNameProject` | Windows task name for Project automatic sync | `Shirube Project Auto Sync` |
-| `rulesyncVersion` | rulesync version to use | `32.0.0` |
+| `rulesyncVersion` | rulesync version to use | `42.0.0` |
 
 If you rename a task, use the same name for the task in Windows Task Scheduler. If the names differ, the task cannot be found, and interval changes, enable/disable changes, and the pause before a restore fail.
 
@@ -348,7 +348,7 @@ node .automation\tests\Test-DashboardGenerationRace.mjs
 
 T13a / T13b in `Test-SyncProjectRules.ps1` pass only where you have permission to create symbolic links (Developer Mode or an administrator). Without that permission they are recorded as failures; skipping is not treated as success.
 
-R7e in `Test-ReviewFixes.ps1` resolves `node` from PATH and rulesync 32 from the npx package cache. If either is missing it is shown as skipped, not as a failure. Running `npx --yes rulesync@32.0.0` once makes it verifiable.
+R7e in `Test-ReviewFixes.ps1` resolves `node` from PATH and rulesync 42 from the npx package cache. If either is missing it is shown as skipped, not as a failure. Running `npx --yes rulesync@42.0.0` once makes it verifiable. The npx cache is shared per user, so only the first run needs network access.
 
 </details>
 
