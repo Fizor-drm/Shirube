@@ -406,8 +406,8 @@ try {
   # 42.0.0 must not reach a repository that the next 32 sync cannot read.
   $providers18 = @('codexcli', 'opencode', 'claudecode', 'cline', 'copilotcli', 'antigravity-cli', 'continue', 'roo', 'goose', 'devin', 'zed', 'crush', 'codebuddy', 'commandcode', 'kimi-code', 'vibe', 'qoder', 'pi')
   $settingsFile = Join-Path $auto 'settings.json'
-  function Set-TestRulesyncVersion([string]$Version) {
-    if ($null -eq $Version) { Remove-Item -LiteralPath $settingsFile -Force -ErrorAction SilentlyContinue; return }
+  function Set-TestRulesyncVersion($Version) {
+    if ([string]::IsNullOrEmpty([string]$Version)) { Remove-Item -LiteralPath $settingsFile -Force -ErrorAction SilentlyContinue; return }
     Set-Content -LiteralPath $settingsFile -Value ('{"rulesyncVersion":"' + $Version + '"}') -Encoding UTF8
   }
   Save-GitHubSettings $auto 'Fizor-drm/ai-agent-rules' 'dev' 'rules' | Out-Null
@@ -460,6 +460,7 @@ try {
   Assert (@($script:GhCalls | Where-Object { $_.method -ne 'GET' }).Count -eq 1) 'T6f array-root settings commit under the default'
   Set-TestRulesyncVersion $null
   $script:GhCalls = @()
+  Assert (-not (Test-Path -LiteralPath $settingsFile)) 'T6f null fixture removes the settings file'
   $noSettings = Save-GitHubRuleContent $auto 'global' $ruleNew4 'sha-global'
   Assert ($noSettings.ok) 'T6f missing settings use the 42.0.0 default'
 
@@ -507,6 +508,10 @@ try {
   Assert (@($script:GhCalls | Where-Object { $_.method -ne 'GET' }).Count -eq 0) 'T6f version change before the target PUT never commits'
   $script:GhOnGet = $null
   Set-TestRulesyncVersion $null
+  Assert (-not (Test-Path -LiteralPath $settingsFile)) 'T6f cleanup removes the settings file'
+  Set-TestRulesyncVersion '42.0.0'
+  Set-TestRulesyncVersion ''
+  Assert (-not (Test-Path -LiteralPath $settingsFile)) 'T6f empty fixture removes the settings file'
 
   $ruleGlobalWild = ('---' + $nl + 'root: true' + $nl + 'targets: ["*"]' + $nl + '---' + $nl + '# global body' + $nl)
   foreach ($case in @(@{ name = 'without targets'; text = $ruleGlobalBare }, @{ name = 'with a wildcard target'; text = $ruleGlobalWild })) {
