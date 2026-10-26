@@ -2060,7 +2060,7 @@ exit $c
       if (-not ((Test-Path -LiteralPath $js7 -PathType Leaf) -and (Test-Path -LiteralPath $json7 -PathType Leaf))) { continue }
       $ver7 = ''
       try { $ver7 = [string](Get-Content -LiteralPath $json7 -Raw -Encoding UTF8 | ConvertFrom-Json).version } catch { $ver7 = '' }
-      if ($ver7 -like '42.*') { $cliJs7 = $js7; break }
+      if ($ver7 -ceq '42.0.0') { $cliJs7 = $js7; break }
     }
     if ($cliJs7) { break }
   }
