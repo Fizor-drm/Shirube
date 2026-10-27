@@ -29,7 +29,8 @@ const names = ['stateJa', 'resultJa', 'updateSyncUI', 'updateCommonSyncState',
   'afterSyncNotify', 'afterGlobalSyncNotify', 'setUnifiedProgress',
   'globalProviderEntry', 'globalProviderLabel', 'globalLogoInitials', 'globalProviderLogo',
   'globalReloadProtectsTargets', 'globalReloadProtectsInterval',
-  'renderGlobalTargetChoices', 'renderGlobalTargetsUI', 'globalTargetsDirtyNow', 'globalTargetsSetAll',
+  'renderGlobalTargetChoices', 'renderGlobalTargetsUI', 'reorderGlobalTargetCards',
+  'globalTargetCardId', 'globalTargetCatalogRank', 'globalTargetsDirtyNow', 'globalTargetsSetAll',
   'globalTargetsLockedByGitHub',
   'globalTargetCheckboxes', 'markGlobalTargetsDirty', 'globalSelectedTargets', 'globalPlanIdForSelection',
   'globalSyncApplyEnabled', 'updateGlobalSyncApplyButton', 'singleSyncTerminal',
@@ -39,7 +40,10 @@ function setup() {
   function element() {
     const el = { textContent: '', title: '', value: '', checked: false,
       disabled: false, hidden: false, dataset: {}, style: {}, children: [],
-      appendChild(c) { this.children.push(c); }, setAttribute(k,v) { this[k]=v; },
+      appendChild(c) {
+        if (c.parentNode && c.parentNode.children) { const i = c.parentNode.children.indexOf(c); if (i >= 0) c.parentNode.children.splice(i, 1); }
+        c.parentNode = this; this.children.push(c); return c;
+      }, setAttribute(k,v) { this[k]=v; },
       removeAttribute(k) { delete this[k]; }, classList: {add(){},remove(){}} };
     Object.defineProperty(el, 'innerHTML', { get(){return this._innerHTML || '';}, set(v){this._innerHTML=v; if(v === '') this.children=[];} });
     return el;
