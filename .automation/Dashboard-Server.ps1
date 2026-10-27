@@ -9,6 +9,7 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'Project-Management.ps1')
 . (Join-Path $PSScriptRoot 'Global-Management.ps1')
 . (Join-Path $PSScriptRoot 'GitHub-Management.ps1')
+. (Join-Path $PSScriptRoot 'Extension-Management.ps1')
 
 function Get-AutoDir { return $PSScriptRoot }
 function Get-DashboardPort {
@@ -1172,6 +1173,68 @@ input[type=number]{width:120px;background:#0a0a0a;border:1px solid #2c2c2c;color
 #ghOvl .ghbtn-act.primary:hover{background:var(--gh-accent-hover)}
 #ghOvl .ghbtn-act:disabled{opacity:.5;cursor:not-allowed}
 @media(max-width:560px){#ghOvl .gh-two{grid-template-columns:1fr}#ghOvl .ghchoices{grid-template-columns:1fr}}
+#extensions{--ex-accent:#4c9aff;--ex-accent-soft:rgba(76,154,255,.12);--ex-card:#111114;--ex-card-hover:#17171c;--ex-border:#2a2a30;--ex-muted:#9a9aa3;--ex-text:#e8e8ea;--ex-ok:#3fb950;--ex-warn:#d29922;--ex-err:#f85149;--ex-off:#6b6b75}
+#extensions .ex-tabs{display:flex;gap:4px;flex-wrap:wrap;margin:14px 0 12px;border-bottom:1px solid var(--ex-border);padding-bottom:8px}
+#extensions .ex-tab{appearance:none;background:none;border:1px solid transparent;color:var(--ex-muted);padding:7px 14px;border-radius:7px;font:inherit;font-size:13px;cursor:pointer}
+#extensions .ex-tab:hover{background:var(--ex-card);color:var(--ex-text)}
+#extensions .ex-tab[aria-selected="true"]{background:var(--ex-accent-soft);border-color:var(--ex-accent);color:#fff}
+#extensions .ex-tab:focus-visible{outline:2px solid var(--ex-accent);outline-offset:2px}
+#extensions .ex-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:14px}
+#extensions .ex-stat{background:var(--ex-card);border:1px solid var(--ex-border);border-radius:9px;padding:10px 12px;min-width:0}
+#extensions .ex-stat b{display:block;font-size:18px;color:var(--ex-text);line-height:1.3}
+#extensions .ex-stat span{display:block;font-size:12px;color:var(--ex-muted);overflow-wrap:anywhere}
+#extensions .ex-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+#extensions .ex-card{background:var(--ex-card);border:1px solid var(--ex-border);border-radius:10px;padding:12px 13px;min-width:0;display:flex;flex-direction:column;gap:7px}
+#extensions .ex-card:hover{background:var(--ex-card-hover)}
+#extensions .ex-card h3{margin:0;font-size:14px;line-height:1.35;overflow-wrap:anywhere}
+#extensions .ex-sub{margin:0;font-size:11.5px;line-height:1.45;color:var(--ex-muted);overflow-wrap:anywhere}
+#extensions #exHome{overflow-wrap:anywhere}
+#extensions .ex-details code{overflow-wrap:anywhere}
+#extensions .ex-desc{margin:0;font-size:12px;line-height:1.55;color:#c9c9cf;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;overflow-wrap:anywhere}
+#extensions .ex-providers{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto}
+#extensions .ex-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:999px;font-size:11px;line-height:1.5;border:1px solid var(--ex-border);background:#0c0c0f;color:var(--ex-muted);max-width:100%}
+#extensions .ex-chip .ex-dot{width:7px;height:7px;border-radius:50%;background:var(--ex-off);flex:none}
+#extensions .ex-chip[data-state="enabled"]{border-color:rgba(63,185,80,.45);color:#b7f0c0}
+#extensions .ex-chip[data-state="enabled"] .ex-dot{background:var(--ex-ok)}
+#extensions .ex-chip[data-state="disabled"]{border-color:rgba(210,153,34,.45);color:#f0d08a}
+#extensions .ex-chip[data-state="disabled"] .ex-dot{background:var(--ex-warn)}
+#extensions .ex-chip[data-state="invalid"],#extensions .ex-chip[data-state="error"]{border-color:rgba(248,81,73,.45);color:#ffb4ae}
+#extensions .ex-chip[data-state="invalid"] .ex-dot,#extensions .ex-chip[data-state="error"] .ex-dot{background:var(--ex-err)}
+#extensions .ex-chip[data-state="duplicate"],#extensions .ex-chip[data-state="configured"]{border-color:rgba(210,153,34,.45);color:#f0d08a}
+#extensions .ex-chip[data-state="duplicate"] .ex-dot,#extensions .ex-chip[data-state="configured"] .ex-dot{background:var(--ex-warn)}
+#extensions .ex-chip .ex-toggle{margin-left:2px;border:0;background:none;color:inherit;font:inherit;text-decoration:underline;cursor:pointer;padding:0}
+#extensions .ex-chip .ex-toggle:focus-visible{outline:2px solid var(--ex-accent);outline-offset:2px}
+#extensions .ex-empty{color:var(--ex-muted);font-size:13px;padding:10px 0}
+#extensions .ex-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:14px 0 10px}
+#extensions .ex-toolbar .ex-spacer{margin-left:auto}
+#extensions .ex-details{border-top:1px solid var(--ex-border);margin-top:14px;padding-top:12px}
+#extensions .ex-details summary{cursor:pointer;color:var(--ex-muted);font-size:12px}
+#extensions .ex-details ul{margin:8px 0 0;padding-left:18px;color:var(--ex-muted);font-size:12px}
+#extensions .ex-form{display:grid;gap:10px;margin-top:12px;padding:12px;border:1px solid var(--ex-border);border-radius:10px;background:#0c0c0f}
+#extensions .ex-form fieldset{border:1px solid var(--ex-border);border-radius:8px;padding:8px 10px;margin:0}
+#extensions .ex-form legend{font-size:12px;color:var(--ex-muted);padding:0 4px}
+#extensions .ex-form label{display:block;font-size:12px;color:var(--ex-muted)}
+#extensions .ex-form input[type=text],#extensions .ex-form textarea,#extensions .ex-form select{display:block;width:100%;margin-top:4px;background:#08080a;border:1px solid #2c2c34;border-radius:6px;color:var(--ex-text);padding:8px 9px;font-size:12.5px;line-height:1.5}
+#extensions .ex-form input[type=text]:focus-visible,#extensions .ex-form textarea:focus-visible,#extensions .ex-form select:focus-visible{outline:2px solid var(--ex-accent);outline-offset:1px}
+#extensions .ex-form textarea{min-height:74px;resize:vertical;font-family:ui-monospace,Consolas,monospace}
+#extensions .ex-form .ex-checks{display:flex;gap:14px;flex-wrap:wrap;padding-top:4px}
+#extensions .ex-form .ex-checks label{display:inline-flex;align-items:center;gap:6px;color:var(--ex-text);font-size:12.5px}
+#extensions .ex-warn{color:#f0d08a;font-size:12px;margin:0}
+#extensions .ex-err{color:#ffb4ae;font-size:12px;margin:0}
+#extensions .ex-ok{color:#b7f0c0;font-size:12px;margin:0}
+#extensions .ex-preview{margin-top:12px;display:grid;gap:10px}
+#extensions .ex-entry{border:1px solid var(--ex-border);border-radius:9px;padding:10px 12px;background:#0c0c0f}
+#extensions .ex-entry-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#extensions .ex-entry-head b{font-size:12.5px}
+#extensions .ex-entry code{font-size:11px;color:var(--ex-muted);overflow-wrap:anywhere}
+#extensions .ex-entry pre{max-height:220px;overflow:auto;background:#08080a;border:1px solid #1e1e24;border-radius:6px;padding:8px;margin:8px 0 0;font-size:11px;line-height:1.5}
+#extensions .ex-backups{display:grid;gap:6px;margin-top:8px}
+#extensions .ex-backup{display:flex;align-items:center;gap:8px;flex-wrap:wrap;border:1px solid var(--ex-border);border-radius:8px;padding:8px 10px;background:#0c0c0f;font-size:12px}
+#extensions .ex-backup code{color:var(--ex-muted);font-size:11px}
+#extensions .ex-backup .ex-spacer{margin-left:auto}
+@media(max-width:760px){#extensions .ex-summary{grid-template-columns:1fr}#extensions .ex-grid{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){#extensions .ex-tab,#extensions .ex-card{transition:none!important}}
+
 /* #gsettings card selector */
 #gsettings{--gs-accent:#4c9aff;--gs-accent-soft:rgba(76,154,255,.12);--gs-card:#17171a;--gs-card-hover:#1d1d21;--gs-border:#2a2a30;--gs-muted:#9a9aa3;--gs-text:#e8e8ea;--gs-ok:#3fb950;--gs-off:#6b6b75;--gs-on-accent:#0b0b0c}
 #gsettings .gs-toolbar{display:flex;align-items:center;gap:4px;margin:16px 0 12px;flex-wrap:wrap}
@@ -1357,6 +1420,55 @@ input[type=number]{width:120px;background:#0a0a0a;border:1px solid #2c2c2c;color
 </div>
 </section>
 </div>
+<section id="extensions">
+<div class="card">
+<h2 data-i18n="拡張機能（MCP・スキル・プラグイン）">拡張機能（MCP・スキル・プラグイン）</h2>
+<p class="muted" data-i18n="Codex / OpenCode / Claude Code のグローバル設定から MCP・スキル・プラグインを検出します。変更はプレビューと差分で確認し、バックアップ後に適用します。MCPの実行、外部への送信、パッケージのインストールは行いません。">Codex / OpenCode / Claude Code のグローバル設定から MCP・スキル・プラグインを検出します。変更はプレビューと差分で確認し、バックアップ後に適用します。MCPの実行、外部への送信、パッケージのインストールは行いません。</p>
+<p class="muted" id="exHome"></p>
+<div class="ex-tabs" role="tablist" aria-label="拡張機能の種別" data-i18n-aria="拡張機能の種別">
+<button type="button" class="ex-tab" id="exTabMcp" role="tab" aria-selected="true" aria-controls="exPanelMcp" data-i18n="MCP">MCP</button>
+<button type="button" class="ex-tab" id="exTabSkill" role="tab" aria-selected="false" aria-controls="exPanelSkill" tabindex="-1" data-i18n="スキル">スキル</button>
+<button type="button" class="ex-tab" id="exTabPlugin" role="tab" aria-selected="false" aria-controls="exPanelPlugin" tabindex="-1" data-i18n="プラグイン">プラグイン</button>
+</div>
+<div id="exSummary" class="ex-summary" aria-live="polite"></div>
+<div id="exWarnTop" role="status"></div>
+<div id="exPanelMcp" role="tabpanel" aria-labelledby="exTabMcp">
+<div id="exMcpList" class="ex-grid"></div>
+<div id="msgExtMcp" role="status"></div>
+</div>
+<div id="exPanelSkill" role="tabpanel" aria-labelledby="exTabSkill" hidden>
+<div id="exSkillList" class="ex-grid"></div>
+<div id="msgExtSkill" role="status"></div>
+</div>
+<div id="exPanelPlugin" role="tabpanel" aria-labelledby="exTabPlugin" hidden>
+<p class="muted" data-i18n="プラグインは検出のみ行います。追加・削除・有効化は各CLIの公式なプラグイン管理で行ってください。">プラグインは検出のみ行います。追加・削除・有効化は各CLIの公式なプラグイン管理で行ってください。</p>
+<div id="exPluginList" class="ex-grid"></div>
+<div id="msgExtPlugin" role="status"></div>
+</div>
+<div class="ex-toolbar">
+<button id="btnExtReload" type="button" data-i18n="更新">更新</button>
+<button id="btnExtAddMcp" type="button" class="primary" data-i18n="MCPサーバーを追加">MCPサーバーを追加</button>
+<button id="btnExtAddSkill" type="button" data-i18n="スキルを追加">スキルを追加</button>
+</div>
+<div id="exAddArea"></div>
+<div id="exPreviewArea" class="ex-preview" aria-live="polite"></div>
+<div id="msgExt" role="status"></div>
+<div class="ex-details">
+<details>
+<summary data-i18n="配置先と対応範囲">配置先と対応範囲</summary>
+<div id="exProviders"></div>
+</details>
+</div>
+<div class="ex-details">
+<details>
+<summary data-i18n="変更履歴（拡張機能のバックアップ）">変更履歴（拡張機能のバックアップ）</summary>
+<p class="muted" data-i18n="適用後のファイルが変わっていない場合だけ復元できます。新規作成したファイルは復元時に削除します。">適用後のファイルが変わっていない場合だけ復元できます。新規作成したファイルは復元時に削除します。</p>
+<div id="exBackupList" class="ex-backups"></div>
+<div id="msgExtBackup" role="status"></div>
+</details>
+</div>
+</div>
+</section>
 </div>
 <div id="rules" hidden>
 <section>
@@ -1550,7 +1662,7 @@ function targetId(){var h=rawHash();if(SCREENS.indexOf(h)>=0)return h;if(LEGACY[
 function syncHelp(id){try{var d=null;try{d=document.getElementById("helpDetail");}catch(e){}if(d&&id==="help"&&!d.open){d.open=true;}}catch(e2){}}
 function setActive(id){try{var links=document.querySelectorAll("aside nav a,.topnav a");for(var j=0;j<links.length;j++){var a=links[j];var hn="";try{hn=a.getAttribute("href")||"";}catch(e){}if(hn==="#"+id){try{a.classList.add("active");}catch(e){}try{a.setAttribute("aria-current","page");}catch(e2){}}else{try{a.classList.remove("active");}catch(e){}try{a.removeAttribute("aria-current");}catch(e3){}}}}catch(e){}}
 function applyScreen(id){try{var s=(SCREENS.indexOf(id)>=0)?id:(LEGACY[id]||"top");for(var i=0;i<SCREENS.length;i++){var el=null;try{el=document.getElementById(SCREENS[i]);}catch(e){}if(el)el.hidden=(SCREENS[i]!==s);}try{var ms=document.querySelector(".mainscroll");if(ms)ms.scrollTop=0;}catch(e2){}setActive(s);}catch(e3){}}
-function showHash(){try{var h=rawHash();applyScreen(h);syncHelp(h);}catch(e){}}
+function showHash(){try{var h=rawHash();applyScreen(h);syncHelp(h);if(targetId()==="global"&&typeof loadExtensions==="function")loadExtensions();}catch(e){}}
 window.addEventListener("hashchange",function(){showHash();});
 function isShown(el){try{if(!el||!el.isConnected||el.disabled)return false;var cs=null;try{cs=getComputedStyle(el);}catch(e){}if(cs&&cs.display==="none")return false;try{if(el.offsetParent===null){var pos="";try{pos=cs?cs.position:"";}catch(e2){}if(pos!=="fixed")return false;}}catch(e){}try{var r=el.getBoundingClientRect();if(r&&(r.width===0&&r.height===0))return false;}catch(e){}return true;}catch(e){return false;}}
 function focusVisible(el){try{return isShown(el)&&safeFocus(el);}catch(e){return false;}}
@@ -2028,7 +2140,76 @@ const I18N = {
     "テーブル": "Table",
     "プレビューを表示できません。ソースのみ編集できます。": "The preview is unavailable. Only the source text can be edited.",
     "プレビューの表示中にエラーが発生しました。": "The preview could not be rendered.",
-    "本文が大きいためプレビューを省略しました。": "The text is too large, so the preview was skipped."
+    "本文が大きいためプレビューを省略しました。": "The text is too large, so the preview was skipped.",
+    "拡張機能": "Extensions",
+    "拡張機能（MCP・スキル・プラグイン）": "Extensions (MCP, skills, plugins)",
+    "Codex / OpenCode / Claude Code のグローバル設定から MCP・スキル・プラグインを検出します。変更はプレビューと差分で確認し、バックアップ後に適用します。MCPの実行、外部への送信、パッケージのインストールは行いません。": "Detects MCP servers, skills, and plugins from the global Codex / OpenCode / Claude Code configuration. Changes are reviewed as a diff and applied after a backup. This does not run MCP servers, send data externally, or install packages.",
+    "拡張機能の種別": "Extension type",
+    "MCP": "MCP",
+    "スキル": "Skills",
+    "プラグイン": "Plugins",
+    "プラグインは検出のみ行います。追加・削除・有効化は各CLIの公式なプラグイン管理で行ってください。": "Plugins are detected only. Add, remove, or enable them with each CLI's official plugin manager.",
+    "MCPサーバーを追加": "Add MCP server",
+    "スキルを追加": "Add skill",
+    "配置先と対応範囲": "Locations and support",
+    "変更履歴（拡張機能のバックアップ）": "Change history (extension backups)",
+    "適用後のファイルが変わっていない場合だけ復元できます。新規作成したファイルは復元時に削除します。": "Restore is available only when the applied file is unchanged. Files created by the change are deleted on restore.",
+    "形式不正": "Invalid format",
+    "読取不可": "Unreadable",
+    "重複": "Duplicate",
+    "設定あり": "Configured",
+    "作成する": "Create",
+    "上書き更新": "Update",
+    "共通配置を利用": "Uses shared location",
+    "変更": "Change",
+    "無効化": "Disable",
+    "有効化": "Enable",
+    "MCPサーバーは見つかりませんでした。": "No MCP servers found.",
+    "スキルは見つかりませんでした。": "No skills found.",
+    "説明はありません。": "No description.",
+    "プラグインは見つかりませんでした。": "No plugins found.",
+    "MCP追加: 対応": "MCP add: supported",
+    "MCP追加: 非対応": "MCP add: unsupported",
+    "MCP有効/無効: 対応": "MCP enable/disable: supported",
+    "MCP有効/無効: 非対応": "MCP enable/disable: unsupported",
+    "スキル追加: 対応": "Skill add: supported",
+    "プラグイン: 検出のみ": "Plugins: detection only",
+    "スキル配置先": "Skill location",
+    "警告": "Warning",
+    "変更履歴はありません。": "No change history.",
+    "別のホームフォルダ向けのため復元できません。": "Cannot restore because this backup belongs to a different home folder.",
+    "対象のCLI": "Target CLIs",
+    "名前（英数字・ハイフン・アンダースコア）": "Name (letters, digits, hyphen, underscore)",
+    "接続方式": "Transport",
+    "ローカル（stdio）": "Local (stdio)",
+    "リモート（HTTP）": "Remote (HTTP)",
+    "コマンド": "Command",
+    "引数（1行に1つ）": "Arguments (one per line)",
+    "環境変数（KEY=VALUE、1行に1つ）": "Environment variables (KEY=VALUE, one per line)",
+    "ヘッダー（Name: Value、1行に1つ）": "Headers (Name: Value, one per line)",
+    "秘密情報は各CLIの設定ファイルに平文で保存されます。環境変数とヘッダーの値は画面とプレビューで伏せます。コマンド引数に秘密情報を含める場合は注意してください。": "Secrets are stored in plaintext in each CLI's configuration file. Environment-variable and header values are masked in this screen and in previews. Be careful about secrets in command arguments.",
+    "プレビューを作成": "Create preview",
+    "スキル名（英小文字・数字・単一ハイフン）": "Skill name (lowercase letters, digits, single hyphens)",
+    "説明（1〜1024文字）": "Description (1-1024 characters)",
+    "本文（Markdown）": "Body (Markdown)",
+    "frontmatter は自動生成します。本文には --- で囲んだ frontmatter を含めないでください。": "Frontmatter is generated automatically. Do not include a --- frontmatter block in the body.",
+    "OpenCode は ~/.agents/skills と ~/.claude/skills も読みます。Codex と Claude Code の両方へ配布すると、OpenCode からは同名スキルが重複して見える場合があります。": "OpenCode also reads ~/.agents/skills and ~/.claude/skills. Distributing the same skill to both Codex and Claude Code can make OpenCode see duplicate names.",
+    "対象のCLIを1つ以上選んでください。": "Select at least one target CLI.",
+    "変更内容の確認": "Review changes",
+    "エラー": "Error",
+    "共通の配置先を利用します（{provider}）": "Uses the shared location from {provider}.",
+    "注意事項を確認した": "I reviewed the warnings.",
+    "プレビューの内容を適用することを確認した": "I confirm applying the previewed changes.",
+    "赤字の対象は変更できません。対象を外すか内容を修正して、もう一度プレビューしてください。": "Red entries cannot be changed. Deselect them or fix the input, then preview again.",
+    "変更を適用": "Apply changes",
+    "変更の適用": "Apply changes",
+    "プレビューの内容を適用します。反映直前に再確認し、変化があれば拒否します。よろしいですか。": "Apply the previewed changes? They are re-checked immediately before writing and rejected if anything changed.",
+    "適用しました。バックアップ: {id}": "Applied. Backup: {id}",
+    "「{id}」を復元します。適用後にファイルが変わっている場合は復元しません。新規作成したファイルは削除します。よろしいですか。": "Restore {id}? Files changed after the apply are not restored. Files created by the change are deleted. Continue?",
+    "復元しました。": "Restored.",
+    "変更の確認": "Confirm change",
+    "「{name}」を{state}にします。プレビューで差分を確認してから適用します。": "Set {name} to {state}? Review the diff in the preview before applying.",
+    "プレビューを作り直してください。": "Recreate the preview."
   },
   "zh-CN": {
     " 既存 AGENTS.md はバックアップ後に同期で再生成されます（固有内容は自動転記されません）。": " 现有 AGENTS.md 会在备份后由同步重新生成（其中专有内容不会自动转写）。",
@@ -2482,7 +2663,76 @@ const I18N = {
     "テーブル": "表格",
     "プレビューを表示できません。ソースのみ編集できます。": "无法显示预览。仅可编辑源文本。",
     "プレビューの表示中にエラーが発生しました。": "显示预览时发生错误。",
-    "本文が大きいためプレビューを省略しました。": "文本过大，已跳过预览。"
+    "本文が大きいためプレビューを省略しました。": "文本过大，已跳过预览。",
+    "拡張機能": "扩展功能",
+    "拡張機能（MCP・スキル・プラグイン）": "扩展功能（MCP、技能、插件）",
+    "Codex / OpenCode / Claude Code のグローバル設定から MCP・スキル・プラグインを検出します。変更はプレビューと差分で確認し、バックアップ後に適用します。MCPの実行、外部への送信、パッケージのインストールは行いません。": "从 Codex / OpenCode / Claude Code 的全局配置中检测 MCP、技能与插件。变更会先以差异预览确认，并在备份后应用。不会执行 MCP、不会向外部发送数据，也不会安装软件包。",
+    "拡張機能の種別": "扩展功能类型",
+    "MCP": "MCP",
+    "スキル": "技能",
+    "プラグイン": "插件",
+    "プラグインは検出のみ行います。追加・削除・有効化は各CLIの公式なプラグイン管理で行ってください。": "插件仅做检测。添加、删除或启用请使用各 CLI 官方的插件管理功能。",
+    "MCPサーバーを追加": "添加 MCP 服务器",
+    "スキルを追加": "添加技能",
+    "配置先と対応範囲": "配置位置与支持范围",
+    "変更履歴（拡張機能のバックアップ）": "变更历史（扩展功能备份）",
+    "適用後のファイルが変わっていない場合だけ復元できます。新規作成したファイルは復元時に削除します。": "仅当应用后的文件未变化时才可恢复。新创建的文件会在恢复时删除。",
+    "形式不正": "格式无效",
+    "読取不可": "无法读取",
+    "重複": "重复",
+    "設定あり": "已配置",
+    "作成する": "创建",
+    "上書き更新": "更新",
+    "共通配置を利用": "使用共用位置",
+    "変更": "更改",
+    "無効化": "禁用",
+    "有効化": "启用",
+    "MCPサーバーは見つかりませんでした。": "未找到 MCP 服务器。",
+    "スキルは見つかりませんでした。": "未找到技能。",
+    "説明はありません。": "没有说明。",
+    "プラグインは見つかりませんでした。": "未找到插件。",
+    "MCP追加: 対応": "MCP 添加：支持",
+    "MCP追加: 非対応": "MCP 添加：不支持",
+    "MCP有効/無効: 対応": "MCP 启用/禁用：支持",
+    "MCP有効/無効: 非対応": "MCP 启用/禁用：不支持",
+    "スキル追加: 対応": "技能添加：支持",
+    "プラグイン: 検出のみ": "插件：仅检测",
+    "スキル配置先": "技能位置",
+    "警告": "警告",
+    "変更履歴はありません。": "没有变更历史。",
+    "別のホームフォルダ向けのため復元できません。": "该备份属于其他主目录，无法恢复。",
+    "対象のCLI": "目标 CLI",
+    "名前（英数字・ハイフン・アンダースコア）": "名称（字母、数字、连字符、下划线）",
+    "接続方式": "连接方式",
+    "ローカル（stdio）": "本地（stdio）",
+    "リモート（HTTP）": "远程（HTTP）",
+    "コマンド": "命令",
+    "引数（1行に1つ）": "参数（每行一个）",
+    "環境変数（KEY=VALUE、1行に1つ）": "环境变量（KEY=VALUE，每行一个）",
+    "ヘッダー（Name: Value、1行に1つ）": "请求头（Name: Value，每行一个）",
+    "秘密情報は各CLIの設定ファイルに平文で保存されます。環境変数とヘッダーの値は画面とプレビューで伏せます。コマンド引数に秘密情報を含める場合は注意してください。": "秘密信息会以明文保存在各 CLI 的配置文件中。环境变量和请求头的值会在此页面和预览中遮挡。请注意命令参数中可能包含秘密信息。",
+    "プレビューを作成": "创建预览",
+    "スキル名（英小文字・数字・単一ハイフン）": "技能名称（小写字母、数字、单个连字符）",
+    "説明（1〜1024文字）": "说明（1〜1024 个字符）",
+    "本文（Markdown）": "正文（Markdown）",
+    "frontmatter は自動生成します。本文には --- で囲んだ frontmatter を含めないでください。": "frontmatter 会自动生成。请不要在正文中包含由 --- 包围的 frontmatter。",
+    "OpenCode は ~/.agents/skills と ~/.claude/skills も読みます。Codex と Claude Code の両方へ配布すると、OpenCode からは同名スキルが重複して見える場合があります。": "OpenCode 也会读取 ~/.agents/skills 和 ~/.claude/skills。同时向 Codex 和 Claude Code 分发同名技能时，OpenCode 可能会看到重复名称。",
+    "対象のCLIを1つ以上選んでください。": "请至少选择一个目标 CLI。",
+    "変更内容の確認": "确认变更内容",
+    "エラー": "错误",
+    "共通の配置先を利用します（{provider}）": "使用 {provider} 的共用位置。",
+    "注意事項を確認した": "我已确认注意事项。",
+    "プレビューの内容を適用することを確認した": "我确认应用预览内容。",
+    "赤字の対象は変更できません。対象を外すか内容を修正して、もう一度プレビューしてください。": "红色条目无法更改。请取消选择或修正内容后重新预览。",
+    "変更を適用": "应用更改",
+    "変更の適用": "应用更改",
+    "プレビューの内容を適用します。反映直前に再確認し、変化があれば拒否します。よろしいですか。": "将应用预览内容。写入前会再次核对，如有变化则拒绝。是否继续？",
+    "適用しました。バックアップ: {id}": "已应用。备份：{id}",
+    "「{id}」を復元します。適用後にファイルが変わっている場合は復元しません。新規作成したファイルは削除します。よろしいですか。": "将恢复 {id}。应用后文件已变化时不会恢复。新创建的文件会被删除。是否继续？",
+    "復元しました。": "已恢复。",
+    "変更の確認": "确认更改",
+    "「{name}」を{state}にします。プレビューで差分を確認してから適用します。": "将 {name} 设为{state}。请先在预览中确认差异再应用。",
+    "プレビューを作り直してください。": "请重新创建预览。"
   }
 };
 let currentLang = "ja";
@@ -2514,7 +2764,7 @@ function L(key, vars){
   return s;
 }
 function localizeGeneratedUI(fromLang){
-  const ids = ["ovl","msgList","browseArea","prevArea","batchArea","importArea","msgStatus","planArea","msgGlobal","globalPlanArea","backupDiffArea","msgBackup","globalBackupDiffArea","msgGlobalBackup","localArea","checkArea","msgLocal","msgInterval","msgSettings","importRegArea","msgGlobalTargets","msgGlobalInterval"];
+  const ids = ["ovl","msgList","browseArea","prevArea","batchArea","importArea","msgStatus","planArea","msgGlobal","globalPlanArea","backupDiffArea","msgBackup","globalBackupDiffArea","msgGlobalBackup","localArea","checkArea","msgLocal","msgInterval","msgSettings","importRegArea","msgGlobalTargets","msgGlobalInterval","exHome","exSummary","exWarnTop","exMcpList","exSkillList","exPluginList","exProviders","exAddArea","exPreviewArea","exBackupList","msgExtMcp","msgExtSkill","msgExtPlugin","msgExtBackup","msgExt"];
   function visit(n){
     if(!n) return;
     if(n.nodeType === 3){
@@ -2591,6 +2841,7 @@ function applyLanguage(lang, reload){
   try{ if(typeof renderGlobalContent === "function") renderGlobalContent(); }catch(e){}
   try{ if(typeof renderGlobalStatus === "function") renderGlobalStatus(); }catch(e){}
   try{ if(typeof renderGlobalTargetsUI === "function") renderGlobalTargetsUI(); }catch(e){}
+  try{ if(typeof renderExtensions === "function") renderExtensions(); }catch(e){}
   try{ if(typeof renderRulesLock === "function") renderRulesLock(); }catch(e){}
   try{ if(typeof ruleRenderPreviewNow === "function") ruleRenderPreviewNow(); }catch(e){}
   try{ if(typeof ruleEditorSetAria === "function") ruleEditorSetAria(); }catch(e){}
@@ -4790,6 +5041,524 @@ async function loadGlobalBackups(){
   }catch(e){ setMsg("msgGlobalBackup", e.message, false); }
 }
 document.getElementById("btnGlobalBackups").onclick = function(){ loadGlobalBackups(); };
+/* --- Extensions (MCP / skills / plugins) --------------------------------- */
+const EXT_PROVIDERS = ["codex", "opencode", "claudecode"];
+const EXT_LABELS = {codex:"Codex", opencode:"OpenCode", claudecode:"Claude Code"};
+let extState = {data:null, loading:false, error:null, tab:"mcp", preview:null, form:"", busy:false};
+let extLoadSeq = 0;
+function extLabel(id){ return EXT_LABELS[id] || String(id || ""); }
+function exEl(tag, cls, text){
+  const e = document.createElement(tag);
+  if(cls) e.className = cls;
+  if(text !== undefined && text !== null) e.textContent = text;
+  return e;
+}
+function extStateLabel(s){
+  if(s === "enabled") return L("有効");
+  if(s === "disabled") return L("無効");
+  if(s === "missing") return L("未設定");
+  if(s === "invalid") return L("形式不正");
+  if(s === "error") return L("読取不可");
+  if(s === "duplicate") return L("重複");
+  if(s === "configured") return L("設定あり");
+  return L("未設定");
+}
+function extActionLabel(a){
+  if(a === "create") return L("作成する");
+  if(a === "covered") return L("共通配置を利用");
+  if(a === "write") return L("上書き更新");
+  return L("変更");
+}
+function extSetMsg(id, msg, ok){ try{ setMsg(id, msg, ok); }catch(e){} }
+function extClearMsg(id){ try{ const d = document.getElementById(id); if(d) d.textContent = ""; }catch(e){} }
+function extProviderDetail(item, pid){
+  try{ return item.providers && item.providers[pid] ? item.providers[pid] : null; }catch(e){ return null; }
+}
+function extItemSub(item){
+  for(let i=0;i<EXT_PROVIDERS.length;i++){
+    const d = extProviderDetail(item, EXT_PROVIDERS[i]);
+    if(d && d.configured){
+      let s = d.target || d.path || "";
+      if(d.transport) s = d.transport + " · " + s;
+      return s;
+    }
+  }
+  return "";
+}
+function extChip(pid, detail, kind, item){
+  const st = detail ? (detail.state || (detail.configured ? "enabled" : "missing")) : "missing";
+  const chip = exEl("span", "ex-chip");
+  chip.setAttribute("data-state", st);
+  chip.appendChild(exEl("span", "ex-dot"));
+  chip.appendChild(document.createTextNode(extLabel(pid) + " " + extStateLabel(st)));
+  if(detail){
+    if(detail.error) chip.title = detail.error;
+    else if(detail.note) chip.title = detail.note;
+    else if(detail.target) chip.title = detail.target;
+    else if(detail.path) chip.title = detail.path;
+  }
+  if(kind === "mcp" && detail && detail.configured && detail.canToggle && (st === "enabled" || st === "disabled")){
+    const b = exEl("button", "ex-toggle", st === "enabled" ? L("無効化") : L("有効化"));
+    b.type = "button";
+    b.onclick = function(ev){
+      try{ ev.stopPropagation(); }catch(e){}
+      exAskToggle(item.name, pid, st === "disabled");
+    };
+    chip.appendChild(b);
+  }
+  return chip;
+}
+function exRenderSummary(d){
+  const box = document.getElementById("exSummary");
+  if(!box) return;
+  box.innerHTML = "";
+  const cats = [["mcp", L("MCP")], ["skills", L("スキル")], ["plugins", L("プラグイン")]];
+  cats.forEach(function(c){
+    const st = (d.stats || {})[c[0]] || {total:0, codex:0, opencode:0, claudecode:0};
+    const card = exEl("div", "ex-stat");
+    card.appendChild(exEl("b", null, String(st.total || 0)));
+    card.appendChild(exEl("span", null, c[1] + " · Codex " + (st.codex||0) + " / OpenCode " + (st.opencode||0) + " / Claude Code " + (st.claudecode||0)));
+    box.appendChild(card);
+  });
+}
+function exRenderMcp(items){
+  const box = document.getElementById("exMcpList");
+  if(!box) return;
+  box.innerHTML = "";
+  if(!items.length){
+    box.appendChild(exEl("p", "ex-empty", L("MCPサーバーは見つかりませんでした。")));
+    return;
+  }
+  items.forEach(function(item){
+    const card = exEl("article", "ex-card");
+    card.setAttribute("aria-label", "MCP " + item.name);
+    card.appendChild(exEl("h3", null, item.name));
+    const sub = extItemSub(item);
+    if(sub) card.appendChild(exEl("p", "ex-sub", sub));
+    const row = exEl("div", "ex-providers");
+    EXT_PROVIDERS.forEach(function(pid){ row.appendChild(extChip(pid, extProviderDetail(item, pid), "mcp", item)); });
+    card.appendChild(row);
+    box.appendChild(card);
+  });
+}
+function exRenderSkills(items){
+  const box = document.getElementById("exSkillList");
+  if(!box) return;
+  box.innerHTML = "";
+  if(!items.length){
+    box.appendChild(exEl("p", "ex-empty", L("スキルは見つかりませんでした。")));
+    return;
+  }
+  items.forEach(function(item){
+    const card = exEl("article", "ex-card");
+    card.setAttribute("aria-label", L("スキル") + " " + item.name);
+    card.appendChild(exEl("h3", null, item.name));
+    let desc = "";
+    for(let i=0;i<EXT_PROVIDERS.length;i++){
+      const d = extProviderDetail(item, EXT_PROVIDERS[i]);
+      if(d && d.description){ desc = d.description; break; }
+    }
+    card.appendChild(exEl("p", "ex-desc", desc || L("説明はありません。")));
+    const notes = [];
+    EXT_PROVIDERS.forEach(function(pid){
+      const d = extProviderDetail(item, pid);
+      if(d && d.warnings) d.warnings.forEach(function(w){ if(w && notes.indexOf(w) < 0) notes.push(w); });
+    });
+    if(notes.length) card.appendChild(exEl("p", "ex-warn", notes.slice(0,2).join(" / ")));
+    const row = exEl("div", "ex-providers");
+    EXT_PROVIDERS.forEach(function(pid){ row.appendChild(extChip(pid, extProviderDetail(item, pid), "skill", item)); });
+    card.appendChild(row);
+    box.appendChild(card);
+  });
+}
+function exRenderPlugins(items){
+  const box = document.getElementById("exPluginList");
+  if(!box) return;
+  box.innerHTML = "";
+  if(!items.length){
+    box.appendChild(exEl("p", "ex-empty", L("プラグインは見つかりませんでした。")));
+    return;
+  }
+  items.forEach(function(item){
+    const card = exEl("article", "ex-card");
+    card.setAttribute("aria-label", L("プラグイン") + " " + item.name);
+    card.appendChild(exEl("h3", null, item.name));
+    const src = [];
+    const notes = [];
+    EXT_PROVIDERS.forEach(function(pid){
+      const d = extProviderDetail(item, pid);
+      if(d){ if(d.source && src.indexOf(d.source) < 0) src.push(d.source); if(d.note && notes.indexOf(d.note) < 0) notes.push(d.note); }
+    });
+    if(src.length) card.appendChild(exEl("p", "ex-sub", L("取得元") + ": " + src.join(" / ")));
+    if(notes.length) card.appendChild(exEl("p", "ex-sub", notes.join(" / ")));
+    const row = exEl("div", "ex-providers");
+    EXT_PROVIDERS.forEach(function(pid){ row.appendChild(extChip(pid, extProviderDetail(item, pid), "plugin", item)); });
+    card.appendChild(row);
+    box.appendChild(card);
+  });
+}
+function exRenderProviders(d){
+  const box = document.getElementById("exProviders");
+  if(!box) return;
+  box.innerHTML = "";
+  const ul = exEl("ul");
+  (d.providers || []).forEach(function(p){
+    const li = exEl("li");
+    li.appendChild(document.createTextNode(extLabel(p.id) + ": "));
+    li.appendChild(exEl("code", "path", p.configPath || "-"));
+    const bits = [];
+    bits.push(p.configExists ? L("設定あり") : L("未設定"));
+    if(p.configError) bits.push(p.configError);
+    bits.push((p.mcpWritable === false ? L("MCP追加: 非対応") : L("MCP追加: 対応")) + (p.mcpWritable === false && p.mcpWriteReason ? " (" + p.mcpWriteReason + ")" : ""));
+    bits.push(p.mcpToggle ? L("MCP有効/無効: 対応") : L("MCP有効/無効: 非対応") + (p.mcpToggleReason ? " (" + p.mcpToggleReason + ")" : ""));
+    bits.push(L("スキル追加: 対応"));
+    bits.push(L("プラグイン: 検出のみ") + (p.pluginReason ? " (" + p.pluginReason + ")" : ""));
+    li.appendChild(document.createTextNode(" — " + bits.join(" / ")));
+    ul.appendChild(li);
+    if((p.skillDirs || []).length){
+      ul.appendChild(exEl("li", "ex-sub", L("スキル配置先") + ": " + p.skillDirs.join(", ")));
+    }
+  });
+  (d.warnings || []).forEach(function(w){ if(w) ul.appendChild(exEl("li", "ex-warn", L("警告") + ": " + w)); });
+  box.appendChild(ul);
+}
+function exRenderBackups(list){
+  const box = document.getElementById("exBackupList");
+  if(!box) return;
+  box.innerHTML = "";
+  if(!list.length){
+    box.appendChild(exEl("p", "ex-empty", L("変更履歴はありません。")));
+    return;
+  }
+  list.forEach(function(b){
+    const row = exEl("div", "ex-backup");
+    row.appendChild(exEl("code", null, b.id));
+    row.appendChild(exEl("span", null, (b.kind === "skill" ? L("スキル") : L("MCP")) + " / " + (b.name || "")));
+    row.appendChild(exEl("span", "ex-sub", (b.createdAt || "") + " · " + L("{n} 件", {n:(b.fileCount || 0)})));
+    if(!b.restorable) row.appendChild(exEl("span", "ex-warn", L("別のホームフォルダ向けのため復元できません。")));
+    row.appendChild(exEl("span", "ex-spacer"));
+    const btn = exEl("button", "danger", L("復元"));
+    btn.type = "button";
+    btn.disabled = !b.restorable;
+    btn.onclick = function(){ exRestoreBackup(b); };
+    row.appendChild(btn);
+    box.appendChild(row);
+  });
+}
+function exRenderAll(){
+  const d = extState.data;
+  const home = document.getElementById("exHome");
+  if(!home) return;
+  if(extState.error){
+    home.textContent = L("取得失敗: ") + extState.error;
+    ["exMcpList","exSkillList","exPluginList","exSummary","exProviders","exBackupList","exWarnTop"].forEach(function(id){
+      const el = document.getElementById(id); if(el) el.innerHTML = "";
+    });
+    return;
+  }
+  if(!d){
+    home.textContent = L("読込中");
+    ["exMcpList","exSkillList","exPluginList"].forEach(function(id){
+      const el = document.getElementById(id);
+      if(el){ el.innerHTML = ""; el.appendChild(exEl("p", "ex-empty", L("読込中"))); }
+    });
+    return;
+  }
+  home.textContent = L("配置元: {base}", {base:(d.homeBase || "-")});
+  const wtop = document.getElementById("exWarnTop");
+  if(wtop){
+    wtop.innerHTML = "";
+    (d.warnings || []).slice(0,3).forEach(function(w){ if(w) wtop.appendChild(exEl("p", "ex-warn", L("警告") + ": " + w)); });
+  }
+  exRenderSummary(d);
+  exRenderMcp(d.mcp || []);
+  exRenderSkills(d.skills || []);
+  exRenderPlugins(d.plugins || []);
+  exRenderProviders(d);
+  exRenderBackups(d.backups || []);
+  exSetTab(extState.tab, false);
+}
+function renderExtensions(){ exRenderAll(); }
+function loadExtensions(force){
+  if(extState.loading && !force) return;
+  const seq = ++extLoadSeq;
+  extState.loading = true;
+  if(force){ extState.preview = null; const pa = document.getElementById("exPreviewArea"); if(pa) pa.innerHTML = ""; }
+  if(!extState.data) exRenderAll();
+  (async function(){
+    try{
+      const d = await api("/api/extensions", "GET", null, 15000);
+      if(seq !== extLoadSeq) return;
+      extState.data = d; extState.error = null;
+    }catch(e){
+      if(seq !== extLoadSeq) return;
+      extState.error = e.message;
+    }finally{
+      if(seq === extLoadSeq){ extState.loading = false; exRenderAll(); }
+    }
+  })();
+}
+function exSetTab(tab, focus){
+  if(tab !== "mcp" && tab !== "skill" && tab !== "plugin") tab = "mcp";
+  extState.tab = tab;
+  const tabs = [["mcp","exTabMcp","exPanelMcp"],["skill","exTabSkill","exPanelSkill"],["plugin","exTabPlugin","exPanelPlugin"]];
+  tabs.forEach(function(t){
+    const b = document.getElementById(t[1]), p = document.getElementById(t[2]);
+    if(b){ b.setAttribute("aria-selected", t[0] === tab ? "true" : "false"); b.tabIndex = (t[0] === tab ? 0 : -1); }
+    if(p) p.hidden = (t[0] !== tab);
+  });
+  if(focus){ const b = document.getElementById(tab === "mcp" ? "exTabMcp" : tab === "skill" ? "exTabSkill" : "exTabPlugin"); if(b) try{ b.focus(); }catch(e){} }
+}
+function exSelectedProviders(scope){
+  const out = [];
+  try{
+    const boxes = scope.querySelectorAll("input.ex-prov");
+    for(let i=0;i<boxes.length;i++){ if(boxes[i].checked) out.push(boxes[i].value); }
+  }catch(e){}
+  return out;
+}
+function exFormProviders(scopeId){
+  const scope = document.getElementById(scopeId);
+  return scope ? exSelectedProviders(scope) : [];
+}
+function exClearPreview(){
+  extState.preview = null;
+  const pa = document.getElementById("exPreviewArea");
+  if(pa) pa.innerHTML = "";
+}
+function exOpenMcpForm(){
+  extState.form = "mcp";
+  exClearPreview();
+  const box = document.getElementById("exAddArea");
+  if(!box) return;
+  const checks = EXT_PROVIDERS.map(function(pid){
+    return '<label><input type="checkbox" class="ex-prov" value="' + pid + '" checked> ' + extLabel(pid) + '</label>';
+  }).join("");
+  box.innerHTML = '<div class="ex-form" id="exMcpForm" role="group" aria-label="' + L("MCPサーバーを追加") + '">' +
+    '<fieldset><legend>' + L("対象のCLI") + '</legend><div class="ex-checks">' + checks + '</div></fieldset>' +
+    '<label for="exMcpName">' + L("名前（英数字・ハイフン・アンダースコア）") + '<input type="text" id="exMcpName" maxlength="64" autocomplete="off" spellcheck="false"></label>' +
+    '<label for="exMcpTransport">' + L("接続方式") + '<select id="exMcpTransport"><option value="stdio">' + L("ローカル（stdio）") + '</option><option value="remote">' + L("リモート（HTTP）") + '</option></select></label>' +
+    '<div id="exMcpStdio">' +
+    '<label for="exMcpCommand">' + L("コマンド") + '<input type="text" id="exMcpCommand" autocomplete="off" spellcheck="false" placeholder="npx"></label>' +
+    '<label for="exMcpArgs">' + L("引数（1行に1つ）") + '<textarea id="exMcpArgs" spellcheck="false"></textarea></label>' +
+    '<label for="exMcpEnv">' + L("環境変数（KEY=VALUE、1行に1つ）") + '<textarea id="exMcpEnv" spellcheck="false"></textarea></label>' +
+    '</div>' +
+    '<div id="exMcpRemote" hidden>' +
+    '<label for="exMcpUrl">URL<input type="text" id="exMcpUrl" autocomplete="off" spellcheck="false" placeholder="https://"></label>' +
+    '<label for="exMcpHeaders">' + L("ヘッダー（Name: Value、1行に1つ）") + '<textarea id="exMcpHeaders" spellcheck="false"></textarea></label>' +
+    '</div>' +
+    '<p class="ex-warn">' + L("秘密情報は各CLIの設定ファイルに平文で保存されます。環境変数とヘッダーの値は画面とプレビューで伏せます。コマンド引数に秘密情報を含める場合は注意してください。") + '</p>' +
+    '<div class="btnrow"><button type="button" id="btnExMcpPreview" class="primary">' + L("プレビューを作成") + '</button><button type="button" id="btnExMcpCancel">' + L("やめる") + '</button></div>' +
+    '</div>';
+  const sel = document.getElementById("exMcpTransport");
+  if(sel) sel.onchange = function(){
+    const remote = sel.value === "remote";
+    const s = document.getElementById("exMcpStdio"); if(s) s.hidden = remote;
+    const r = document.getElementById("exMcpRemote"); if(r) r.hidden = !remote;
+  };
+  const cancel = document.getElementById("btnExMcpCancel");
+  if(cancel) cancel.onclick = function(){ extState.form = ""; box.innerHTML = ""; exClearPreview(); };
+  const btn = document.getElementById("btnExMcpPreview");
+  if(btn) btn.onclick = function(){ exPreviewMcpAdd(btn); };
+  const form = document.getElementById("exMcpForm");
+  if(form){ form.addEventListener("input", exClearPreview); form.addEventListener("change", exClearPreview); }
+  const first = document.getElementById("exMcpName");
+  if(first) try{ first.focus(); }catch(e){}
+}
+function exOpenSkillForm(){
+  extState.form = "skill";
+  exClearPreview();
+  const box = document.getElementById("exAddArea");
+  if(!box) return;
+  const checks = EXT_PROVIDERS.map(function(pid){
+    return '<label><input type="checkbox" class="ex-prov" value="' + pid + '" checked> ' + extLabel(pid) + '</label>';
+  }).join("");
+  box.innerHTML = '<div class="ex-form" id="exSkillForm" role="group" aria-label="' + L("スキルを追加") + '">' +
+    '<fieldset><legend>' + L("対象のCLI") + '</legend><div class="ex-checks">' + checks + '</div></fieldset>' +
+    '<label for="exSkillName">' + L("スキル名（英小文字・数字・単一ハイフン）") + '<input type="text" id="exSkillName" maxlength="64" autocomplete="off" spellcheck="false" placeholder="my-skill"></label>' +
+    '<label for="exSkillDesc">' + L("説明（1〜1024文字）") + '<input type="text" id="exSkillDesc" maxlength="1024" autocomplete="off"></label>' +
+    '<label for="exSkillBody">' + L("本文（Markdown）") + '<textarea id="exSkillBody" spellcheck="false"></textarea></label>' +
+    '<p class="ex-sub">' + L("frontmatter は自動生成します。本文には --- で囲んだ frontmatter を含めないでください。") + '</p>' +
+    '<p class="ex-sub">' + L("OpenCode は ~/.agents/skills と ~/.claude/skills も読みます。Codex と Claude Code の両方へ配布すると、OpenCode からは同名スキルが重複して見える場合があります。") + '</p>' +
+    '<div class="btnrow"><button type="button" id="btnExSkillPreview" class="primary">' + L("プレビューを作成") + '</button><button type="button" id="btnExSkillCancel">' + L("やめる") + '</button></div>' +
+    '</div>';
+  const cancel = document.getElementById("btnExSkillCancel");
+  if(cancel) cancel.onclick = function(){ extState.form = ""; box.innerHTML = ""; exClearPreview(); };
+  const btn = document.getElementById("btnExSkillPreview");
+  if(btn) btn.onclick = function(){ exPreviewSkillAdd(btn); };
+  const form = document.getElementById("exSkillForm");
+  if(form){ form.addEventListener("input", exClearPreview); form.addEventListener("change", exClearPreview); }
+  const first = document.getElementById("exSkillName");
+  if(first) try{ first.focus(); }catch(e){}
+}
+function exReadValue(id){ const el = document.getElementById(id); return el ? el.value : ""; }
+async function exPreviewMcpAdd(btn){
+  const providers = exFormProviders("exMcpForm");
+  if(!providers.length){ extSetMsg("msgExtMcp", L("対象のCLIを1つ以上選んでください。"), false); return; }
+  const transport = exReadValue("exMcpTransport") || "stdio";
+  const args = exReadValue("exMcpArgs").split(/\r?\n/).map(function(s){ return s; }).filter(function(s){ return s.trim() !== ""; });
+  const req = {
+    kind:"mcp", action:"add", providers:providers,
+    name:exReadValue("exMcpName").trim(), transport:transport,
+    command:exReadValue("exMcpCommand").trim(), args:args,
+    url:exReadValue("exMcpUrl").trim(),
+    envLines:exReadValue("exMcpEnv"), headerLines:exReadValue("exMcpHeaders")
+  };
+  if(btn) btn.disabled = true;
+  extClearMsg("msgExtMcp");
+  exClearPreview();
+  try{
+    const r = await api("/api/extension-preview", "POST", req, 20000);
+    extState.preview = r;
+    exRenderPreview(r);
+  }catch(e){ extSetMsg("msgExtMcp", e.message, false); }
+  finally{ if(btn) btn.disabled = false; }
+}
+async function exPreviewSkillAdd(btn){
+  const providers = exFormProviders("exSkillForm");
+  if(!providers.length){ extSetMsg("msgExtSkill", L("対象のCLIを1つ以上選んでください。"), false); return; }
+  const req = {
+    kind:"skill", action:"add", providers:providers,
+    name:exReadValue("exSkillName").trim(),
+    description:exReadValue("exSkillDesc").trim(),
+    body:exReadValue("exSkillBody")
+  };
+  if(btn) btn.disabled = true;
+  extClearMsg("msgExtSkill");
+  exClearPreview();
+  try{
+    const r = await api("/api/extension-preview", "POST", req, 20000);
+    extState.preview = r;
+    exRenderPreview(r);
+  }catch(e){ extSetMsg("msgExtSkill", e.message, false); }
+  finally{ if(btn) btn.disabled = false; }
+}
+async function exAskToggle(name, pid, enabled){
+  const word = enabled ? L("有効") : L("無効");
+  const ok = await showConfirm(L("変更の確認"), L("「{name}」を{state}にします。プレビューで差分を確認してから適用します。", {name:name, state:word}), L("プレビュー"), L("やめる"));
+  if(!ok) return;
+  exClearPreview();
+  try{
+    const r = await api("/api/extension-preview", "POST", {kind:"mcp", action:"toggle", providers:[pid], name:name, enabled:enabled}, 20000);
+    extState.preview = r;
+    exRenderPreview(r);
+  }catch(e){ extSetMsg("msgExtMcp", e.message, false); }
+}
+function exRenderPreview(r){
+  const box = document.getElementById("exPreviewArea");
+  if(!box) return;
+  box.innerHTML = "";
+  const head = exEl("p", "ex-sub", L("変更内容の確認") + ": " + (r.kind === "skill" ? L("スキル") : L("MCP")) + " / " + (r.name || ""));
+  box.appendChild(head);
+  let anyError = false;
+  (r.entries || []).forEach(function(en){
+    const card = exEl("div", "ex-entry");
+    const h = exEl("div", "ex-entry-head");
+    h.appendChild(exEl("b", null, extLabel(en.provider) + " — " + extActionLabel(en.action)));
+    if(!en.ok){ anyError = true; h.appendChild(exEl("span", "ex-err", L("エラー"))); }
+    card.appendChild(h);
+    if(en.path) card.appendChild(exEl("code", null, en.path));
+    if(en.error) card.appendChild(exEl("p", "ex-err", en.error));
+    (en.warnings || []).forEach(function(w){ if(w) card.appendChild(exEl("p", "ex-warn", w)); });
+    if(en.coveredBy) card.appendChild(exEl("p", "ex-sub", L("共通の配置先を利用します（{provider}）", {provider:extLabel(en.coveredBy)})));
+    if(en.diff && (en.diff.lines || []).length){
+      const pre = exEl("pre");
+      pre.setAttribute("aria-label", L("差分"));
+      pre.appendChild(renderDiffFrag(en.diff.lines));
+      if(en.diff.truncated) pre.appendChild(exEl("span", "diff-note", L("(省略)")));
+      card.appendChild(pre);
+    }
+    box.appendChild(card);
+  });
+  (r.warnings || []).forEach(function(w){ if(w) box.appendChild(exEl("p", "ex-warn", w)); });
+  const hasWarnings = !!(r.warnings && r.warnings.length);
+  let ackBox = null;
+  if(hasWarnings){
+    const ack = exEl("label", "chk");
+    ackBox = document.createElement("input"); ackBox.type = "checkbox"; ackBox.id = "ckExAck";
+    ack.appendChild(ackBox);
+    ack.appendChild(document.createTextNode(" " + L("注意事項を確認した")));
+    box.appendChild(ack);
+  }
+  const confirm = exEl("label", "chk");
+  const ck = document.createElement("input"); ck.type = "checkbox"; ck.id = "ckExConfirm";
+  confirm.appendChild(ck);
+  confirm.appendChild(document.createTextNode(" " + L("プレビューの内容を適用することを確認した")));
+  box.appendChild(confirm);
+  if(anyError) box.appendChild(exEl("p", "ex-warn", L("赤字の対象は変更できません。対象を外すか内容を修正して、もう一度プレビューしてください。")));
+  const row = exEl("div", "btnrow");
+  const apply = exEl("button", "primary", L("変更を適用"));
+  apply.type = "button";
+  const cancel = exEl("button", null, L("やめる"));
+  cancel.type = "button";
+  const update = function(){
+    apply.disabled = !!anyError || !r.previewId || !ck.checked || (hasWarnings && (!ackBox || !ackBox.checked));
+  };
+  ck.onchange = update;
+  if(ackBox) ackBox.onchange = update;
+  apply.onclick = function(){ exApplyPreview(r, apply, hasWarnings); };
+  cancel.onclick = function(){ extState.form = ""; const a = document.getElementById("exAddArea"); if(a) a.innerHTML = ""; exClearPreview(); };
+  row.appendChild(apply); row.appendChild(cancel);
+  box.appendChild(row);
+  update();
+}
+async function exApplyPreview(r, btn, hasWarnings){
+  if(!r || !r.previewId){ extSetMsg("msgExt", L("プレビューを作り直してください。"), false); return; }
+  const ack = hasWarnings ? !!(document.getElementById("ckExAck") && document.getElementById("ckExAck").checked) : true;
+  const ck = document.getElementById("ckExConfirm");
+  if(!ck || !ck.checked){ extSetMsg("msgExt", L("確認チェックを入れてください。"), false); return; }
+  const ok = await showConfirm(L("変更の適用"), L("プレビューの内容を適用します。反映直前に再確認し、変化があれば拒否します。よろしいですか。"), L("適用する"), L("やめる"));
+  if(!ok) return;
+  if(btn) btn.disabled = true;
+  extState.busy = true;
+  try{
+    const res = await api("/api/extension-apply", "POST", {previewId:r.previewId, confirm:true, acknowledgeWarnings:ack}, 30000);
+    extState.form = "";
+    const a = document.getElementById("exAddArea"); if(a) a.innerHTML = "";
+    exClearPreview();
+    extSetMsg("msgExt", L("適用しました。バックアップ: {id}", {id:(res.backupId || "-")}), true);
+    await loadExtensions(true);
+  }catch(e){
+    extSetMsg("msgExt", e.message, false);
+    exClearPreview();
+  }finally{ extState.busy = false; if(btn) btn.disabled = false; }
+}
+async function exRestoreBackup(b){
+  const ok = await showConfirm(L("復元の確認"), L("「{id}」を復元します。適用後にファイルが変わっている場合は復元しません。新規作成したファイルは削除します。よろしいですか。", {id:b.id}), L("復元する"), L("やめる"));
+  if(!ok) return;
+  try{
+    await api("/api/extension-restore", "POST", {backupId:b.id, confirm:true}, 30000);
+    extSetMsg("msgExtBackup", L("復元しました。"), true);
+    await loadExtensions(true);
+  }catch(e){ extSetMsg("msgExtBackup", e.message, false); }
+}
+function initExtensionUI(){
+  const binds = [["exTabMcp","mcp"],["exTabSkill","skill"],["exTabPlugin","plugin"]];
+  binds.forEach(function(b){
+    const el = document.getElementById(b[0]);
+    if(!el) return;
+    el.onclick = function(){ exSetTab(b[1], false); };
+    el.onkeydown = function(ev){
+      const order = ["mcp","skill","plugin"];
+      let i = order.indexOf(extState.tab);
+      if(ev.key === "ArrowRight" || ev.key === "ArrowDown"){ i = (i + 1) % order.length; }
+      else if(ev.key === "ArrowLeft" || ev.key === "ArrowUp"){ i = (i - 1 + order.length) % order.length; }
+      else if(ev.key === "Home"){ i = 0; }
+      else if(ev.key === "End"){ i = order.length - 1; }
+      else { return; }
+      ev.preventDefault();
+      exSetTab(order[i], true);
+    };
+  });
+  const reload = document.getElementById("btnExtReload");
+  if(reload) reload.onclick = function(){ loadExtensions(true); };
+  const addMcp = document.getElementById("btnExtAddMcp");
+  if(addMcp) addMcp.onclick = function(){ exSetTab("mcp", false); exOpenMcpForm(); };
+  const addSkill = document.getElementById("btnExtAddSkill");
+  if(addSkill) addSkill.onclick = function(){ exSetTab("skill", false); exOpenSkillForm(); };
+  exSetTab(extState.tab, false);
+}
+initExtensionUI();
 initLanguage();
 showHash();refresh();refreshGlobal();
 /* --- GitHub integration (topbar dialog) --------------------------------- */
@@ -5049,7 +5818,7 @@ ghRenderPreview();</script>
   return $html.Replace('__RULE_EDITOR_VENDOR__', (Get-RuleEditorVendor))
 }
 function Send-Json($Ctx, [int]$Code, $Obj) {
-  $j = ConvertTo-Json -InputObject $Obj -Depth 6 -Compress
+  $j = ConvertTo-Json -InputObject $Obj -Depth 12 -Compress
   $b = [System.Text.Encoding]::UTF8.GetBytes($j)
   $r = $Ctx.Response
   $r.StatusCode = $Code; $r.ContentType = 'application/json; charset=utf-8'
@@ -5217,6 +5986,14 @@ function Start-Dashboard {
           Send-Json $ctx 200 @{ schemaVersion = [int]$gsGet.schemaVersion; targets = @($gsGet.targets); available = $availGet }
         }
         catch { Send-Json $ctx 500 @{ error = $_.Exception.Message } }
+        continue
+      }
+      if ($path -eq '/api/extensions' -and $method -eq 'GET') {
+        if ($req.Headers['X-Dashboard-Token'] -cne $Token) { Send-Json $ctx 403 @{ error = 'token 不正のため拒否しました。' }; continue }
+        try {
+          $homeE = Resolve-GlobalHomeBase
+          Send-Json $ctx 200 (Get-ExtensionSnapshot $AutoDir $homeE $Token)
+        } catch { Send-Json $ctx 500 @{ ok = $false; error = $_.Exception.Message } }
         continue
       }
       if ($path -eq '/api/github-settings' -and $method -eq 'GET') {
@@ -6099,6 +6876,57 @@ function Start-Dashboard {
             Send-Json $ctx 200 $rs0
           } catch { Send-Json $ctx 400 @{ error = $_.Exception.Message }
           } finally { if ($rlock) { try { $rlock.Close() } catch {} } }
+          continue
+        }
+        if ($path -eq '/api/extension-preview') {
+          $homeEP = ''
+          try { $homeEP = Resolve-GlobalHomeBase } catch { Send-Json $ctx 500 @{ error = '配置先を確認できませんでした。' }; continue }
+          try {
+            $ep0 = New-ExtensionPreview $AutoDir $homeEP $body $Token
+            Send-Json $ctx 200 $ep0
+          } catch {
+            $emEP = $_.Exception.Message
+            if ($emEP.Contains('(busy)')) { Send-Json $ctx 409 @{ error = $emEP } }
+            else { Send-Json $ctx 400 @{ error = $emEP } }
+          }
+          continue
+        }
+        if ($path -eq '/api/extension-apply') {
+          if ($body.confirm -ne $true) { Send-Json $ctx 400 @{ error = '確認チェックを入れてください。' }; continue }
+          $pvId = ''
+          try { $pvId = [string]$body.previewId } catch {}
+          if ($pvId -cnotmatch '^[0-9a-f]{32}$') { Send-Json $ctx 400 @{ error = '先にプレビューを作成してください。' }; continue }
+          $ackW = $false
+          try { $ackW = ($body.acknowledgeWarnings -eq $true) } catch {}
+          $homeEA = ''
+          try { $homeEA = Resolve-GlobalHomeBase } catch { Send-Json $ctx 500 @{ error = '配置先を確認できませんでした。' }; continue }
+          try {
+            $ea0 = Apply-ExtensionPreview $AutoDir $homeEA $pvId $true $ackW
+            Send-Json $ctx 200 $ea0
+          } catch {
+            $emEA = $_.Exception.Message
+            if ($emEA.Contains('(busy)') -or $emEA.Contains('変化') -or $emEA.Contains('競合')) { Send-Json $ctx 409 @{ error = $emEA } }
+            elseif ($emEA.Contains('適用に失敗')) { Send-Json $ctx 500 @{ error = $emEA } }
+            else { Send-Json $ctx 400 @{ error = $emEA } }
+          }
+          continue
+        }
+        if ($path -eq '/api/extension-restore') {
+          if ($body.confirm -ne $true) { Send-Json $ctx 400 @{ error = '確認チェックを入れてください。' }; continue }
+          $ebId = ''
+          try { $ebId = [string]$body.backupId } catch {}
+          if ($ebId -cnotmatch '^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$') { Send-Json $ctx 400 @{ error = 'バックアップIDが不正です。' }; continue }
+          $homeER = ''
+          try { $homeER = Resolve-GlobalHomeBase } catch { Send-Json $ctx 500 @{ error = '配置先を確認できませんでした。' }; continue }
+          try {
+            $er0 = Restore-ExtensionBackup $AutoDir $homeER $ebId $true
+            Send-Json $ctx 200 $er0
+          } catch {
+            $emER = $_.Exception.Message
+            if ($emER.Contains('(busy)') -or $emER.Contains('変化') -or $emER.Contains('復元しません')) { Send-Json $ctx 409 @{ error = $emER } }
+            elseif ($emER.Contains('復元に失敗')) { Send-Json $ctx 500 @{ error = $emER } }
+            else { Send-Json $ctx 400 @{ error = $emER } }
+          }
           continue
         }
         if ($path -eq '/api/open') {

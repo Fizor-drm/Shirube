@@ -584,6 +584,10 @@ function Get-MgmtBackupList([string]$AutoDir, [string]$Name) {
     $isGlobalRow = $false
     try { if ($mf -and $mf.PSObject.Properties['scope'] -and ([string]$mf.scope -ceq 'global')) { $isGlobalRow = $true } } catch {}
     if ($isGlobalRow) { continue }
+    # Extension backups share the folder but have their own screen and restore.
+    $isExtensionRow = $false
+    try { if ($mf -and $mf.PSObject.Properties['scope'] -and ([string]$mf.scope -ceq 'extensions')) { $isExtensionRow = $true } } catch {}
+    if ($isExtensionRow) { continue }
     $bn = Get-MgmtBackupName $id $mf
     if ($Name -and ($Name.Trim() -ne '') -and ($bn -cne $Name)) { continue }
     $agF = Join-Path $full 'AGENTS.md'

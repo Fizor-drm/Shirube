@@ -56,7 +56,7 @@ function Set-TestSettings([string]$Text) {
 
 $origLocal = $env:LOCALAPPDATA
 try {
-  foreach ($f in @('Settings.ps1', 'Global-Management.ps1', 'Project-Management.ps1', 'GitHub-Management.ps1', 'Dashboard-Server.ps1')) {
+  foreach ($f in @('Settings.ps1', 'Global-Management.ps1', 'Project-Management.ps1', 'GitHub-Management.ps1', 'Extension-Management.ps1', 'Dashboard-Server.ps1')) {
     Copy-Item -LiteralPath (Join-Path $devAuto $f) -Destination (Join-Path $auto $f) -Force
   }
   . (Join-Path $auto 'Dashboard-Server.ps1')
