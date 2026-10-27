@@ -126,8 +126,9 @@ try {
   Assert ([bool]$snap.ok) 'T8 snapshot ok'
   Assert ([string]$snap.homeBase -ieq (Ext-NormPath $fakeHome)) 'T8 snapshot home base'
   $snapJson = $snap | ConvertTo-Json -Depth 12 -Compress
-  Assert (-not $snapJson.Contains('v1')) 'T8 snapshot hides env value'
-  Assert (-not $snapJson.Contains('h1')) 'T8 snapshot hides header value'
+  $jsoncSnapJson = (Get-ExtensionSnapshot $auto $jsoncHome '') | ConvertTo-Json -Depth 12 -Compress
+  Assert ($jsoncSnapJson.Contains('keep') -and -not $jsoncSnapJson.Contains('v1')) 'T8 snapshot hides env value'
+  Assert ($jsoncSnapJson.Contains('keep') -and -not $jsoncSnapJson.Contains('h1')) 'T8 snapshot hides header value'
   $okItem = @($snap.mcp | Where-Object { [string]$_.name -eq 'ok' })[0]
   Assert ($null -ne $okItem) 'T8 snapshot contains ok server'
   Assert ($okItem.providers.ContainsKey('opencode')) 'T8 snapshot provider entry'
