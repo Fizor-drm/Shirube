@@ -259,12 +259,36 @@ Changes to shared rules are picked up from GitHub on the next sync. For project-
 | --- | --- |
 | Projects | Register, unregister, preview, and sync |
 | Global sync / Global settings | Select targets from the 18 providers, preview before applying, apply, check the final result and source, change the sync interval (5 to 1440 minutes) and enable/disable state |
+| Extensions (in Global sync) | Detect MCP servers, skills, and plugins for Codex / OpenCode / Claude Code. Add MCP servers and skills, toggle MCP enable/disable, and review or restore change history |
 | Overview | Choose the scope with "Sync all", "Global only" or "Project only" (a single scope shows one progress step; Sync all runs Global then Project as two steps) |
 | Local edit | Edit and validate `project-local.md` |
 | Backups | List project / Global backups, inspect diffs, and restore. After a restore, automatic sync for that target is paused so the next run does not overwrite it |
 | Logs / Settings | Check sync logs, change the Project sync interval, and export or import settings |
 
 Registering and unregistering projects changes only `projects.json`; sync generates `AGENTS.md`. Secrets such as authentication tokens are never shown in the dashboard or logs. The language selector in the top-right switches between Japanese, English, and Simplified Chinese, and remembers the choice in the browser.
+
+## Extensions (MCP, skills, plugins)
+
+The Extensions section of the Global sync screen detects MCP servers, skills, and plugins in the **global** Codex / OpenCode / Claude Code configuration. It can add MCP servers and skills, and toggle MCP enable/disable for Codex and OpenCode, after a preview diff. Plugins are detection-only; add, remove, or enable them with each CLI's official manager. Project-scoped configuration is out of scope.
+
+| CLI | MCP configuration | Skills | Plugins |
+| --- | --- | --- | --- |
+| Codex | `[mcp_servers.<name>]` in `~/.codex/config.toml`. Supports add and `enabled` toggle | Detect and add `~/.agents/skills/<name>/SKILL.md` | Detect `[plugins.<name>]` only |
+| OpenCode | `mcp` in `~/.config/opencode/opencode.json` (or `.jsonc`). Supports add and `enabled` toggle | Detect `~/.config/opencode/skills`, `~/.claude/skills`, and `~/.agents/skills`. Adds to `~/.config/opencode/skills` | Detect the `plugin` array and `plugins` folder only |
+| Claude Code | User-scope `mcpServers` in `~/.claude.json`. Supports add. Disable from the official `/mcp` panel | Detect and add `~/.claude/skills/<name>/SKILL.md` | Detect `enabledPlugins` in `~/.claude/settings.json` only |
+
+- Every change is previewed as a per-target diff. Immediately before writing, the file hash is checked again; if anything changed after the preview, the change is rejected.
+- Before applying, each target file is copied to `.automation\backups\.extensions\<ID>\` with hashes in `manifest.json`. The change history restores only when the applied file is unchanged. Files created by the change are deleted on restore.
+- Codex writes append a new `[mcp_servers.<name>]` table instead of rewriting existing tables. The toggle changes only the `enabled` line in that table. Configs that define MCP servers with inline tables, dotted keys, or arrays of tables are left unchanged for safety. Configs with quoted `mcp_servers` roots or multiline strings are also left unchanged. The diff shows only the server name, transport, key names, and enabled state; values are not shown.
+- OpenCode and Claude Code JSON are edited as text so existing comments and unknown keys are preserved. Inserted lines use two-space indentation. A plain `opencode.json` that already contains comments or trailing commas is left unchanged; use `.jsonc` instead. The MCP diff uses the same structural summary as Codex: only the server name, transport, key names, and enabled state, never values.
+- Configuration files that are symbolic links or junctions are never read or written. Nothing is written outside the home folder.
+- Existing file ACLs are carried over when possible. New files, and files whose ACL cannot be read or restored, may be restricted to the current user / SYSTEM / Administrators.
+- Environment-variable and header values are stored in plaintext in the configuration file. They are masked in the screen, previews, and logs, but the configuration file itself contains secrets; protect its permissions and backups accordingly. stdio commands and args are also not shown in the list or the preview diff. Remote URLs show only the host; path, query, and credentials are hidden.
+- This screen never runs an MCP server, connects externally, installs npm packages, or launches `codex` / `opencode` / `claude`.
+- Distributing the same skill to both Codex and Claude Code can make OpenCode see duplicate names because it reads both compatible locations. The screen warns about this combination. To target OpenCode alone, use `~/.config/opencode/skills`.
+
+> [!CAUTION]
+> Extension changes update each CLI's global configuration directly. If the CLI is running, restart it afterwards and confirm the change. Always review the preview diff before applying.
 
 ## Settings
 
@@ -291,6 +315,9 @@ Do not put secrets in this file. Authentication tokens and similar values are no
 | OS | Windows only. Linux and macOS are not supported. |
 | PowerShell path | The `.vbs` launcher hard-codes `C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe`. It does not work as-is when Windows is installed elsewhere. |
 | Symbolic links | On systems without permission to create symbolic links, T13a / T13b in `Test-SyncProjectRules.ps1` are unverified. |
+| Extension plugins | Plugins are detection-only. Add, remove, or enable them with each CLI's official plugin manager. |
+| Claude Code MCP disable | Use the official `/mcp` panel (per project). This screen does not change it. |
+| Duplicate skills | Distributing the same skill to both Codex and Claude Code can make OpenCode detect duplicates from its compatible locations. |
 | Upstream engine identifiers | The `rulesync` package, `rulesync.jsonc`, `.rulesync`, `rulesync.lock`, and `rulesyncVersion` keep their old names for compatibility. |
 
 A security review has been completed only for the pre-publication prerelease; a standard audit has not been performed.

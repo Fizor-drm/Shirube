@@ -259,12 +259,36 @@ Project 的 frontmatter 只接受固定格式。请将 3 个键各写一行，�
 | --- | --- |
 | 项目 | 注册、取消注册、预览、同步 |
 | Global 同步 / Global 设置 | 从 18 种目标中选择分发对象、应用前预览、应用、确认最终结果和来源、修改同步间隔（5～1440 分钟）以及启用/禁用状态 |
+| Global 同步中的扩展功能 | 检测 Codex / OpenCode / Claude Code 的 MCP、技能与插件。添加 MCP 服务器和技能、切换 MCP 启用/禁用、查看变更历史并恢复 |
 | 概述 | 通过“全部同步”“仅 Global”“仅 Project”选择执行范围（单独执行显示 1 步进度，全部同步按 Global → Project 显示 2 步） |
 | 本地编辑 | 编辑和检查 `project-local.md` |
 | 备份 | 查看项目 / Global 备份列表、确认差异、还原。还原后会暂停该目标的自动同步，防止下次覆盖 |
 | 日志 / 设置 | 查看同步日志、修改 Project 的同步间隔、导出和导入设置 |
 
 管理界面的注册和取消注册只修改 `projects.json`，`AGENTS.md` 的生成由同步完成。认证令牌等秘密信息不会显示在界面或日志中。右上角的语言选择器可以在日语、English 和简体中文之间切换，选择会保存在浏览器中。
+
+## 扩展功能（MCP、技能、插件）
+
+“Global 同步”页面中的“扩展功能”部分会检测 Codex / OpenCode / Claude Code 的**全局配置**中的 MCP 服务器、技能与插件。可以在确认预览差异后添加 MCP 服务器和技能，并切换 Codex / OpenCode 的 MCP 启用/禁用状态。插件仅做检测，添加、删除或启用请使用各 CLI 的官方功能。项目专用配置不在范围内。
+
+| CLI | MCP 配置 | 技能 | 插件 |
+| --- | --- | --- | --- |
+| Codex | `~/.codex/config.toml` 中的 `[mcp_servers.<name>]`。支持添加和 `enabled` 切换 | 检测并添加 `~/.agents/skills/<name>/SKILL.md` | 仅检测 `[plugins.<name>]` |
+| OpenCode | `~/.config/opencode/opencode.json`（没有时使用 `.jsonc`）中的 `mcp`。支持添加和 `enabled` 切换 | 检测 `~/.config/opencode/skills`、`~/.claude/skills`、`~/.agents/skills`。添加到 `~/.config/opencode/skills` | 仅检测 `plugin` 数组和 `plugins` 文件夹 |
+| Claude Code | `~/.claude.json` 中用户范围的 `mcpServers`。支持添加。禁用请使用官方 `/mcp` 面板 | 检测并添加 `~/.claude/skills/<name>/SKILL.md` | 仅检测 `~/.claude/settings.json` 中的 `enabledPlugins` |
+
+- 所有变更都会先在预览中按目标显示差异。写入前会再次核对文件哈希；预览后如有变化则拒绝。
+- 应用前会将目标文件复制到 `.automation\backups\.extensions\<ID>\`，并在 `manifest.json` 中记录哈希。“变更历史”仅在应用后的文件未变化时允许恢复。新创建的文件会在恢复时删除。
+- Codex 会追加新的 `[mcp_servers.<name>]` 表，不重写已有表。启用/禁用切换只修改该表中的 `enabled` 行。使用内联表、点分键或表数组定义 MCP 服务器的配置将出于安全考虑不予修改。使用带引号的 `mcp_servers` 根键或包含多行字符串的配置也不予修改。差异中仅显示服务器名称、连接方式、键名和启用状态，不显示值。
+- OpenCode / Claude Code 的 JSON 以文本方式插入，以保留已有注释和未知键。插入行使用两个空格缩进。含有注释或尾随逗号的 `opencode.json` 不会被修改，请改用 `.jsonc`。MCP 差异与 Codex 相同，仅显示服务器名称、连接方式、键名和启用状态，不显示值。
+- 符号链接或 junction 的配置文件不会被读取或写入。不会向主目录外写入。
+- 会尽可能继承已有文件的 ACL。新文件或无法读取/恢复 ACL 时，可能会限制为当前用户 / SYSTEM / Administrators。
+- 环境变量和请求头的值会以明文保存在配置文件中。界面、预览和日志会进行遮挡，但配置文件本身包含秘密信息，请注意权限和备份。stdio 的 command 和 args 也不会显示在列表和预览差异中。远程 URL 仅显示主机名，路径、查询和认证信息会被遮挡。
+- 本页面不会执行 MCP 服务器、连接外部服务、安装 npm 包，也不会启动 `codex` / `opencode` / `claude`。
+- 同时向 Codex 和 Claude Code 分发同名技能时，OpenCode 会读取两个兼容位置，可能看到重复名称。界面会对此组合发出警告。仅面向 OpenCode 时请使用 `~/.config/opencode/skills`。
+
+> [!CAUTION]
+> 扩展功能的变更会直接更新各 CLI 的全局配置。如果 CLI 正在运行，请在变更后重启并确认。应用前请务必查看预览差异。
 
 ## 设置
 
@@ -291,6 +315,9 @@ Project 的 frontmatter 只接受固定格式。请将 3 个键各写一行，�
 | OS | 仅支持 Windows。不支持 Linux / macOS。 |
 | PowerShell 路径 | 启动用 `.vbs` 固定引用 `C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe`。Windows 安装位置不同的环境无法直接运行。 |
 | 符号链接 | 在没有创建权限的环境中，`Test-SyncProjectRules.ps1` 的 T13a / T13b 尚未验证。 |
+| 扩展功能的插件 | 插件仅做检测。添加、删除或启用请使用各 CLI 官方的插件管理功能。 |
+| Claude Code 的 MCP 禁用 | 请使用官方 `/mcp` 面板（按项目）。本页面不会更改。 |
+| 技能重复 | 同时向 Codex 和 Claude Code 分发同名技能时，OpenCode 可能会从兼容位置检测到重复。 |
 | 上游引擎来源的标识符 | `rulesync` 包、`rulesync.jsonc`、`.rulesync`、`rulesync.lock`、`rulesyncVersion` 为保持兼容性仍使用旧名称。 |
 
 安全审查仅针对公开发布前的预发布版本实施过，尚未实施标准审计。
