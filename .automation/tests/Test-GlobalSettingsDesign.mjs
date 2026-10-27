@@ -96,7 +96,11 @@ function makeElement(tag) {
     hidden: false, title: '', alt: '', src: '', dir: '', tabIndex: 0,
     style: { setProperty(k, v) { this[k] = String(v); } },
     dataset: {}, focused: false, parentNode: null,
-    appendChild(c) { c.parentNode = this; this.children.push(c); return c; },
+    appendChild(c) {
+      if (c.parentNode && c.parentNode !== this && typeof c.parentNode.removeChild === 'function') c.parentNode.removeChild(c);
+      else if (c.parentNode === this) { const i = this.children.indexOf(c); if (i >= 0) this.children.splice(i, 1); }
+      c.parentNode = this; this.children.push(c); return c;
+    },
     removeChild(c) {
       const i = this.children.indexOf(c);
       if (i >= 0) this.children.splice(i, 1);
@@ -391,6 +395,110 @@ test('count, select all/none, revert and preview invalidation share one change p
   must(h.state().dirty === false, 'reverting to saved selection clears dirty');
   must(h.byId('btnGlobalTargets').disabled === true, 'reverted state disables save');
   must(h.context.lastGlobalPlan === null, 'revert still keeps preview invalidated');
+});
+
+const cardOrder = h => h.checks().map(c => c.value);
+function adopt(h, targets) {
+  h.gs.updateGlobalUI({ providers: [], targets: targets.slice(), syncState: 'idle', intervalMinutes: 15, taskEnabled: true, githubConfigured: true });
+}
+
+test('saved selection is pinned to the top while toggling keeps the card order', () => {
+  const h = harness();
+  adopt(h, ['claudecode', 'pi']);
+  must(cardOrder(h).slice(0, 2).join('|') === 'claudecode|pi', 'adopted baseline pins selected cards: ' + cardOrder(h).slice(0, 6).join(','));
+  must(cardOrder(h).slice(2, 4).join('|') === 'codexcli|opencode', 'unselected cards keep catalog order');
+  const afterAdopt = cardOrder(h).join('|');
+  h.checkFor('zed').checked = true;
+  h.gs.markGlobalTargetsDirty();
+  must(cardOrder(h).join('|') === afterAdopt, 'checking a new provider does not move cards');
+  h.checkFor('claudecode').checked = false;
+  h.gs.markGlobalTargetsDirty();
+  must(cardOrder(h).join('|') === afterAdopt, 'unchecking a pinned provider does not move cards');
+  h.checkFor('claudecode').checked = true;
+  h.checkFor('zed').checked = false;
+  h.gs.markGlobalTargetsDirty();
+  must(cardOrder(h).join('|') === afterAdopt, 'reverting the edit keeps the established order');
+});
+
+await testAsync('an ordinary clean poll pins its adopted baseline', async () => {
+  const h = harness();
+  h.model.globalStatus.targets = ['qoder', 'goose'];
+  await h.context.refreshGlobal();
+  must(cardOrder(h).slice(0, 2).join('|') === 'goose|qoder', 'clean poll reorders to the saved baseline');
+  must(h.state().saved.join('|') === 'qoder|goose', 'clean poll adopts the baseline');
+});
+
+await testAsync('a status response racing an edit moves the baseline without moving cards', async () => {
+  const h = harness();
+  adopt(h, ['claudecode', 'pi']);
+  const before = cardOrder(h).join('|');
+  let release;
+  h.model.statusGetGate = new Promise(resolve => { release = resolve; });
+  h.model.globalStatus.targets = ['qoder', 'claudecode'];
+  const poll = h.context.refreshGlobal();
+  h.checkFor('zed').checked = true;
+  h.gs.markGlobalTargetsDirty();
+  release();
+  await poll;
+  must(h.state().saved.join('|') === 'qoder|claudecode', 'the raced response becomes the baseline');
+  must(cardOrder(h).join('|') === before, 'the raced response leaves card order alone');
+  must(h.state().dirty === true, 'the edit stays dirty against the new baseline');
+  must(h.checkFor('zed').checked === true, 'the edit survives the raced response');
+});
+
+await testAsync('explicit reload pins the adopted baseline and keeps order under a concurrent edit', async () => {
+  const h = harness();
+  h.model.globalStatus.targets = ['claudecode', 'pi'];
+  let release;
+  h.model.statusGetGate = new Promise(resolve => { release = resolve; });
+  const first = h.byId('btnGlobalReload').onclick();
+  release();
+  await first;
+  must(cardOrder(h).slice(0, 2).join('|') === 'claudecode|pi', 'reload pins the adopted baseline');
+  const before = cardOrder(h).join('|');
+  h.model.globalStatus.targets = ['qoder', 'goose'];
+  let release2;
+  h.model.statusGetGate = new Promise(resolve => { release2 = resolve; });
+  const second = h.byId('btnGlobalReload').onclick();
+  h.checkFor('zed').checked = true;
+  h.gs.markGlobalTargetsDirty();
+  release2();
+  await second;
+  must(h.state().saved.join('|') === 'qoder|goose', 'the reload response is the new baseline');
+  must(cardOrder(h).join('|') === before, 'an edit during reload keeps the established card order');
+});
+
+await testAsync('a successful save pins the saved selection to the top', async () => {
+  const h = harness();
+  h.checkFor('codexcli').checked = false;
+  h.checkFor('opencode').checked = false;
+  h.checkFor('claudecode').checked = true;
+  h.checkFor('pi').checked = true;
+  h.gs.markGlobalTargetsDirty();
+  await h.byId('btnGlobalTargets').onclick();
+  must(h.state().saved.join('|') === 'claudecode|pi', 'the save moves the baseline');
+  must(cardOrder(h).slice(0, 2).join('|') === 'claudecode|pi', 'saved cards are pinned: ' + cardOrder(h).slice(0, 6).join(','));
+  must(cardOrder(h).slice(2, 4).join('|') === 'codexcli|opencode', 'unsaved cards keep catalog order');
+});
+
+test('reordering moves the existing nodes and restores focus', () => {
+  const h = harness();
+  adopt(h, ['claudecode', 'pi']);
+  const box = h.byId('globalTargetsList');
+  const active = h.checkFor('codexcli');
+  active.checked = true;
+  h.document.activeElement = active;
+  const append = box.appendChild.bind(box);
+  box.appendChild = function (card) {
+    if (h.document.activeElement === active) h.document.activeElement = null;
+    return append(card);
+  };
+  h.context.globalSavedTargets = ['qoder'];
+  h.gs.renderGlobalTargetsUI(true);
+  must(cardOrder(h)[0] === 'qoder', 'the forced order uses the new baseline');
+  must(h.checkFor('codexcli') === active, 'the same checkbox node is retained');
+  must(active.checked === true, 'checked state survives the move');
+  must(active.focused === true, 'focus is restored after the move');
 });
 
 test('dirty selection survives status polls and locale rerenders; clean polls adopt saved state', () => {

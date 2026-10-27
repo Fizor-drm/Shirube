@@ -3788,10 +3788,12 @@ function updateGlobalUI(g){
   // refreshed only after save or explicit reload. A missed change event still
   // shows up as a real difference, so detect it before adopting the server state.
   try{ if(!forceAdopt && !globalTargetsDirty && globalTargetsDirtyNow()){ globalTargetsDirty = true; lastGlobalPlan = null; } }catch(e0){}
+  let targetsAdopted = false;
   if(!globalTargetsSaving && !targetsStale){
     try{
       if(targetsEdited){
         // Keep the user's checkboxes, but the successful response is the new server truth to diff against.
+        // The card order stays put while an edit is in progress.
         globalSavedTargets = (g.targets || []).slice();
         globalTargetsDirty = globalTargetsDirtyNow();
         if(adoptGuard) globalTargetsAppliedSeq = adoptGuard.seq;
@@ -3800,12 +3802,13 @@ function updateGlobalUI(g){
         const cs = globalTargetCheckboxes();
         for(let i=0;i<cs.length;i++){ cs[i].checked = wanted.indexOf(cs[i].value) >= 0; }
         globalSavedTargets = wanted;
+        targetsAdopted = true;
         if(forceAdopt){ globalTargetsDirty = false; }
         if(adoptGuard) globalTargetsAppliedSeq = adoptGuard.seq;
       }
     }catch(e2){}
   }
-  try{ renderGlobalTargetsUI(); }catch(e6){}
+  try{ renderGlobalTargetsUI(targetsAdopted); }catch(e6){}
   const intervalAdoptable = !intervalStale && !(adoptGuard && !forceAdopt && globalReloadProtectsInterval()) && (!globalIntervalDirty || (forceAdopt && !globalTargetsSaving && !intervalEdited));
   try{
     if(g.intervalMinutes !== null && g.intervalMinutes !== undefined && intervalAdoptable){
@@ -3960,7 +3963,7 @@ function renderGlobalTargetChoices(){
     l.appendChild(card);
     box.appendChild(l);
   });
-  renderGlobalTargetsUI();
+  renderGlobalTargetsUI(true);
 }
 function globalTargetCheckboxes(){
   try{ return document.querySelectorAll("#globalTargetsList input[type=checkbox]"); }catch(e){ return []; }
@@ -3971,7 +3974,54 @@ function globalTargetsDirtyNow(){
 function globalTargetsLockedByGitHub(){
   return !(currentGlobalStatus && currentGlobalStatus.githubConfigured === true);
 }
-function renderGlobalTargetsUI(){
+function globalTargetCardId(card){
+  const kids = (card && card.children) || [];
+  for(let i=0;i<kids.length;i++){ if(kids[i] && kids[i].type === "checkbox") return String(kids[i].value || ""); }
+  return "";
+}
+function globalTargetCatalogRank(id){
+  const catalog = GLOBAL_CATALOG || [];
+  for(let i=0;i<catalog.length;i++){ if(catalog[i] && catalog[i].id === id) return i; }
+  return catalog.length;
+}
+// Ordering follows the saved baseline, never the live checkboxes: toggling a
+// provider must not move its card. Callers reorder only when the baseline was
+// replaced (initial render, clean status adoption, successful save).
+function reorderGlobalTargetCards(box){
+  const cards = [];
+  for(let i=0;i<box.children.length;i++) cards.push(box.children[i]);
+  if(cards.length < 2) return;
+  const picked = {};
+  const saved = globalSavedTargets || [];
+  for(let i=0;i<saved.length;i++) picked[saved[i]] = true;
+  const ordered = cards.map(function(card, index){
+    const id = globalTargetCardId(card);
+    return {
+      card: card,
+      index: index,
+      picked: picked[id] === true,
+      rank: globalTargetCatalogRank(id)
+    };
+  }).sort(function(a, b){
+    if(a.picked !== b.picked) return a.picked ? -1 : 1;
+    if(a.rank !== b.rank) return a.rank - b.rank;
+    return a.index - b.index;
+  });
+  let changed = false;
+  for(let i=0;i<ordered.length;i++){ if(ordered[i].card !== cards[i]){ changed = true; break; } }
+  if(!changed) return;
+  // Move the existing nodes so checked state and listeners survive; restore
+  // focus because moving a focused node may drop it in some browsers.
+  const active = document.activeElement || null;
+  for(let i=0;i<ordered.length;i++) box.appendChild(ordered[i].card);
+  if(active && active !== (document.activeElement || null) && typeof active.focus === "function"){
+    const inside = typeof box.contains === "function" ? box.contains(active) : true;
+    if(inside){ try{ active.focus(); }catch(e){} }
+  }
+}
+function renderGlobalTargetsUI(forceOrder){
+  const box = document.getElementById("globalTargetsList");
+  if(box && forceOrder) reorderGlobalTargetCards(box);
   const total = (GLOBAL_CATALOG || []).length;
   const selected = globalSelectedTargets().length;
   const ghLocked = globalTargetsLockedByGitHub();
@@ -4015,6 +4065,8 @@ function globalSelectedTargets(){
     const cs = globalTargetCheckboxes();
     for(let i=0;i<cs.length;i++){ if(cs[i].checked) tg.push(cs[i].value); }
   }catch(e){}
+  // Card order is presentational; selection order stays canonical (catalog).
+  tg.sort(function(a, b){ return globalTargetCatalogRank(a) - globalTargetCatalogRank(b); });
   return tg;
 }
 function globalPlanIdForSelection(names){
@@ -4618,7 +4670,7 @@ document.getElementById("btnGlobalTargets").onclick = async function(){
       else { ghHardFail = true; ghNote = L("GitHubへの追記に失敗しました：{reason}", {reason: gh0.error || ""}); }
     }
     setMsg("msgGlobalTargets", L("対象を保存しました。") + (ghNote ? " " + ghNote : ""), !ghHardFail);
-    renderGlobalTargetsUI();
+    renderGlobalTargetsUI(true);
     await refreshGlobal();
   }catch(e){ setMsg("msgGlobalTargets", e.message, false); }
   finally{ globalTargetsSaving = false; try{ renderGlobalTargetsUI(); }catch(e2){} try{ safeFocus(b); }catch(e3){} }
