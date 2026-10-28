@@ -1217,6 +1217,7 @@ input[type=number]{width:120px;background:#0a0a0a;border:1px solid #2c2c2c;color
 #extensions .ex-form input[type=text],#extensions .ex-form textarea,#extensions .ex-form select{display:block;width:100%;margin-top:4px;background:#08080a;border:1px solid #2c2c34;border-radius:6px;color:var(--ex-text);padding:8px 9px;font-size:12.5px;line-height:1.5}
 #extensions .ex-form input[type=text]:focus-visible,#extensions .ex-form textarea:focus-visible,#extensions .ex-form select:focus-visible{outline:2px solid var(--ex-accent);outline-offset:1px}
 #extensions .ex-form textarea{min-height:74px;resize:vertical;font-family:ui-monospace,Consolas,monospace}
+#extensions textarea.ex-secret{-webkit-text-security:disc}
 #extensions .ex-form .ex-checks{display:flex;gap:14px;flex-wrap:wrap;padding-top:4px}
 #extensions .ex-form .ex-checks label{display:inline-flex;align-items:center;gap:6px;color:var(--ex-text);font-size:12.5px}
 #extensions .ex-warn{color:#f0d08a;font-size:12px;margin:0}
@@ -2191,7 +2192,8 @@ const I18N = {
     "引数（1行に1つ）": "Arguments (one per line)",
     "環境変数（KEY=VALUE、1行に1つ）": "Environment variables (KEY=VALUE, one per line)",
     "ヘッダー（Name: Value、1行に1つ）": "Headers (Name: Value, one per line)",
-    "秘密情報は各CLIの設定ファイルに平文で保存されます。環境変数とヘッダーの値は画面とプレビューで伏せます。コマンド引数に秘密情報を含める場合は注意してください。": "Secrets are stored in plaintext in each CLI's configuration file. Environment-variable and header values are masked in this screen and in previews. Be careful about secrets in command arguments.",
+    "秘密情報を表示（マスク非対応ブラウザでは入力に必要）": "Show secrets (required for entry in browsers without masking)",
+    "秘密情報は各CLIの設定ファイルに平文で保存されます。環境変数とヘッダーの値は画面では既定で伏せ、明示的に「秘密情報を表示」を選んだときだけ表示します。プレビューでは常に伏せます。コマンド引数に秘密情報を含める場合は注意してください。": "Secrets are stored in plaintext in each CLI's configuration file. Environment-variable and header values are hidden by default on this screen and appear only when you explicitly choose \"Show secrets\". Previews always mask them. Be careful about secrets in command arguments.",
     "プレビューを作成": "Create preview",
     "スキル名（英小文字・数字・単一ハイフン）": "Skill name (lowercase letters, digits, single hyphens)",
     "説明（1〜1024文字）": "Description (1-1024 characters)",
@@ -2714,7 +2716,8 @@ const I18N = {
     "引数（1行に1つ）": "参数（每行一个）",
     "環境変数（KEY=VALUE、1行に1つ）": "环境变量（KEY=VALUE，每行一个）",
     "ヘッダー（Name: Value、1行に1つ）": "请求头（Name: Value，每行一个）",
-    "秘密情報は各CLIの設定ファイルに平文で保存されます。環境変数とヘッダーの値は画面とプレビューで伏せます。コマンド引数に秘密情報を含める場合は注意してください。": "秘密信息会以明文保存在各 CLI 的配置文件中。环境变量和请求头的值会在此页面和预览中遮挡。请注意命令参数中可能包含秘密信息。",
+    "秘密情報を表示（マスク非対応ブラウザでは入力に必要）": "显示秘密信息（不支持遮挡的浏览器需要开启才能输入）",
+    "秘密情報は各CLIの設定ファイルに平文で保存されます。環境変数とヘッダーの値は画面では既定で伏せ、明示的に「秘密情報を表示」を選んだときだけ表示します。プレビューでは常に伏せます。コマンド引数に秘密情報を含める場合は注意してください。": "秘密信息会以明文保存在各 CLI 的配置文件中。环境变量和请求头的值在界面上默认遮挡，仅在明确选择“显示秘密信息”时才显示。预览中始终遮挡。请注意命令参数中可能包含秘密信息。",
     "プレビューを作成": "创建预览",
     "スキル名（英小文字・数字・単一ハイフン）": "技能名称（小写字母、数字、单个连字符）",
     "説明（1〜1024文字）": "说明（1〜1024 个字符）",
@@ -5048,7 +5051,7 @@ document.getElementById("btnGlobalBackups").onclick = function(){ loadGlobalBack
 /* --- Extensions (MCP / skills / plugins) --------------------------------- */
 const EXT_PROVIDERS = ["codex", "opencode", "claudecode"];
 const EXT_LABELS = {codex:"Codex", opencode:"OpenCode", claudecode:"Claude Code"};
-let extState = {data:null, loading:false, error:null, tab:"mcp", preview:null, form:"", busy:false};
+let extState = {data:null, loading:false, error:null, tab:"mcp", preview:null, previewSeq:0, form:"", busy:false};
 let extLoadSeq = 0;
 function extLabel(id){ return EXT_LABELS[id] || String(id || ""); }
 function exEl(tag, cls, text){
@@ -5287,7 +5290,7 @@ function loadExtensions(force){
   if(extState.loading && !force) return;
   const seq = ++extLoadSeq;
   extState.loading = true;
-  if(force){ extState.preview = null; const pa = document.getElementById("exPreviewArea"); if(pa) pa.innerHTML = ""; }
+  if(force) exClearPreview();
   if(!extState.data) exRenderAll();
   (async function(){
     try{
@@ -5326,6 +5329,7 @@ function exFormProviders(scopeId){
   return scope ? exSelectedProviders(scope) : [];
 }
 function exClearPreview(){
+  extState.previewSeq++;
   extState.preview = null;
   const pa = document.getElementById("exPreviewArea");
   if(pa) pa.innerHTML = "";
@@ -5345,15 +5349,28 @@ function exOpenMcpForm(){
     '<div id="exMcpStdio">' +
     '<label for="exMcpCommand">' + L("コマンド") + '<input type="text" id="exMcpCommand" autocomplete="off" spellcheck="false" placeholder="npx"></label>' +
     '<label for="exMcpArgs">' + L("引数（1行に1つ）") + '<textarea id="exMcpArgs" spellcheck="false"></textarea></label>' +
-    '<label for="exMcpEnv">' + L("環境変数（KEY=VALUE、1行に1つ）") + '<textarea id="exMcpEnv" spellcheck="false"></textarea></label>' +
+    '<label for="exMcpEnv">' + L("環境変数（KEY=VALUE、1行に1つ）") + '<textarea id="exMcpEnv" class="ex-secret" hidden spellcheck="false" autocomplete="off"></textarea></label>' +
     '</div>' +
     '<div id="exMcpRemote" hidden>' +
     '<label for="exMcpUrl">URL<input type="text" id="exMcpUrl" autocomplete="off" spellcheck="false" placeholder="https://"></label>' +
-    '<label for="exMcpHeaders">' + L("ヘッダー（Name: Value、1行に1つ）") + '<textarea id="exMcpHeaders" spellcheck="false"></textarea></label>' +
+    '<label for="exMcpHeaders">' + L("ヘッダー（Name: Value、1行に1つ）") + '<textarea id="exMcpHeaders" class="ex-secret" hidden spellcheck="false" autocomplete="off"></textarea></label>' +
     '</div>' +
-    '<p class="ex-warn">' + L("秘密情報は各CLIの設定ファイルに平文で保存されます。環境変数とヘッダーの値は画面とプレビューで伏せます。コマンド引数に秘密情報を含める場合は注意してください。") + '</p>' +
+    '<label><input type="checkbox" id="exRevealSecrets" aria-controls="exMcpEnv exMcpHeaders"> ' + L("秘密情報を表示（マスク非対応ブラウザでは入力に必要）") + '</label>' +
+    '<p class="ex-warn">' + L("秘密情報は各CLIの設定ファイルに平文で保存されます。環境変数とヘッダーの値は画面では既定で伏せ、明示的に「秘密情報を表示」を選んだときだけ表示します。プレビューでは常に伏せます。コマンド引数に秘密情報を含める場合は注意してください。") + '</p>' +
     '<div class="btnrow"><button type="button" id="btnExMcpPreview" class="primary">' + L("プレビューを作成") + '</button><button type="button" id="btnExMcpCancel">' + L("やめる") + '</button></div>' +
     '</div>';
+  const reveal = document.getElementById("exRevealSecrets");
+  let canMask = false;
+  try{ canMask = typeof CSS !== "undefined" && CSS.supports("-webkit-text-security", "disc"); }catch(e){}
+  const updateSecrets = function(){
+    ["exMcpEnv", "exMcpHeaders"].forEach(function(id){
+      const field = document.getElementById(id);
+      if(!field) return;
+      field.hidden = !canMask && !reveal.checked;
+      field.classList.toggle("ex-secret", !reveal.checked);
+    });
+  };
+  if(reveal){ reveal.onchange = updateSecrets; updateSecrets(); }
   const sel = document.getElementById("exMcpTransport");
   if(sel) sel.onchange = function(){
     const remote = sel.value === "remote";
@@ -5411,8 +5428,10 @@ async function exPreviewMcpAdd(btn){
   if(btn) btn.disabled = true;
   extClearMsg("msgExtMcp");
   exClearPreview();
+  const seq = extState.previewSeq;
   try{
     const r = await api("/api/extension-preview", "POST", req, 20000);
+    if(seq !== extState.previewSeq) return;
     extState.preview = r;
     exRenderPreview(r);
   }catch(e){ extSetMsg("msgExtMcp", e.message, false); }
@@ -5430,20 +5449,25 @@ async function exPreviewSkillAdd(btn){
   if(btn) btn.disabled = true;
   extClearMsg("msgExtSkill");
   exClearPreview();
+  const seq = extState.previewSeq;
   try{
     const r = await api("/api/extension-preview", "POST", req, 20000);
+    if(seq !== extState.previewSeq) return;
     extState.preview = r;
     exRenderPreview(r);
   }catch(e){ extSetMsg("msgExtSkill", e.message, false); }
   finally{ if(btn) btn.disabled = false; }
 }
 async function exAskToggle(name, pid, enabled){
+  const beforeConfirm = extState.previewSeq;
   const word = enabled ? L("有効") : L("無効");
   const ok = await showConfirm(L("変更の確認"), L("「{name}」を{state}にします。プレビューで差分を確認してから適用します。", {name:name, state:word}), L("プレビュー"), L("やめる"));
-  if(!ok) return;
+  if(!ok || beforeConfirm !== extState.previewSeq) return;
   exClearPreview();
+  const seq = extState.previewSeq;
   try{
     const r = await api("/api/extension-preview", "POST", {kind:"mcp", action:"toggle", providers:[pid], name:name, enabled:enabled}, 20000);
+    if(seq !== extState.previewSeq) return;
     extState.preview = r;
     exRenderPreview(r);
   }catch(e){ extSetMsg("msgExtMcp", e.message, false); }
@@ -5507,12 +5531,13 @@ function exRenderPreview(r){
   update();
 }
 async function exApplyPreview(r, btn, hasWarnings){
-  if(!r || !r.previewId){ extSetMsg("msgExt", L("プレビューを作り直してください。"), false); return; }
+  if(!r || !r.previewId || extState.preview !== r){ extSetMsg("msgExt", L("プレビューを作り直してください。"), false); return; }
   const ack = hasWarnings ? !!(document.getElementById("ckExAck") && document.getElementById("ckExAck").checked) : true;
   const ck = document.getElementById("ckExConfirm");
   if(!ck || !ck.checked){ extSetMsg("msgExt", L("確認チェックを入れてください。"), false); return; }
   const ok = await showConfirm(L("変更の適用"), L("プレビューの内容を適用します。反映直前に再確認し、変化があれば拒否します。よろしいですか。"), L("適用する"), L("やめる"));
   if(!ok) return;
+  if(extState.preview !== r){ extSetMsg("msgExt", L("プレビューを作り直してください。"), false); return; }
   if(btn) btn.disabled = true;
   extState.busy = true;
   try{
