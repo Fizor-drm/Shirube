@@ -11,11 +11,11 @@ function Assert([bool]$Cond, [string]$Name) {
 $devAuto = Split-Path -Parent $PSScriptRoot
 $srvPath = Join-Path $devAuto 'Dashboard-Server.ps1'
 $srvTxt = Get-Content -LiteralPath $srvPath -Raw
-$screenIds = @('top', 'projects', 'global', 'rules', 'backups', 'local', 'logs', 'settings')
+$screenIds = @('top', 'projects', 'global', 'extensions', 'rules', 'backups', 'local', 'logs', 'settings')
 $legacy = @{ register = 'projects'; status = 'projects'; gsettings = 'global'; help = 'settings' }
 
 try {
-  # --- static: both navigations reach the same eight screens (desktop sidebar / narrow topnav)
+  # --- static: both navigations reach the same nine screens (desktop sidebar / narrow topnav)
   $aside = [regex]::Match($srvTxt, '(?s)<aside>.*?</aside>')
   $topnav = [regex]::Match($srvTxt, '(?s)<nav class="topnav".*?</nav>')
   Assert ($aside.Success -and $topnav.Success) 'NAV both navigations present'
@@ -23,22 +23,22 @@ try {
   $topLinks = [regex]::Matches($topnav.Value, 'href="#([a-z]+)"')
   $asideIds = @($asideLinks | ForEach-Object { $_.Groups[1].Value })
   $topIds = @($topLinks | ForEach-Object { $_.Groups[1].Value })
-  Assert (($asideIds.Count -eq 8) -and ($topIds.Count -eq 8)) 'NAV each navigation has exactly eight links'
-  Assert ((@($asideIds | Sort-Object) -join ',') -eq ((@($screenIds) | Sort-Object) -join ',')) 'NAV desktop sidebar reaches all eight screens'
-  Assert ((@($topIds | Sort-Object) -join ',') -eq ((@($screenIds) | Sort-Object) -join ',')) 'NAV narrow topnav reaches all eight screens'
+  Assert (($asideIds.Count -eq 9) -and ($topIds.Count -eq 9)) 'NAV each navigation has exactly nine links'
+  Assert ((@($asideIds | Sort-Object) -join ',') -eq ((@($screenIds) | Sort-Object) -join ',')) 'NAV desktop sidebar reaches all nine screens'
+  Assert ((@($topIds | Sort-Object) -join ',') -eq ((@($screenIds) | Sort-Object) -join ',')) 'NAV narrow topnav reaches all nine screens'
   Assert ((@($asideIds) -join ',') -eq (@($topIds) -join ',')) 'NAV both navigations point at the same screens in the same order'
   Assert ((@($asideIds) -join ',') -eq (@($screenIds) -join ',')) 'NAV screens keep the documented order'
 
   # --- static: every link uses an inline Lucide icon with the label in a span
   $iconPrefix = 'width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"'
   $inlineSvg = [regex]::Matches($srvTxt, '<svg ' + [regex]::Escape($iconPrefix))
-  Assert ($inlineSvg.Count -eq 16) 'NAV both navigations carry one 16x16 Lucide SVG per link'
+  Assert ($inlineSvg.Count -eq 18) 'NAV both navigations carry one 16x16 Lucide SVG per link'
   foreach ($nav in @($aside.Value, $topnav.Value)) {
     $anchors = [regex]::Matches($nav, '(?s)<a [^>]*>.*?</a>')
     $badIcons = @($anchors | Where-Object { $_.Value -notmatch [regex]::Escape($iconPrefix) })
     $badLabels = @($anchors | Where-Object { $_.Value -notmatch '<span data-i18n="[^"]+">[^<]+</span>' })
     $badAnchorI18n = @($anchors | Where-Object { $_.Value -match '<a [^>]*data-i18n=' })
-    Assert (($anchors.Count -eq 8) -and ($badIcons.Count -eq 0)) 'NAV each link holds the Lucide SVG'
+    Assert (($anchors.Count -eq 9) -and ($badIcons.Count -eq 0)) 'NAV each link holds the Lucide SVG'
     Assert ($badLabels.Count -eq 0) 'NAV each label is wrapped in a data-i18n span'
     Assert ($badAnchorI18n.Count -eq 0) 'NAV the anchor carries no data-i18n (static language never wipes the SVG)'
   }
@@ -129,7 +129,7 @@ var js = src.substring(src.indexOf('<script>') + 8, src.indexOf('</script>'));
 function slice(a, b) { var i = js.indexOf(a); if (i < 0) throw new Error('slice miss: ' + a); var j = js.indexOf(b, i); if (j < 0) throw new Error('slice miss: ' + b); return js.substring(i, j); }
 var SEARCHCODE = slice('function applySearchFilter(', '\nfunction selectedNames');
 var NAVCODE = slice('const SCREENS', '\nasync function api(');
-var SCREEN_IDS = ['top', 'projects', 'global', 'rules', 'backups', 'local', 'logs', 'settings'];
+var SCREEN_IDS = ['top', 'projects', 'global', 'extensions', 'rules', 'backups', 'local', 'logs', 'settings'];
 var el = {};
 SCREEN_IDS.forEach(function (id) { el[id] = { id: id, hidden: null, value: 'entered-' + id, mark: { screen: id } }; });
 el.helpDetail = { id: 'helpDetail', open: false };
@@ -185,13 +185,13 @@ ok(links.every(function (l) { return !l.focused; }) && document.activeElement ==
 ok(SCREEN_IDS.every(function (id) { return typeof el[id].hidden === 'boolean'; }), 'every screen carries an explicit hidden flag');
 
 var cases = [['', 'top'], ['#top', 'top'], ['#projects', 'projects'], ['#register', 'projects'], ['#status', 'projects'],
-  ['#global', 'global'], ['#gsettings', 'global'], ['#rules', 'rules'], ['#backups', 'backups'], ['#local', 'local'],
+  ['#global', 'global'], ['#gsettings', 'global'], ['#extensions', 'extensions'], ['#rules', 'rules'], ['#backups', 'backups'], ['#local', 'local'],
   ['#logs', 'logs'], ['#settings', 'settings'], ['#help', 'settings'], ['#missing', 'top'],
   ['#constructor', 'top'], ['#toString', 'top'], ['#__proto__', 'top']];
 cases.forEach(function (c) {
   scroll.scrollTop = 9;
   route(c[0]);
-  ok(visible().join('') === c[1] && hiddenTrue() === 7 && scroll.scrollTop === 0, 'route ' + (c[0] || '(empty)') + ' shows only ' + c[1]);
+  ok(visible().join('') === c[1] && hiddenTrue() === 8 && scroll.scrollTop === 0, 'route ' + (c[0] || '(empty)') + ' shows only ' + c[1]);
   ok(active().join(',') === '#' + c[1] + ',#' + c[1], 'route ' + (c[0] || '(empty)') + ' marks ' + c[1] + ' active in both navigations');
 });
 route('#help');

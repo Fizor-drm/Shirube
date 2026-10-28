@@ -259,7 +259,7 @@ Project 的 frontmatter 只接受固定格式。请将 3 个键各写一行，�
 | --- | --- |
 | 项目 | 注册、取消注册、预览、同步 |
 | Global 同步 / Global 设置 | 从 18 种目标中选择分发对象、应用前预览、应用、确认最终结果和来源、修改同步间隔（5～1440 分钟）以及启用/禁用状态 |
-| Global 同步中的扩展功能 | 检测 Codex / OpenCode / Claude Code 的 MCP、技能与插件。添加 MCP 服务器和技能、切换 MCP 启用/禁用、查看变更历史并恢复 |
+| 扩展功能 | 检测 Codex / OpenCode / Claude Code 的 MCP、技能与插件。添加 MCP 服务器和技能、切换 MCP 启用/禁用、查看变更历史并恢复 |
 | 概述 | 通过“全部同步”“仅 Global”“仅 Project”选择执行范围（单独执行显示 1 步进度，全部同步按 Global → Project 显示 2 步） |
 | 本地编辑 | 编辑和检查 `project-local.md` |
 | 备份 | 查看项目 / Global 备份列表、确认差异、还原。还原后会暂停该目标的自动同步，防止下次覆盖 |
@@ -269,7 +269,7 @@ Project 的 frontmatter 只接受固定格式。请将 3 个键各写一行，�
 
 ## 扩展功能（MCP、技能、插件）
 
-“Global 同步”页面中的“扩展功能”部分会检测 Codex / OpenCode / Claude Code 的**全局配置**中的 MCP 服务器、技能与插件。可以在确认预览差异后添加 MCP 服务器和技能，并切换 Codex / OpenCode 的 MCP 启用/禁用状态。插件仅做检测，添加、删除或启用请使用各 CLI 的官方功能。项目专用配置不在范围内。
+侧边栏的“扩展功能”页面会检测 Codex / OpenCode / Claude Code 的**全局配置**中的 MCP 服务器、技能与插件。可以在确认预览差异后添加 MCP 服务器和技能，并切换 Codex / OpenCode 的 MCP 启用/禁用状态。插件仅做检测，添加、删除或启用请使用各 CLI 的官方功能。项目专用配置不在范围内。
 
 | CLI | MCP 配置 | 技能 | 插件 |
 | --- | --- | --- | --- |

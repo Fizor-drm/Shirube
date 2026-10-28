@@ -259,7 +259,7 @@ Changes to shared rules are picked up from GitHub on the next sync. For project-
 | --- | --- |
 | Projects | Register, unregister, preview, and sync |
 | Global sync / Global settings | Select targets from the 18 providers, preview before applying, apply, check the final result and source, change the sync interval (5 to 1440 minutes) and enable/disable state |
-| Extensions (in Global sync) | Detect MCP servers, skills, and plugins for Codex / OpenCode / Claude Code. Add MCP servers and skills, toggle MCP enable/disable, and review or restore change history |
+| Extensions | Detect MCP servers, skills, and plugins for Codex / OpenCode / Claude Code. Add MCP servers and skills, toggle MCP enable/disable, and review or restore change history |
 | Overview | Choose the scope with "Sync all", "Global only" or "Project only" (a single scope shows one progress step; Sync all runs Global then Project as two steps) |
 | Local edit | Edit and validate `project-local.md` |
 | Backups | List project / Global backups, inspect diffs, and restore. After a restore, automatic sync for that target is paused so the next run does not overwrite it |
@@ -269,7 +269,7 @@ Registering and unregistering projects changes only `projects.json`; sync genera
 
 ## Extensions (MCP, skills, plugins)
 
-The Extensions section of the Global sync screen detects MCP servers, skills, and plugins in the **global** Codex / OpenCode / Claude Code configuration. It can add MCP servers and skills, and toggle MCP enable/disable for Codex and OpenCode, after a preview diff. Plugins are detection-only; add, remove, or enable them with each CLI's official manager. Project-scoped configuration is out of scope.
+The Extensions screen, opened from the sidebar, detects MCP servers, skills, and plugins in the **global** Codex / OpenCode / Claude Code configuration. It can add MCP servers and skills, and toggle MCP enable/disable for Codex and OpenCode, after a preview diff. Plugins are detection-only; add, remove, or enable them with each CLI's official manager. Project-scoped configuration is out of scope.
 
 | CLI | MCP configuration | Skills | Plugins |
 | --- | --- | --- | --- |
