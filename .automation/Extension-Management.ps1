@@ -1814,13 +1814,23 @@ function New-ExtensionPreview([string]$AutoDir, [string]$HomeBase, $Req, [string
         $dir = Join-Path $base $v.name
         $file = Join-Path $dir 'SKILL.md'
         Ext-AssertNoLinkChain $file $homePath 'スキル'
-        if (Test-Path -LiteralPath $dir) { throw '同名のフォルダが既にあります。' }
+        if (Test-Path -LiteralPath $dir) {
+          # Never adopt, replace, or delete an existing folder. A marker file
+          # whose name and content match is not proof that this operation owns
+          # the folder: another process may be writing it, a copy may carry the
+          # marker, or another user may have created it. Require a manual check.
+          throw '同名のフォルダが既にあります。内容を確認して手動で削除してから、もう一度プレビューしてください。'
+        }
         if (Test-Path -LiteralPath $file) { throw '同じスキルが既にあります。' }
         # Reject if the provider would discover an existing skill with this name elsewhere.
         $searchDirs = @(@($def.skillDirs) | ForEach-Object { Join-Path $homePath ([string]$_) })
         $foundElsewhere = $false
         foreach ($sd in $searchDirs) {
-          if (Test-Path -LiteralPath (Join-Path $sd $v.name)) { $foundElsewhere = $true; break }
+          $candidate = Join-Path $sd $v.name
+          if (-not (Test-Path -LiteralPath $candidate)) { continue }
+          # Skip the target folder itself; an existing one was rejected above.
+          if ((Ext-NormPath $candidate) -ieq (Ext-NormPath $dir)) { continue }
+          $foundElsewhere = $true; break
         }
         if ($foundElsewhere) { throw 'このCLIには同名のスキルが既にあります。' }
         $entry.ok = $true
@@ -1944,10 +1954,22 @@ function New-ExtensionBackup([string]$AutoDir, [string]$HomeBase, [string]$Kind,
       $h = Ext-HashFile $dst
       if ($h -cne [string]$e.beforeHash) { throw 'バックアップの検証に失敗しました。' }
     }
+    # Record the folder ownership proof with the backup so a later restore can
+    # remove only a folder this apply really published. Manifests without the
+    # record (older backups) are treated as "ownership unknown".
+    $dirOwner = $null
+    try { if (($e -is [System.Collections.IDictionary]) -and ($e.Contains('dirOwner'))) { $dirOwner = $e['dirOwner'] } } catch {}
+    $createdDir = ($null -ne $dirOwner)
+    $dirToken = ''; $dirMarker = ''
+    if ($createdDir) {
+      $dirToken = [string]$dirOwner.token
+      $dirMarker = [string]$dirOwner.marker
+    }
     $files += @{
       provider = [string]$e.provider; path = [string]$e.path; present = [bool]$e.beforeExists
       backupFile = $bakName; hashBefore = [string]$e.beforeHash; hashAfter = [string]$e.afterHash
       kind = [string]$e.kind; skillDir = [string]$e.dirPath
+      createdDir = $createdDir; dirToken = $dirToken; dirMarker = $dirMarker
     }
     $i++
   }
@@ -1957,6 +1979,232 @@ function New-ExtensionBackup([string]$AutoDir, [string]$HomeBase, [string]$Kind,
     kind = $Kind; name = $Name; action = $Action; files = @($files)
   }
   return $id
+}
+
+function Ext-EnsureDirectory([string]$Dir, [string]$Root) {
+  # Create a missing folder chain inside an existing root, one level at a time.
+  # Every level is inspected after creation so a folder swapped for a link
+  # concurrently cannot redirect a deeper creation outside the root.
+  if ([string]::IsNullOrWhiteSpace($Dir)) { throw '作成するフォルダを確認できませんでした。' }
+  if ([string]::IsNullOrWhiteSpace($Root)) { throw '作成するフォルダの基準を確認できませんでした。' }
+  $rootN = Ext-RootCanonical $Root
+  if (-not (Test-Path -LiteralPath $rootN -PathType Container)) { throw '作成するフォルダの基準を確認できませんでした。' }
+  $dirN = Ext-NormPath $Dir
+  if (-not (Ext-Contained $dirN $rootN)) { throw '作成するフォルダがホームフォルダの外にあります。' }
+  $missing = @()
+  $walk = $dirN
+  $guard = 0
+  while (($walk -ine $rootN) -and (Ext-Contained $walk $rootN) -and ($guard -lt 64)) {
+    if (Test-Path -LiteralPath $walk -PathType Container) {
+      if (Ext-Reparse $walk) { throw '作成するフォルダの親がリンクになっています。' }
+      break
+    }
+    $missing += $walk
+    $next = Split-Path $walk -Parent
+    if ((-not $next) -or ($next -ieq $walk)) { break }
+    $walk = Ext-RootCanonical $next
+    $guard++
+  }
+  for ($i = ($missing.Count - 1); $i -ge 0; $i--) {
+    $mk = $missing[$i]
+    if (-not (Ext-Contained $mk $rootN)) { throw '作成するフォルダを確認できませんでした。' }
+    $par = Split-Path $mk -Parent
+    if ($par -and (Ext-Reparse $par)) { throw '作成するフォルダの親がリンクになっています。' }
+    [System.IO.Directory]::CreateDirectory($mk) | Out-Null
+    if (Ext-Reparse $mk) { throw '作成するフォルダの親がリンクになっています。' }
+  }
+}
+
+function Ext-CreateOwnedDirectory([string]$Dir, [string]$File, [string]$HomePath) {
+  # Publish a new skill folder atomically and return the ownership proof.
+  # The folder is prepared under a unique temporary name created by this
+  # process, then renamed into place with a no-replace move. When another
+  # process created the target folder first, the move fails and that folder is
+  # left untouched: it is never adopted, written into, or deleted. The marker
+  # file is recorded in the backup manifest, and a later restore relies on that
+  # record, not on the marker alone, to remove the folder.
+  if ([string]::IsNullOrWhiteSpace($Dir)) { throw '作成するフォルダを確認できませんでした。' }
+  if ([string]::IsNullOrWhiteSpace($HomePath)) { throw '作成するフォルダの基準を確認できませんでした。' }
+  $dirN = Ext-NormPath $Dir
+  $fileN = Ext-NormPath $File
+  if (-not (Ext-Contained $dirN $HomePath)) { throw '作成するフォルダがホームフォルダの外にあります。' }
+  $parentOfFile = ''
+  try { $parentOfFile = Split-Path $fileN -Parent } catch { $parentOfFile = '' }
+  if (($parentOfFile -eq '') -or ($dirN -ine $parentOfFile)) { throw '作成するフォルダを確認できませんでした。' }
+  $parent = Split-Path $dirN -Parent
+  if ([string]::IsNullOrWhiteSpace($parent)) { throw '作成するフォルダを確認できませんでした。' }
+  Ext-AssertNoLinkChain $dirN $HomePath 'スキル'
+  Ext-EnsureDirectory $parent $HomePath
+  Ext-AssertNoLinkChain $dirN $HomePath 'スキル'
+  if (Test-Path -LiteralPath $dirN) { throw '変更対象のフォルダが作成されました。もう一度プレビューしてください。' }
+  $token = [System.Guid]::NewGuid().ToString('N')
+  $markerName = '.ext-owner-' + $token + '.tmp'
+  $tmp = Join-Path $parent ('.ext-new-' + $token)
+  $marker = Join-Path $tmp $markerName
+  try {
+    [System.IO.Directory]::CreateDirectory($tmp) | Out-Null
+    if (Ext-Reparse $tmp) { throw 'temporary folder became a link' }
+    $fs = [System.IO.File]::Open($marker, [System.IO.FileMode]::CreateNew, [System.IO.FileAccess]::Write, [System.IO.FileShare]::None)
+    try {
+      $b = (New-Object System.Text.UTF8Encoding($false)).GetBytes($token)
+      $fs.Write($b, 0, $b.Length)
+    } finally { $fs.Dispose() }
+    # No-replace rename: the OS refuses the move when the target already exists.
+    [System.IO.Directory]::Move($tmp, $dirN)
+  } catch {
+    try { if (Test-Path -LiteralPath $marker -PathType Leaf) { Remove-Item -LiteralPath $marker -Force -ErrorAction SilentlyContinue } } catch {}
+    try { if (Test-Path -LiteralPath $tmp) { [System.IO.Directory]::Delete($tmp, $false) } } catch {}
+    if (Test-Path -LiteralPath $dirN) { throw '変更対象のフォルダが作成されました。もう一度プレビューしてください。' }
+    throw 'スキルフォルダを作成できませんでした。'
+  }
+  return @{ dir = $dirN; file = $fileN; marker = $markerName; token = $token }
+}
+
+function Ext-RemoveOwnedDirectory($Owner, [string]$HomePath) {
+  # Remove a skill folder only while the ownership proof recorded at creation
+  # still holds. A missing folder needs nothing. A folder that became a link,
+  # left the home root, gained other content, lost its marker, or was created
+  # by someone else is kept. Callers treat any returned reason as an incomplete
+  # recovery and never report success while the folder remains. The marker is
+  # kept after a successful apply on purpose: folder creation time is ambient
+  # metadata that copies and re-creation can reuse, so it is not ownership
+  # evidence and is never used to justify a deletion.
+  if ($null -eq $Owner) { return '' }
+  try {
+    $dir = [string]$Owner.dir
+    $file = [string]$Owner.file
+    $markerName = [string]$Owner.marker
+    $token = [string]$Owner.token
+    if (($dir -eq '') -or ($file -eq '')) { return '作成したフォルダの記録を確認できません。' }
+    if ($token -cnotmatch '^[0-9a-f]{32}$') { return '作成したフォルダの記録を確認できません。' }
+    if ($markerName -cne ('.ext-owner-' + $token + '.tmp')) { return '作成したフォルダの記録を確認できません。' }
+    if ([string]::IsNullOrWhiteSpace($HomePath)) { return '作成したフォルダの基準を確認できません。' }
+    $dirN = Ext-NormPath $dir
+    $fileN = Ext-NormPath $file
+    $parentOfFile = ''
+    try { $parentOfFile = Split-Path $fileN -Parent } catch { $parentOfFile = '' }
+    if (($parentOfFile -eq '') -or ($dirN -ine $parentOfFile)) { return '作成したフォルダを確認できません。' }
+    if (-not (Test-Path -LiteralPath $dirN -PathType Container)) { return '' }
+    if (Ext-Reparse $dirN) { return '作成したフォルダがリンクになっているため削除しません。' }
+    if (-not (Ext-Contained $dirN $HomePath)) { return '作成したフォルダがホームフォルダの外にあるため削除しません。' }
+    $left = @()
+    try { $left = @(Get-ChildItem -LiteralPath $dirN -Force -ErrorAction Stop) } catch { return '作成したフォルダの内容を確認できないため削除しません。' }
+    $markerItem = $null
+    $others = @()
+    foreach ($it in $left) {
+      if (($null -eq $markerItem) -and ([string]$it.Name -ceq $markerName)) { $markerItem = $it; continue }
+      $others += $it
+    }
+    if ($others.Count -gt 0) { return '作成したフォルダに他の内容があるため削除しません。' }
+    if ($null -eq $markerItem) { return '作成したフォルダの所有を確認できないため削除しません。' }
+    if ((-not $markerItem.PSIsContainer) -and (-not (Ext-Reparse $markerItem.FullName))) {
+      $mt = ''
+      try { $mt = [System.IO.File]::ReadAllText($markerItem.FullName, (New-Object System.Text.UTF8Encoding($false))) } catch { $mt = '' }
+      # A marker-shaped file that does not verify is unexplained content; keep
+      # the folder instead of deleting a file whose ownership is unknown.
+      if ($mt -cne $token) { return '作成したフォルダの所有を確認できないため削除しません。' }
+    } else {
+      return '作成したフォルダの所有を確認できないため削除しません。'
+    }
+    try { Remove-Item -LiteralPath $markerItem.FullName -Force -ErrorAction Stop } catch { return '作成したフォルダの削除に失敗しました。' }
+    # Non-recursive: the OS refuses if anything else appeared in the meantime.
+    try { [System.IO.Directory]::Delete($dirN, $false) } catch { return '作成したフォルダの削除に失敗しました。' }
+    if (Test-Path -LiteralPath $dirN) { return '作成したフォルダの削除を確認できませんでした。' }
+    return ''
+  } catch {
+    return '作成したフォルダを確認できません。'
+  }
+}
+
+function Ext-ManifestDirOwner($Entry) {
+  # Rebuild the folder ownership record stored in a backup manifest. Manifests
+  # written before this record existed have none, so their folders are kept.
+  try {
+    if (-not [bool](Ext-Field $Entry 'createdDir' $false)) { return $null }
+    $token = [string](Ext-Field $Entry 'dirToken' '')
+    if ($token -cnotmatch '^[0-9a-f]{32}$') { return $null }
+    $dir = [string](Ext-Field $Entry 'skillDir' '')
+    $file = [string](Ext-Field $Entry 'path' '')
+    if (($dir -eq '') -or ($file -eq '')) { return $null }
+    return @{
+      dir = $dir; file = $file
+      marker = [string](Ext-Field $Entry 'dirMarker' '')
+      token = $token
+    }
+  } catch { return $null }
+}
+
+function Undo-ExtensionAppliedTarget([string]$HomePath, $Target) {
+  # Restore one applied target without overwriting an unrelated external change.
+  try {
+    $path = [string]$Target.path
+    $cur = Ext-SafeFileInfo $path $HomePath
+    if ([string]$cur.error -ne '') { return @{ ok = $false; reason = [string]$cur.error } }
+    $writtenHash = [string]$Target.appliedHash
+    if ([string]::IsNullOrEmpty($writtenHash)) { $writtenHash = [string]$Target.afterHash }
+    if ([bool]$Target.beforeExists) {
+      $beforeHash = [string]$Target.beforeHash
+      if (([string]::IsNullOrEmpty($beforeHash)) -or (-not $cur.exists)) {
+        return @{ ok = $false; reason = '復旧対象を確認できません。' }
+      }
+      if ([string]$cur.hash -ceq $beforeHash) { return @{ ok = $true; reason = '' } }
+      if ([string]$cur.hash -cne $writtenHash) {
+        return @{ ok = $false; reason = '外部で変更されているため上書きしません。' }
+      }
+      if ($null -eq $Target.beforeBytes) { return @{ ok = $false; reason = '復旧データがありません。' } }
+      $bytes = [byte[]]$Target.beforeBytes
+      if ((Ext-HashBytes $bytes) -cne $beforeHash) { return @{ ok = $false; reason = '復旧データがありません。' } }
+      Ext-WriteAtomic $path $bytes $HomePath
+      if ((Ext-HashFile $path) -cne $beforeHash) { return @{ ok = $false; reason = '復旧後の検証に失敗しました。' } }
+      return @{ ok = $true; reason = '' }
+    }
+    if (-not $cur.exists) {
+      # A failed first write can leave only the folder this operation created.
+      # Remove it only while the recorded ownership proof still holds, and never
+      # report success while a folder we cannot prove is ours is in the way.
+      if ($null -ne $Target.dirOwner) {
+        $reason = Ext-RemoveOwnedDirectory $Target.dirOwner $HomePath
+        if ($reason -ne '') { return @{ ok = $false; reason = $reason } }
+      }
+      return @{ ok = $true; reason = '' }
+    }
+    if ([string]$cur.hash -cne $writtenHash) {
+      return @{ ok = $false; reason = '外部で変更されているため削除しません。' }
+    }
+    Remove-Item -LiteralPath $path -Force -ErrorAction Stop
+    if (Test-Path -LiteralPath $path) { return @{ ok = $false; reason = '復旧後の削除を確認できませんでした。' } }
+    if ($null -ne $Target.dirOwner) {
+      $reason = Ext-RemoveOwnedDirectory $Target.dirOwner $HomePath
+      if ($reason -ne '') { return @{ ok = $false; reason = $reason } }
+    }
+    return @{ ok = $true; reason = '' }
+  } catch {
+    return @{ ok = $false; reason = $_.Exception.Message }
+  }
+}
+
+function Undo-ExtensionRestoredTarget([string]$HomePath, $Target) {
+  # Restore the pre-restore (applied) state of one target after a failed restore.
+  try {
+    $path = [string]$Target.path
+    $cur = Ext-SafeFileInfo $path $HomePath
+    if ([string]$cur.error -ne '') { return @{ ok = $false; reason = [string]$cur.error } }
+    $preHash = [string]$Target.preHash
+    if (([string]::IsNullOrEmpty($preHash)) -or ($null -eq $Target.preBytes)) {
+      return @{ ok = $false; reason = '復旧データがありません。' }
+    }
+    if ($cur.exists -and ([string]$cur.hash -ceq $preHash)) { return @{ ok = $true; reason = '' } }
+    if ($cur.exists -and ([string]$cur.hash -cne [string]$Target.restoreHash)) {
+      return @{ ok = $false; reason = '外部で変更されているため上書きしません。' }
+    }
+    $bytes = [byte[]]$Target.preBytes
+    if ((Ext-HashBytes $bytes) -cne $preHash) { return @{ ok = $false; reason = '復旧データがありません。' } }
+    Ext-WriteAtomic $path $bytes $HomePath
+    if ((Ext-HashFile $path) -cne $preHash) { return @{ ok = $false; reason = '復旧後の検証に失敗しました。' } }
+    return @{ ok = $true; reason = '' }
+  } catch {
+    return @{ ok = $false; reason = $_.Exception.Message }
+  }
 }
 
 function Apply-ExtensionPreview([string]$AutoDir, [string]$HomeBase, [string]$PreviewId, [bool]$Confirm, [bool]$AcknowledgeWarnings) {
@@ -1987,13 +2235,35 @@ function Apply-ExtensionPreview([string]$AutoDir, [string]$HomeBase, [string]$Pr
       } else {
         if (Test-Path -LiteralPath $path) { throw 'プレビュー後にファイルが作成されました。もう一度プレビューしてください。' }
         if (([string]$e.kind -eq 'skill') -and ([string]$e.dirPath) -and (Test-Path -LiteralPath ([string]$e.dirPath))) {
-          throw 'プレビュー後にフォルダが作成されました。もう一度プレビューしてください。'
+          # An existing folder is never adopted or replaced, even when it holds
+          # a marker whose name and content match: that does not prove this
+          # operation owns it. Require a manual check instead of deleting data.
+          throw 'プレビュー後にフォルダが作成されました。内容を確認して手動で削除してから、もう一度プレビューしてください。'
         }
       }
     }
-    $backupId = New-ExtensionBackup $AutoDir $homePath ([string]$pv.kind) ([string]$pv.name) ([string]$pv.action) $entries
+    $backupId = ''
+    $ownedDirs = @()
     $written = @()
     try {
+      # Publish each new skill folder before the backup is recorded. The
+      # no-replace rename is the ownership decision: a folder another process
+      # created is never adopted. A crash before the backup is recorded can
+      # leave a marker-only folder, but that marker cannot prove ownership from
+      # the outside, so it is refused and requires a manual check instead of
+      # being replaced.
+      foreach ($e in $entries) {
+        if (([string]$e.kind -ne 'skill') -or [bool]$e.beforeExists) { continue }
+        $dirPath = [string]$e.dirPath
+        if ($dirPath -eq '') { continue }
+        if (Test-Path -LiteralPath $dirPath) {
+          throw '変更対象のフォルダが作成されました。内容を確認して手動で削除してから、もう一度プレビューしてください。'
+        }
+        $owner = Ext-CreateOwnedDirectory $dirPath ([string]$e.path) $homePath
+        $e['dirOwner'] = $owner
+        $ownedDirs += $owner
+      }
+      $backupId = New-ExtensionBackup $AutoDir $homePath ([string]$pv.kind) ([string]$pv.name) ([string]$pv.action) $entries
       foreach ($e in $entries) {
         $curBytes = $null
         if ([bool]$e.beforeExists) {
@@ -2002,38 +2272,54 @@ function Apply-ExtensionPreview([string]$AutoDir, [string]$HomeBase, [string]$Pr
           $curBytes = [byte[]]$cur.bytes
         } else {
           if (Test-Path -LiteralPath ([string]$e.path)) { throw '変更対象が作成されました。もう一度プレビューしてください。' }
-          if (([string]$e.kind -eq 'skill') -and ([string]$e.dirPath) -and (Test-Path -LiteralPath ([string]$e.dirPath))) {
-            throw '変更対象のフォルダが作成されました。もう一度プレビューしてください。'
+          if (([string]$e.kind -eq 'skill') -and ([string]$e.dirPath)) {
+            # This folder is the one published above; only refuse when it is no
+            # longer the folder we created and can prove.
+            $owner = $e['dirOwner']
+            if ($null -eq $owner) { throw '変更対象のフォルダを確認できません。もう一度プレビューしてください。' }
+            if (-not (Test-Path -LiteralPath ([string]$owner.dir) -PathType Container)) { throw '変更対象のフォルダが削除されました。もう一度プレビューしてください。' }
+            if (Ext-Reparse ([string]$owner.dir)) { throw '変更対象のフォルダがリンクになっています。' }
           }
         }
-        Ext-WriteAtomic ([string]$e.path) ([byte[]]$e.afterBytes) $homePath
+        # Register the recovery record before mutating the target, so a write
+        # failure or a post-write verification failure still restores this file.
+        # appliedHash identifies our exact bytes even if the expected afterHash
+        # is wrong, so that target can still be recovered safely.
+        $afterBytes = [byte[]]$e.afterBytes
+        $appliedHash = Ext-HashBytes $afterBytes
+        $written += @{ path = [string]$e.path; beforeExists = [bool]$e.beforeExists; beforeBytes = $curBytes; beforeHash = [string]$e.beforeHash; afterHash = [string]$e.afterHash; appliedHash = $appliedHash; dirOwner = $e['dirOwner'] }
+        Ext-WriteAtomic ([string]$e.path) $afterBytes $homePath
         $got = Ext-HashFile ([string]$e.path)
         if ($got -cne [string]$e.afterHash) { throw '書込み後の検証に失敗しました。' }
-        $written += @{ path = [string]$e.path; beforeExists = [bool]$e.beforeExists; beforeBytes = $curBytes; afterHash = [string]$e.afterHash; dirPath = [string]$e.dirPath }
       }
     } catch {
       $err = $_.Exception.Message
-      $rbOk = $true
+      $failed = @()
+      $handledDirs = @{}
       for ($i = $written.Count - 1; $i -ge 0; $i--) {
         $w = $written[$i]
-        try {
-          if ([bool]$w.beforeExists) {
-            if ($null -eq $w.beforeBytes) { throw '復旧データがありません。' }
-            Ext-WriteAtomic ([string]$w.path) ([byte[]]$w.beforeBytes) $homePath
-          } else {
-            $cur = Ext-SafeFileInfo ([string]$w.path) $homePath
-            if ($cur.exists -and ([string]$cur.hash -ceq [string]$w.afterHash)) { Remove-Item -LiteralPath ([string]$w.path) -Force -ErrorAction Stop }
-            $sd = [string]$w.dirPath
-            $parentOfFile = Split-Path ([string]$w.path) -Parent
-            if ($sd -and ($sd -ieq $parentOfFile) -and (Test-Path -LiteralPath $sd -PathType Container) -and (-not (Ext-Reparse $sd)) -and (Ext-Contained $sd $homePath)) {
-              try { if (@(Get-ChildItem -LiteralPath $sd -Force -ErrorAction Stop).Count -eq 0) { Remove-Item -LiteralPath $sd -Force -ErrorAction SilentlyContinue } } catch {}
-            }
-          }
-        } catch { $rbOk = $false }
+        if ($null -ne $w.dirOwner) { $handledDirs[[string]$w.dirOwner.dir] = $true }
+        $r = Undo-ExtensionAppliedTarget $homePath $w
+        if (-not [bool]$r.ok) { $failed += ([string]$w.path + ': ' + [string]$r.reason) }
       }
-      $tail = if ($rbOk) { '（自動復旧しました）' } else { '（自動復旧も一部失敗しました。バックアップから手動で復元してください）' }
-      throw ('適用に失敗しました。バックアップ: ' + $backupId + ' ' + $tail + ' 詳細: ' + $err)
+      # Folders published for targets that were never reached still have to be
+      # removed, and only their own ownership proof allows that.
+      foreach ($owner in $ownedDirs) {
+        if ($handledDirs.ContainsKey([string]$owner.dir)) { continue }
+        if (-not (Test-Path -LiteralPath ([string]$owner.dir) -PathType Container)) { continue }
+        $reason = Ext-RemoveOwnedDirectory $owner $homePath
+        if ($reason -ne '') { $failed += ([string]$owner.dir + ': ' + $reason) }
+      }
+      $tail = if ($failed.Count -eq 0) { '（自動復旧しました）' } elseif ($backupId -ne '') { '（自動復旧に失敗した対象があります。バックアップから手動で復元してください）' } else { '（自動復旧に失敗した対象があります）' }
+      $msg = '適用に失敗しました。'
+      if ($backupId -ne '') { $msg += ' バックアップ: ' + $backupId } else { $msg += ' バックアップは作成できませんでした。' }
+      $msg += ' ' + $tail + ' 詳細: ' + $err
+      if ($failed.Count -gt 0) { $msg += ' 復旧失敗: ' + ($failed -join ' / ') }
+      throw $msg
     }
+    # The ownership marker stays in the published folder. Creation time can be
+    # copied or reused by an externally re-created folder, so the marker is the
+    # only proof a later restore may rely on to remove the folder.
     $script:ExtensionPreviews.Remove($PreviewId) | Out-Null
     $results = @()
     foreach ($e in $entries) {
@@ -2112,66 +2398,110 @@ function Restore-ExtensionBackup([string]$AutoDir, [string]$HomeBase, [string]$B
   try {
     $files = @(Ext-Field $m 'files' @())
     if ($files.Count -eq 0) { throw '復元するファイルがありません。' }
+    # Pre-validate every target and classify its state. A target that was never
+    # applied (still hashBefore) or was already restored is a safe no-op, so it
+    # no longer blocks restore of the remaining targets.
     $plan = @()
+    $restoredList = @()
+    $deletedList = @()
+    $dirCleanups = @()
+    $failures = @()
     foreach ($f in $files) {
       $path = [string](Ext-Field $f 'path' '')
-      if ($path -eq '') { throw 'バックアップの対象が不正です。' }
-      Ext-AssertNoLinkChain $path $homePath '復元先'
-      if (-not (Ext-Contained $path $homePath)) { throw '復元先がホームフォルダの外にあります。' }
-      $cur = Ext-SafeFileInfo $path $homePath
-      if ((-not $cur.exists) -or ($cur.error -ne '')) { throw ('復元対象が見つかりません: ' + $path) }
-      if ([string]$cur.hash -cne [string](Ext-Field $f 'hashAfter' '')) { throw ('適用後にファイルが変化しているため復元しません: ' + $path) }
-      $present = [bool](Ext-Field $f 'present' $false)
-      $bakFile = [string](Ext-Field $f 'backupFile' '')
-      $hashBefore = [string](Ext-Field $f 'hashBefore' '')
-      $hashAfter = [string](Ext-Field $f 'hashAfter' '')
-      if ($present) {
-        if ($bakFile -cnotmatch '^[0-9]{4}\.bin$') { throw 'バックアップの内容が不正です。' }
-        $bak = Join-Path $bdir $bakFile
-        if (-not (Ext-Contained $bak $bdir)) { throw 'バックアップの内容が不正です。' }
-        Ext-AssertNoLinkChain $bak $AutoDir '復元元'
-        $bi = Ext-SafeFileInfo $bak $AutoDir
-        if ((-not $bi.exists) -or ($bi.error -ne '')) { throw 'バックアップの内容を読み取れません。' }
-        if ([string]$bi.hash -cne $hashBefore) { throw 'バックアップが破損しているため復元しません。' }
+      try {
+        if ($path -eq '') { throw 'バックアップの対象が不正です。' }
+        Ext-AssertNoLinkChain $path $homePath '復元先'
+        if (-not (Ext-Contained $path $homePath)) { throw '復元先がホームフォルダの外にあります。' }
+        $present = [bool](Ext-Field $f 'present' $false)
+        $bakFile = [string](Ext-Field $f 'backupFile' '')
+        $hashBefore = [string](Ext-Field $f 'hashBefore' '')
+        $hashAfter = [string](Ext-Field $f 'hashAfter' '')
+        if ([string]::IsNullOrEmpty($hashAfter)) { throw 'バックアップの内容が不正です。' }
+        if ($present -and ([string]::IsNullOrEmpty($hashBefore))) { throw 'バックアップの内容が不正です。' }
+        $cur = Ext-SafeFileInfo $path $homePath
+        if ([string]$cur.error -ne '') { throw [string]$cur.error }
+        if ($present) {
+          if (-not $cur.exists) { throw '復元対象が見つかりません。' }
+          if ([string]$cur.hash -ceq $hashAfter) {
+            if ($bakFile -cnotmatch '^[0-9]{4}\.bin$') { throw 'バックアップの内容が不正です。' }
+            $bak = Join-Path $bdir $bakFile
+            if (-not (Ext-Contained $bak $bdir)) { throw 'バックアップの内容が不正です。' }
+            Ext-AssertNoLinkChain $bak $AutoDir '復元元'
+            $bi = Ext-SafeFileInfo $bak $AutoDir
+            if ((-not $bi.exists) -or ($bi.error -ne '')) { throw 'バックアップの内容を読み取れません。' }
+            if ([string]$bi.hash -cne $hashBefore) { throw 'バックアップが破損しているため復元しません。' }
+            $plan += @{ path = $path; present = $true; backupFile = $bakFile; hashBefore = $hashBefore; hashAfter = $hashAfter; currentBytes = [byte[]]$cur.bytes; skillDir = [string](Ext-Field $f 'skillDir' '') }
+          } elseif ([string]$cur.hash -ceq $hashBefore) {
+            $restoredList += $path
+          } else {
+            throw '適用後にファイルが変化しているため復元しません。'
+          }
+        } else {
+          if (-not $cur.exists) {
+            $deletedList += $path
+            # An interrupted apply can leave only the folder it published.
+            # Clean it up after the plan runs, and only with the recorded proof.
+            $noopOwner = Ext-ManifestDirOwner $f
+            if ($null -ne $noopOwner) { $dirCleanups += $noopOwner }
+          } elseif ([string]$cur.hash -ceq $hashAfter) {
+            $plan += @{ path = $path; present = $false; backupFile = ''; hashBefore = ''; hashAfter = $hashAfter; currentBytes = [byte[]]$cur.bytes; skillDir = [string](Ext-Field $f 'skillDir' ''); dirOwner = (Ext-ManifestDirOwner $f) }
+          } else {
+            throw '適用後にファイルが変化しているため復元しません。'
+          }
+        }
+      } catch {
+        $label = if ($path -eq '') { '(不明)' } else { $path }
+        $failures += ($label + ': ' + $_.Exception.Message)
       }
-      $plan += @{ path = $path; present = $present; backupFile = $bakFile; hashBefore = $hashBefore; hashAfter = $hashAfter; currentBytes = [byte[]]$cur.bytes; skillDir = [string](Ext-Field $f 'skillDir' '') }
     }
-    $done = @()
-    try {
-      foreach ($p in $plan) {
+    foreach ($p in $plan) {
+      $targetFailures = @()
+      $rec = $null
+      try {
         $now = Ext-SafeFileInfo ([string]$p.path) $homePath
-        if ((-not $now.exists) -or ([string]$now.hash -cne [string]$p.hashAfter)) { throw ('復元直前にファイルが変化しました: ' + [string]$p.path) }
+        if ([string]$now.error -ne '') { throw [string]$now.error }
+        if ((-not $now.exists) -or ([string]$now.hash -cne [string]$p.hashAfter)) { throw '復元直前にファイルが変化しました。' }
+        $rec = @{ path = [string]$p.path; preBytes = [byte[]]$p.currentBytes; preHash = [string]$p.hashAfter; restoreHash = [string]$p.hashBefore; present = [bool]$p.present }
         if ([bool]$p.present) {
           $bak = Join-Path $bdir ([string]$p.backupFile)
           $bytes = [System.IO.File]::ReadAllBytes($bak)
+          if ((Ext-HashBytes $bytes) -cne [string]$p.hashBefore) { throw 'バックアップが破損しているため復元しません。' }
+          $rec.restoreHash = Ext-HashBytes $bytes
           Ext-WriteAtomic ([string]$p.path) $bytes $homePath
           $got = Ext-HashFile ([string]$p.path)
           if ($got -cne [string]$p.hashBefore) { throw '復元後の検証に失敗しました。' }
+          $restoredList += [string]$p.path
         } else {
           Remove-Item -LiteralPath ([string]$p.path) -Force -ErrorAction Stop
-          $sd = [string]$p.skillDir
-          if ($sd -and (Test-Path -LiteralPath $sd -PathType Container)) {
-            try {
-              $parentOfFile = Split-Path ([string]$p.path) -Parent
-              $left = @(Get-ChildItem -LiteralPath $sd -Force -ErrorAction Stop)
-              if (($left.Count -eq 0) -and (Ext-Contained $sd $homePath) -and ($sd -ieq $parentOfFile) -and (-not (Ext-Reparse $sd))) {
-                Remove-Item -LiteralPath $sd -Force -ErrorAction SilentlyContinue
-              }
-            } catch {}
-          }
+          if (Test-Path -LiteralPath ([string]$p.path)) { throw '復元後の削除を確認できませんでした。' }
+          $deletedList += [string]$p.path
+          # Folder removal is deferred: a folder that cannot be proven ours must
+          # not roll back the file restore that already succeeded.
+          if ($null -ne $p.dirOwner) { $dirCleanups += $p.dirOwner }
         }
-        $done += $p
+      } catch {
+        $targetErr = $_.Exception.Message
+        if ($null -eq $rec) {
+          $targetFailures += ([string]$p.path + ': ' + $targetErr)
+        } else {
+          $r = Undo-ExtensionRestoredTarget $homePath $rec
+          if ([bool]$r.ok) { $targetFailures += ([string]$p.path + ': ' + $targetErr + '（復元前の状態に戻しました）') }
+          else { $targetFailures += ([string]$p.path + ': ' + $targetErr + '（復元前の状態に戻せませんでした: ' + [string]$r.reason + '）') }
+        }
       }
-    } catch {
-      $err = $_.Exception.Message
-      $rbOk = $true
-      for ($i = $done.Count - 1; $i -ge 0; $i--) {
-        try { Ext-WriteAtomic ([string]$done[$i].path) ([byte[]]$done[$i].currentBytes) $homePath } catch { $rbOk = $false }
-      }
-      $tail = if ($rbOk) { '（復元前の状態に戻しました）' } else { '（一部の復元を取り消せませんでした）' }
-      throw ('復元に失敗しました。' + $tail + ' 詳細: ' + $err)
+      foreach ($tf in $targetFailures) { $failures += $tf }
     }
-    return @{ ok = $true; restored = @($plan | Where-Object { [bool]$_.present } | ForEach-Object { [string]$_.path }); deleted = @($plan | Where-Object { -not [bool]$_.present } | ForEach-Object { [string]$_.path }) }
+    # Remove only folders whose recorded ownership proof still verifies. A
+    # folder that cannot be proven ours is kept and reported, never deleted.
+    foreach ($owner in @($dirCleanups)) {
+      $reason = Ext-RemoveOwnedDirectory $owner $homePath
+      if ($reason -ne '') { $failures += ([string]$owner.dir + ': ' + $reason) }
+    }
+    if ($failures.Count -gt 0) {
+      $tail = if (($restoredList.Count + $deletedList.Count) -gt 0) { '（一部の対象は復元済みです）' } else { '' }
+      throw ('復元に失敗しました。' + $tail + ' 詳細: ' + ($failures -join ' / '))
+    }
+    return @{ ok = $true; restored = @($restoredList); deleted = @($deletedList) }
   } finally {
     try { $lock.Close() } catch {}
   }
