@@ -45,7 +45,7 @@ flowchart TB
   subgraph O [生成される AGENTS.md]
     OG["%USERPROFILE%/.codex/AGENTS.md"]
     OO["%USERPROFILE%/.config/opencode/AGENTS.md"]
-    OX["ほか 16 CLI の固定パス"]
+    OX["ほか 17 CLI の固定パス"]
     OP["プロジェクト直下/AGENTS.md"]
   end
 
