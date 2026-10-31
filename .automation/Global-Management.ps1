@@ -350,7 +350,8 @@ function Get-GlobalProviderCatalog {
     @{ id = 'kimi-code'; label = 'Kimi Code'; rel = '.kimi-code\AGENTS.md' },
     @{ id = 'vibe'; label = 'Vibe'; rel = '.vibe\AGENTS.md' },
     @{ id = 'qoder'; label = 'Qoder'; rel = '.qoder\AGENTS.md' },
-    @{ id = 'pi'; label = 'Pi'; rel = '.pi\agent\AGENTS.md' }
+    @{ id = 'pi'; label = 'Pi'; rel = '.pi\agent\AGENTS.md' },
+    @{ id = 'grokcli'; label = 'Grok'; rel = '.grok\AGENTS.md' }
   )
 }
 function Get-GlobalProviderIds {

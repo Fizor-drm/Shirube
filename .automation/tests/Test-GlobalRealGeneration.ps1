@@ -134,14 +134,14 @@ try {
 }
 '@
 
-  # R1: omitted targets -> all 18 catalog providers get real content, with no
+  # R1: omitted targets -> every catalog provider gets real content, with no
   # unbacked extra config files (notably no Claude settings.json).
   $c1 = New-IsolatedCase 'all-omitted'
   $marker1 = 'REAL-GLOBAL-OMIT-MARKER'
   Set-CaseRule $c1 '' $marker1
   Set-CaseConfig $c1 $quietConfig
   $r1 = Invoke-RealRulesync $c1 $allTargets
-  Assert ($r1.code -eq 0) 'R1 all-18 real generation exits 0'
+  Assert ($r1.code -eq 0) 'R1 all-catalog real generation exits 0'
   $expected1 = @{}
   foreach ($e in $catalog) {
     $p = Join-Path $c1.home ([string]$e.rel)
@@ -150,7 +150,7 @@ try {
     Assert $ok ('R1 ' + [string]$e.id + ' receives documented Global content')
   }
   $actual1 = @(Get-ChildItem -LiteralPath $c1.home -Recurse -File -ErrorAction SilentlyContinue)
-  Assert (@($actual1).Count -eq $catalog.Count) 'R1 exactly 18 files generated under HOME_DIR'
+  Assert (@($actual1).Count -eq $catalog.Count) 'R1 exactly one file per catalog provider under HOME_DIR'
   $unexpected1 = @($actual1 | Where-Object { -not $expected1.ContainsKey($_.FullName) })
   Assert (@($unexpected1).Count -eq 0) 'R1 no extra home files (Claude settings untouched)'
   Assert (-not (Test-Path -LiteralPath (Join-Path $c1.home '.claude\settings.json'))) 'R1 no Claude settings side effect without language'

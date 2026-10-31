@@ -120,7 +120,7 @@ exit 0
       $tg0 = Get '/api/global-targets-get'
       Assert ((@($tg0.targets).Count -eq 2)) 'D3 default targets both'
       $avail0 = @($tg0.available)
-      Assert (($avail0.Count -ge 18) -and (@($avail0 | Where-Object { [string]$_.id -ceq 'pi' }).Count -eq 1) -and (@($avail0 | Where-Object { [string]$_.id -ceq 'zed' }).Count -eq 1)) 'D3 available catalog includes new providers'
+      Assert (($avail0.Count -ge 19) -and (@($avail0 | Where-Object { [string]$_.id -ceq 'pi' }).Count -eq 1) -and (@($avail0 | Where-Object { [string]$_.id -ceq 'grokcli' }).Count -eq 1) -and (@($avail0 | Where-Object { [string]$_.id -ceq 'zed' }).Count -eq 1)) 'D3 available catalog includes new providers'
       $tg1 = Post '/api/global-targets-set' @{ targets = @('codexcli'); confirm = $true }
       Assert (($tg1.ok -eq $true) -and (@($tg1.targets).Count -eq 1)) 'D3 single target saved'
       Assert ((@( (Get '/api/global-targets-get').targets ).Count -eq 1)) 'D3 saved selection persists'
