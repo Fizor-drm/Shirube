@@ -2,12 +2,12 @@
 
 [日本語](README.md) | [English](README.en.md) | [简体中文](README.zh-CN.md)
 
-GitHub のルールリポジトリと各プロジェクトのローカルルールから、Codex / OpenCode を含む 18 の対応 CLI が読む `AGENTS.md` を生成し、Windows のスケジュールタスクで配布するツールです。生成には [rulesync](https://github.com/dyoshikawa/rulesync) を使い、差分プレビュー、バックアップ、復元、同期状態の確認を管理画面から行えます。
+GitHub のルールリポジトリと各プロジェクトのローカルルールから、Codex / OpenCode を含む 19 の対応 CLI が読む `AGENTS.md` を生成し、Windows のスケジュールタスクで配布するツールです。生成には [rulesync](https://github.com/dyoshikawa/rulesync) を使い、差分プレビュー、バックアップ、復元、同期状態の確認を管理画面から行えます。
 
 ![Windows 10 / 11](https://img.shields.io/badge/OS-Windows%2010%20%2F%2011-0078D4?logo=windows&logoColor=white)
 ![Windows PowerShell 5.1](https://img.shields.io/badge/PowerShell-5.1-5391FE?logo=powershell&logoColor=white)
 ![rulesync 42.0.0](https://img.shields.io/badge/rulesync-42.0.0-2F6F44)
-![Global 18 CLIs / Project 2](https://img.shields.io/badge/targets-Global%2018%20CLIs%20%2F%20Project%202-111827)
+![Global 19 CLIs / Project 2](https://img.shields.io/badge/targets-Global%2019%20CLIs%20%2F%20Project%202-111827)
 [![MIT License](https://img.shields.io/badge/license-MIT-2EA043)](LICENSE)
 
 Windows 専用です。Linux / macOS には対応していません。
@@ -60,10 +60,10 @@ flowchart TB
 
 | スコープ | 正本 | 生成先 |
 | --- | --- | --- |
-| Global（18 種） | `rules/global.md` | 選択した CLI の固定パス（例: `%USERPROFILE%\.codex\AGENTS.md`、`%USERPROFILE%\.config\opencode\AGENTS.md`） |
+| Global（19 種） | `rules/global.md` | 選択した CLI の固定パス（例: `%USERPROFILE%\.codex\AGENTS.md`、`%USERPROFILE%\.config\opencode\AGENTS.md`） |
 | Project | `rules/project.md` と `.rulesync\rules\project-local.md` | `<プロジェクト>\AGENTS.md` |
 
-Global で選べる対象（18）は Codex、OpenCode、Claude Code、Cline、GitHub Copilot CLI、Antigravity CLI、Continue、Roo Code、Goose、Devin、Zed、Crush、CodeBuddy、CommandCode、Kimi Code、Vibe、Qoder、Pi です。出力先は CLI ごとの固定パスだけで、任意のパスは指定できません。複数ファイルを生成する対象（augment、takt）と、重複する別名（warp、claudecode-legacy、antigravity-ide、zoocode）は安全のため一覧に含めません。既定の選択は Codex / OpenCode のままです。
+Global で選べる対象（19）は Codex、OpenCode、Claude Code、Cline、GitHub Copilot CLI、Antigravity CLI、Continue、Roo Code、Goose、Devin、Zed、Crush、CodeBuddy、CommandCode、Kimi Code、Vibe、Qoder、Pi、Grok です。Grok の配置先は `%USERPROFILE%\.grok\AGENTS.md` です。出力先は CLI ごとの固定パスだけで、任意のパスは指定できません。複数ファイルを生成する対象（augment、takt）と、重複する別名（warp、claudecode-legacy、antigravity-ide、zoocode）は安全のため一覧に含めません。既定の選択は Codex / OpenCode のままです。
 
 rulesync は `--features rules` で `AGENTS.md` を生成します。Global は `--global` で、選択した CLI 向けの `AGENTS.md` をホームディレクトリ配下に生成します。Project は登録フォルダを出力先に指定し、そのフォルダ直下の `AGENTS.md` だけを生成します。Project の生成では、共通ルール（`rules/project.md`）とプロジェクト固有ルール（`project-local.md`）をこの順で入力し、1 つの `AGENTS.md` にまとめます。共通ルールの frontmatter は `root: true`、固有ルールは `localRoot: true` でなければ同期は拒否します。
 
@@ -191,11 +191,11 @@ Copy-Item 管理.bat $root
 
 | ファイル | 適用範囲 | frontmatter |
 | --- | --- | --- |
-| ルールリポジトリの `rules/global.md` | すべてのプロジェクト（Global 18 種） | `root: true`。`targets` は書かない（または `["*"]`） |
+| ルールリポジトリの `rules/global.md` | すべてのプロジェクト（Global 19 種） | `root: true`。`targets` は書かない（または `["*"]`） |
 | ルールリポジトリの `rules/project.md` | 登録したプロジェクト全体（Project 2 種） | `root: true` と `targets: ["codexcli", "opencode"]` |
 | `<プロジェクト>\.rulesync\rules\project-local.md` | そのプロジェクトのみ | `localRoot: true` と `targets: ["codexcli", "opencode"]` |
 
-Global と Project では `targets` の扱いが異なります。Global は管理画面で選んだ 18 種へ配布するため、ルール側で対象を固定しません。`targets` を省略すると rulesync の既定値 `["*"]`（すべて）になり、`targets: ["*"]` と明示しても同じです。`["codexcli", "opencode"]` のように固定すると、あとから選んだ Pi や Claude Code などには内容が配られません。既存の Global ルールが固定 `targets` になっている場合は、その行を削除するか `["*"]` に変更して GitHub へ push してください。
+Global と Project では `targets` の扱いが異なります。Global は管理画面で選んだ 19 種へ配布するため、ルール側で対象を固定しません。`targets` を省略すると rulesync の既定値 `["*"]`（すべて）になり、`targets: ["*"]` と明示しても同じです。`["codexcli", "opencode"]` のように固定すると、あとから選んだ Pi や Claude Code などには内容が配られません。既存の Global ルールが固定 `targets` になっている場合は、その行を削除するか `["*"]` に変更して GitHub へ push してください。
 
 Project は Codex / OpenCode の 2 種だけを対象にする固定仕様です。Project のルールには `targets: ["codexcli", "opencode"]` を必ず書きます。
 
@@ -249,7 +249,7 @@ Project の frontmatter は決まった形式だけを受け付けます。3 つ
 | `32.0.0`～`41.x` | 32.0.0で確認済みの67名に保守的に制限。中間版で追加済みでも、`androidstudio`、`firebender`、`opencodev1`、`xum` は拒否 |
 | その他・範囲指定・タグ | 未検証のため保存を拒否 |
 
-新しいターゲットを使うときは `42.0.0` に固定してください。この許可範囲は、Globalの同期対象18種やProjectの生成対象2種を増やすものではありません。Projectルールは `codexcli` と `opencode` が必須で、追加の許可済みターゲットを記述しても本アプリのProject同期対象は変わりません。
+新しいターゲットを使うときは `42.0.0` に固定してください。この許可範囲は、Globalの同期対象19種やProjectの生成対象2種を増やすものではありません。Projectルールは `codexcli` と `opencode` が必須で、追加の許可済みターゲットを記述しても本アプリのProject同期対象は変わりません。
 
 共通ルールを変えた場合は、GitHub へ反映した内容が次の同期で取得されます。プロジェクト固有ルールはローカルファイルの変更がそのまま次の同期で反映されます。`AGENTS.md` は生成物なので編集しないでください。
 
@@ -258,7 +258,7 @@ Project の frontmatter は決まった形式だけを受け付けます。3 つ
 | 画面 | できること |
 | --- | --- |
 | プロジェクト | 登録、解除、プレビュー、同期 |
-| Global 同期 / Global 設定 | 18 種から配布対象を選択、反映前プレビュー、適用、最終結果と取得元の確認、同期間隔（5〜1440 分）と有効/無効の変更 |
+| Global 同期 / Global 設定 | 19 種から配布対象を選択、反映前プレビュー、適用、最終結果と取得元の確認、同期間隔（5〜1440 分）と有効/無効の変更 |
 | 概要 | 「すべて同期」「Globalのみ」「Projectのみ」で実行範囲を選択（単独実行は進行表示 1 段、すべて同期は Global → Project の 2 段） |
 | ローカル編集 | `project-local.md` の編集と検査 |
 | バックアップ | プロジェクト / Global のバックアップ一覧、差分確認、復元。復元後は次回上書きを防ぐため対象の自動同期を休止 |

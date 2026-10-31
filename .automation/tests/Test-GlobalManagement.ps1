@@ -204,7 +204,8 @@ try {
   $ids13 = @($cat13 | ForEach-Object { [string]$_.id })
   Assert (($cat13.Count -ge 18) -and (@($ids13 | Sort-Object -Unique).Count -eq $cat13.Count)) 'G13 catalog has unique fixed provider ids'
   Assert ((@($cat13 | Where-Object { ([string]$_.id -ceq 'zed') -and ([string]$_.rel -ceq 'AppData\Roaming\Zed\AGENTS.md') }).Count -eq 1)) 'G13 zed path is fixed and exact'
-  Assert ((Test-GlobalTargetsValid @('pi', 'zed')) -and (Test-GlobalTargetsValid 'pi')) 'G13 new providers accepted'
+  Assert ((@($cat13 | Where-Object { ([string]$_.id -ceq 'grokcli') -and ([string]$_.label -ceq 'Grok') -and ([string]$_.rel -ceq '.grok\AGENTS.md') }).Count -eq 1)) 'G13 grok path is fixed and exact'
+  Assert ((Test-GlobalTargetsValid @('pi', 'zed', 'grokcli')) -and (Test-GlobalTargetsValid 'grokcli')) 'G13 new providers accepted'
   Assert ((-not (Test-GlobalTargetsValid @('ZED'))) -and (-not (Test-GlobalTargetsValid @('zed', 'zed')))) 'G13 case-sensitive, no duplicates'
   Assert ((-not (Test-GlobalTargetsValid @('../evil'))) -and (-not (Test-GlobalTargetsValid @('codex')))) 'G13 unknown/traversal rejected'
   Set-GlobalTargets $auto @('pi') | Out-Null
