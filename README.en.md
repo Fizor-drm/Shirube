@@ -2,12 +2,12 @@
 
 [日本語](README.md) | [English](README.en.md) | [简体中文](README.zh-CN.md)
 
-Shirube generates the `AGENTS.md` files that Codex, OpenCode and 16 other supported CLIs read from a GitHub rules repository and each project's local rules, then distributes them with Windows scheduled tasks. Generation uses [rulesync](https://github.com/dyoshikawa/rulesync), and the dashboard lets you preview diffs, back up and restore files, and check sync status.
+Shirube generates the `AGENTS.md` files that Codex, OpenCode and 17 other supported CLIs read from a GitHub rules repository and each project's local rules, then distributes them with Windows scheduled tasks. Generation uses [rulesync](https://github.com/dyoshikawa/rulesync), and the dashboard lets you preview diffs, back up and restore files, and check sync status.
 
 ![Windows 10 / 11](https://img.shields.io/badge/OS-Windows%2010%20%2F%2011-0078D4?logo=windows&logoColor=white)
 ![Windows PowerShell 5.1](https://img.shields.io/badge/PowerShell-5.1-5391FE?logo=powershell&logoColor=white)
 ![rulesync 42.0.0](https://img.shields.io/badge/rulesync-42.0.0-2F6F44)
-![Global 18 CLIs / Project 2](https://img.shields.io/badge/targets-Global%2018%20CLIs%20%2F%20Project%202-111827)
+![Global 19 CLIs / Project 2](https://img.shields.io/badge/targets-Global%2019%20CLIs%20%2F%20Project%202-111827)
 [![MIT License](https://img.shields.io/badge/license-MIT-2EA043)](LICENSE)
 
 Windows only. Linux and macOS are not supported.
@@ -60,10 +60,10 @@ flowchart TB
 
 | Scope | Source of truth | Output |
 | --- | --- | --- |
-| Global (18 targets) | `rules/global.md` | Fixed path per selected CLI (for example `%USERPROFILE%\.codex\AGENTS.md` and `%USERPROFILE%\.config\opencode\AGENTS.md`) |
+| Global (19 targets) | `rules/global.md` | Fixed path per selected CLI (for example `%USERPROFILE%\.codex\AGENTS.md` and `%USERPROFILE%\.config\opencode\AGENTS.md`) |
 | Project | `rules/project.md` and `.rulesync\rules\project-local.md` | `<project>\AGENTS.md` |
 
-The 18 Global targets are Codex, OpenCode, Claude Code, Cline, GitHub Copilot CLI, Antigravity CLI, Continue, Roo Code, Goose, Devin, Zed, Crush, CodeBuddy, CommandCode, Kimi Code, Vibe, Qoder and Pi. Only each CLI's fixed output path is accepted; arbitrary paths cannot be selected. Multi-file targets (augment, takt) and colliding aliases (warp, claudecode-legacy, antigravity-ide, zoocode) are left out of the list for safety. The default selection stays Codex / OpenCode.
+The 19 Global targets are Codex, OpenCode, Claude Code, Cline, GitHub Copilot CLI, Antigravity CLI, Continue, Roo Code, Goose, Devin, Zed, Crush, CodeBuddy, CommandCode, Kimi Code, Vibe, Qoder, Pi and Grok. Grok is written to `%USERPROFILE%\.grok\AGENTS.md`. Only each CLI's fixed output path is accepted; arbitrary paths cannot be selected. Multi-file targets (augment, takt) and colliding aliases (warp, claudecode-legacy, antigravity-ide, zoocode) are left out of the list for safety. The default selection stays Codex / OpenCode.
 
 rulesync generates `AGENTS.md` with `--features rules`. For Global, `--global` writes `AGENTS.md` for the selected CLIs under the home directory. For Project, the registered folder is the output directory, and only `AGENTS.md` directly under that folder is generated. Project generation takes the shared rules (`rules/project.md`) and the project-specific rules (`project-local.md`) in that order and merges them into one `AGENTS.md`. Sync is rejected unless the shared rules frontmatter has `root: true` and the local rules use `localRoot: true`.
 
@@ -191,11 +191,11 @@ Use Preview before applying to check the generated result without writing real f
 
 | File | Applies to | frontmatter |
 | --- | --- | --- |
-| `rules/global.md` in the rules repository | Every project (18 Global targets) | `root: true`; omit `targets` (or use `["*"]`) |
+| `rules/global.md` in the rules repository | Every project (19 Global targets) | `root: true`; omit `targets` (or use `["*"]`) |
 | `rules/project.md` in the rules repository | All registered projects (2 Project targets) | `root: true` and `targets: ["codexcli", "opencode"]` |
 | `<project>\.rulesync\rules\project-local.md` | That project only | `localRoot: true` and `targets: ["codexcli", "opencode"]` |
 
-Global and Project rules treat `targets` differently. Global distributes to whichever of the 18 providers are selected in the dashboard, so the rule must not pin them. Omitting `targets` uses rulesync's default `["*"]` (all); writing `targets: ["*"]` explicitly is equivalent. A fixed list such as `["codexcli", "opencode"]` silently excludes providers added later, including Pi and Claude Code. If an existing Global rule pins `targets`, remove that line or change it to `["*"]` and push it to GitHub.
+Global and Project rules treat `targets` differently. Global distributes to whichever of the 19 providers are selected in the dashboard, so the rule must not pin them. Omitting `targets` uses rulesync's default `["*"]` (all); writing `targets: ["*"]` explicitly is equivalent. A fixed list such as `["codexcli", "opencode"]` silently excludes providers added later, including Pi and Claude Code. If an existing Global rule pins `targets`, remove that line or change it to `["*"]` and push it to GitHub.
 
 Project supports only Codex and OpenCode, so Project rules must keep `targets: ["codexcli", "opencode"]`.
 
@@ -249,7 +249,7 @@ Before saving, the rule editor validates `targets` using the `rulesyncVersion` i
 | `32.0.0`–`41.x` | Conservatively limited to the 67 names verified in 32.0.0. `androidstudio`, `firebender`, `opencodev1`, and `xum` are rejected even if an intermediate release supports them |
 | Other versions, ranges, or tags | Saving is refused because compatibility is unverified |
 
-Pin `42.0.0` to use the newer targets. This validation does not expand the 18 Global sync providers or the two Project generation targets. Project rules must include `codexcli` and `opencode`; additional accepted names do not expand this application's Project sync scope.
+Pin `42.0.0` to use the newer targets. This validation does not expand the 19 Global sync providers or the two Project generation targets. Project rules must include `codexcli` and `opencode`; additional accepted names do not expand this application's Project sync scope.
 
 Changes to shared rules are picked up from GitHub on the next sync. For project-specific rules, local file changes take effect on the next sync. `AGENTS.md` is generated, so do not edit it.
 
@@ -258,7 +258,7 @@ Changes to shared rules are picked up from GitHub on the next sync. For project-
 | Screen | What you can do |
 | --- | --- |
 | Projects | Register, unregister, preview, and sync |
-| Global sync / Global settings | Select targets from the 18 providers, preview before applying, apply, check the final result and source, change the sync interval (5 to 1440 minutes) and enable/disable state |
+| Global sync / Global settings | Select targets from the 19 providers, preview before applying, apply, check the final result and source, change the sync interval (5 to 1440 minutes) and enable/disable state |
 | Overview | Choose the scope with "Sync all", "Global only" or "Project only" (a single scope shows one progress step; Sync all runs Global then Project as two steps) |
 | Local edit | Edit and validate `project-local.md` |
 | Backups | List project / Global backups, inspect diffs, and restore. After a restore, automatic sync for that target is paused so the next run does not overwrite it |

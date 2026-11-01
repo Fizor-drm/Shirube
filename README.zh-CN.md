@@ -2,12 +2,12 @@
 
 [日本語](README.md) | [English](README.en.md) | [简体中文](README.zh-CN.md)
 
-Shirube 从 GitHub 上的规则仓库和各项目的本地规则生成 Codex、OpenCode 等 18 种受支持 CLI 读取的 `AGENTS.md`，并通过 Windows 计划任务进行分发。生成过程使用 [rulesync](https://github.com/dyoshikawa/rulesync)，管理界面支持差异预览、备份、还原和同步状态确认。
+Shirube 从 GitHub 上的规则仓库和各项目的本地规则生成 Codex、OpenCode 等 19 种受支持 CLI 读取的 `AGENTS.md`，并通过 Windows 计划任务进行分发。生成过程使用 [rulesync](https://github.com/dyoshikawa/rulesync)，管理界面支持差异预览、备份、还原和同步状态确认。
 
 ![Windows 10 / 11](https://img.shields.io/badge/OS-Windows%2010%20%2F%2011-0078D4?logo=windows&logoColor=white)
 ![Windows PowerShell 5.1](https://img.shields.io/badge/PowerShell-5.1-5391FE?logo=powershell&logoColor=white)
 ![rulesync 42.0.0](https://img.shields.io/badge/rulesync-42.0.0-2F6F44)
-![Global 18 CLIs / Project 2](https://img.shields.io/badge/targets-Global%2018%20CLIs%20%2F%20Project%202-111827)
+![Global 19 CLIs / Project 2](https://img.shields.io/badge/targets-Global%2019%20CLIs%20%2F%20Project%202-111827)
 [![MIT License](https://img.shields.io/badge/license-MIT-2EA043)](LICENSE)
 
 仅支持 Windows。不支持 Linux / macOS。
@@ -60,10 +60,10 @@ flowchart TB
 
 | 范围 | 规则来源 | 生成位置 |
 | --- | --- | --- |
-| Global（18 种） | `rules/global.md` | 所选 CLI 的固定路径（例如 `%USERPROFILE%\.codex\AGENTS.md`、`%USERPROFILE%\.config\opencode\AGENTS.md`） |
+| Global（19 种） | `rules/global.md` | 所选 CLI 的固定路径（例如 `%USERPROFILE%\.codex\AGENTS.md`、`%USERPROFILE%\.config\opencode\AGENTS.md`） |
 | Project | `rules/project.md` 和 `.rulesync\rules\project-local.md` | `<项目>\AGENTS.md` |
 
-Global 可选目标（18 种）为 Codex、OpenCode、Claude Code、Cline、GitHub Copilot CLI、Antigravity CLI、Continue、Roo Code、Goose、Devin、Zed、Crush、CodeBuddy、CommandCode、Kimi Code、Vibe、Qoder、Pi。只接受各 CLI 的固定输出路径，不能指定任意路径。为保证安全，会生成多个文件的目标（augment、takt）和存在别名冲突的目标（warp、claudecode-legacy、antigravity-ide、zoocode）不会出现在列表中。默认选择仍为 Codex / OpenCode。
+Global 可选目标（19 种）为 Codex、OpenCode、Claude Code、Cline、GitHub Copilot CLI、Antigravity CLI、Continue、Roo Code、Goose、Devin、Zed、Crush、CodeBuddy、CommandCode、Kimi Code、Vibe、Qoder、Pi、Grok。Grok 写入 `%USERPROFILE%\.grok\AGENTS.md`。只接受各 CLI 的固定输出路径，不能指定任意路径。为保证安全，会生成多个文件的目标（augment、takt）和存在别名冲突的目标（warp、claudecode-legacy、antigravity-ide、zoocode）不会出现在列表中。默认选择仍为 Codex / OpenCode。
 
 rulesync 使用 `--features rules` 生成 `AGENTS.md`。Global 使用 `--global`，在主目录下为选中的 CLI 生成 `AGENTS.md`。Project 将注册文件夹作为输出目录，只生成该文件夹正下方的 `AGENTS.md`。Project 生成时按顺序读取通用规则（`rules/project.md`）和项目专用规则（`project-local.md`），合并为一个 `AGENTS.md`。通用规则的 frontmatter 必须为 `root: true`，专用规则必须为 `localRoot: true`，否则同步会被拒绝。
 
@@ -191,11 +191,11 @@ Copy-Item 管理.bat $root
 
 | 文件 | 适用范围 | frontmatter |
 | --- | --- | --- |
-| 规则仓库中的 `rules/global.md` | 所有项目（Global 18 种） | `root: true`；不要写 `targets`（或使用 `["*"]`） |
+| 规则仓库中的 `rules/global.md` | 所有项目（Global 19 种） | `root: true`；不要写 `targets`（或使用 `["*"]`） |
 | 规则仓库中的 `rules/project.md` | 所有已注册项目（Project 2 种） | `root: true` 和 `targets: ["codexcli", "opencode"]` |
 | `<项目>\.rulesync\rules\project-local.md` | 仅该项目 | `localRoot: true` 和 `targets: ["codexcli", "opencode"]` |
 
-Global 与 Project 对 `targets` 的处理不同。Global 会分发到管理界面所选的 18 种目标，因此规则侧不要固定目标。省略 `targets` 时使用 rulesync 的默认值 `["*"]`（全部），显式写 `targets: ["*"]` 也一样。若固定为 `["codexcli", "opencode"]`，之后选择的 Pi、Claude Code 等将收不到内容。现有 Global 规则如果固定了 `targets`，请删除该行或改为 `["*"]`，然后 push 到 GitHub。
+Global 与 Project 对 `targets` 的处理不同。Global 会分发到管理界面所选的 19 种目标，因此规则侧不要固定目标。省略 `targets` 时使用 rulesync 的默认值 `["*"]`（全部），显式写 `targets: ["*"]` 也一样。若固定为 `["codexcli", "opencode"]`，之后选择的 Pi、Claude Code 等将收不到内容。现有 Global 规则如果固定了 `targets`，请删除该行或改为 `["*"]`，然后 push 到 GitHub。
 
 Project 只支持 Codex / OpenCode 两种固定目标，因此 Project 规则必须保留 `targets: ["codexcli", "opencode"]`。
 
@@ -249,7 +249,7 @@ Project 的 frontmatter 只接受固定格式。请将 3 个键各写一行，�
 | `32.0.0`～`41.x` | 保守限制为在 32.0.0 中确认过的67个名称。即使中间版本已经支持，也拒绝 `androidstudio`、`firebender`、`opencodev1`、`xum` |
 | 其他版本、范围或标签 | 未验证兼容性，因此拒绝保存 |
 
-要使用新目标，请固定为 `42.0.0`。此校验不会增加Global的18种同步目标或Project的2种生成目标。Project规则必须包含 `codexcli` 和 `opencode`；额外的允许名称不会扩大本应用的Project同步范围。
+要使用新目标，请固定为 `42.0.0`。此校验不会增加Global的19种同步目标或Project的2种生成目标。Project规则必须包含 `codexcli` 和 `opencode`；额外的允许名称不会扩大本应用的Project同步范围。
 
 修改通用规则后，GitHub 上的内容会在下次同步时获取。项目专用规则会直接使用本地文件的下次同步结果。`AGENTS.md` 是生成文件，请不要编辑。
 
@@ -258,7 +258,7 @@ Project 的 frontmatter 只接受固定格式。请将 3 个键各写一行，�
 | 界面 | 可以做什么 |
 | --- | --- |
 | 项目 | 注册、取消注册、预览、同步 |
-| Global 同步 / Global 设置 | 从 18 种目标中选择分发对象、应用前预览、应用、确认最终结果和来源、修改同步间隔（5～1440 分钟）以及启用/禁用状态 |
+| Global 同步 / Global 设置 | 从 19 种目标中选择分发对象、应用前预览、应用、确认最终结果和来源、修改同步间隔（5～1440 分钟）以及启用/禁用状态 |
 | 概述 | 通过“全部同步”“仅 Global”“仅 Project”选择执行范围（单独执行显示 1 步进度，全部同步按 Global → Project 显示 2 步） |
 | 本地编辑 | 编辑和检查 `project-local.md` |
 | 备份 | 查看项目 / Global 备份列表、确认差异、还原。还原后会暂停该目标的自动同步，防止下次覆盖 |
