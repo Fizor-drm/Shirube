@@ -11,7 +11,7 @@ function Assert([bool]$Cond, [string]$Name) {
 $devAuto = Split-Path -Parent $PSScriptRoot
 $srvPath = Join-Path $devAuto 'Dashboard-Server.ps1'
 $srvTxt = Get-Content -LiteralPath $srvPath -Raw
-$screenIds = @('top', 'projects', 'global', 'rules', 'backups', 'local', 'logs', 'settings')
+$screenIds = @('top', 'logs', 'projects', 'global', 'rules', 'backups', 'local', 'settings')
 $legacy = @{ register = 'projects'; status = 'projects'; gsettings = 'global'; help = 'settings' }
 
 try {
@@ -31,7 +31,7 @@ try {
 
   # --- static: every link uses an inline Lucide icon with the label in a span
   $iconPrefix = 'width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"'
-  $inlineSvg = [regex]::Matches($srvTxt, '<svg ' + [regex]::Escape($iconPrefix))
+  $inlineSvg = [regex]::Matches($aside.Value + $topnav.Value, '<svg ' + [regex]::Escape($iconPrefix))
   Assert ($inlineSvg.Count -eq 16) 'NAV both navigations carry one 16x16 Lucide SVG per link'
   foreach ($nav in @($aside.Value, $topnav.Value)) {
     $anchors = [regex]::Matches($nav, '(?s)<a [^>]*>.*?</a>')
@@ -107,8 +107,11 @@ try {
 
   # --- static: modal focus return and the black theme spacing are untouched
   Assert (($srvTxt.Contains('wrap.inert') -and $srvTxt.Contains('focusVisible(lf)') -and $srvTxt.Contains('function focusVisibleNav') -and $srvTxt.Contains('done=focusVisibleNav();'))) 'FOCUS modal returns focus to a visible control (per-candidate nav fallback)'
-  Assert (($srvTxt.Contains('background:#000') -and $srvTxt.Contains('background:#0a0a0a') -and $srvTxt.Contains('border-radius:14px'))) 'THEME black palette and card radius kept'
+  Assert (($srvTxt.Contains('background:var(--water)') -and $srvTxt.Contains('--buoy:#b43322') -and $srvTxt.Contains('background:#0a0a0a') -and $srvTxt.Contains('font-family:"Yu Mincho"'))) 'THEME chart-room chrome and dark rule plate kept'
+  Assert (($srvTxt.Contains('id="selTheme"') -and $srvTxt.Contains('shirube.theme') -and $srvTxt.Contains('--water:#101820') -and $srvTxt.Contains('[data-theme="dark"]'))) 'THEME night mode follows the device or an explicit choice'
   Assert (($srvTxt.Contains('.mainscroll{flex:1;min-height:0;overflow:auto;padding:22px 28px 40px'))) 'THEME main padding kept'
+  Assert (($srvTxt.Contains('.summarybar .sum-split{display:grid;grid-template-columns:1fr 1fr}') -and $srvTxt.Contains('#sumProject[data-state="success"]') -and $srvTxt.Contains('#stRun[data-state="success"]') -and $srvTxt.Contains('progress.tone-ok'))) 'SUMMARY status strip is two equal halves over one action row and colors the outcome'
+  Assert (($srvTxt.Contains('data-i18n="見る"') -and $srvTxt.Contains('data-i18n="配る"') -and $srvTxt.Contains('data-i18n="守る"') -and $srvTxt.Contains('aside .ticks::before'))) 'NAV sidebar groups screens on a depth scale'
 
   # --- static: narrow layout keeps one row of reachable 44px-class targets
   Assert ($srvTxt.Contains('@media(max-width:1000px){.topnav{display:flex;flex-wrap:nowrap;overflow-x:auto}')) 'MOBILE topnav stays one scrollable row'

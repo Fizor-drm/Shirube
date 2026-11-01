@@ -311,7 +311,7 @@ test('Global settings styles are scoped, scroll-bounded, responsive and reduced-
 test('logo map is fixed, self-contained and covers the supplied CommandCode asset', () => {
   const map = logos();
   const expected = ['codexcli', 'opencode', 'claudecode', 'cline', 'copilotcli', 'antigravity-cli',
-    'commandcode', 'roo', 'goose', 'devin', 'zed', 'codebuddy', 'kimi-code', 'qoder', 'pi'].sort();
+    'commandcode', 'roo', 'goose', 'devin', 'zed', 'codebuddy', 'kimi-code', 'qoder', 'pi', 'grokcli'].sort();
   const keys = Object.keys(map).sort();
   must(keys.join('|') === expected.join('|'), 'exact canonical logo keys: ' + keys.join(','));
   must(Object.prototype.hasOwnProperty.call(map, 'commandcode'), 'CommandCode logo is embedded');

@@ -128,8 +128,11 @@ test('mode button and editor colors keep >=4.5:1 contrast', () => {
   }
   function ratio(fg, bg) { const a = lum(fg), b = lum(bg); return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05); }
   const pairs = [
-    ['#ffffff', '#161616', 'inactive mode button text'],
-    ['#ffffff', '#2563eb', 'pressed mode button text'],
+    ['#1a2c34', '#f4f8fa', 'inactive mode button text'],
+    ['#ffffff', '#b43322', 'pressed mode button text'],
+    ['#e7eef3', '#182430', 'dark body text'],
+    ['#9bb4c2', '#182430', 'dark muted text'],
+    ['#7dcea0', '#182430', 'dark success text'],
     ['#8b949e', '#0a0a0a', 'muted table pipes / line numbers'],
     ['#60a5fa', '#0a0a0a', 'blue headings'],
     ['#fbbf24', '#0a0a0a', 'orange inline code']

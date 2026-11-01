@@ -976,58 +976,111 @@ function Get-PageHtml {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Shirube 管理ダッシュボード</title>
 <style>
-:root{color-scheme:dark}
+:root{color-scheme:light;--water:#d7e3ea;--paper:#f4f8fa;--ink:#1a2c34;--tide:#3e6578;--line:#c5d4dc;--buoy:#b43322;--buoy-ink:#fff8f6;--buoy-soft:#f8e8e5;--wash:#e7eef3;--field:#fff;--buoy-down:#8e291c;--ok:#1f7a45;--err:#9d2430;--warn:#8a5a12}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--water:#101820;--paper:#182430;--ink:#e7eef3;--tide:#9bb4c2;--line:#2e4656;--buoy:#b43322;--buoy-ink:#fff8f6;--buoy-soft:#3a2422;--wash:#243644;--field:#101820;--buoy-down:#8e291c;--ok:#7dcea0;--err:#f0a3a3;--warn:#e8c87a}}
+:root[data-theme="dark"]{color-scheme:dark;--water:#101820;--paper:#182430;--ink:#e7eef3;--tide:#9bb4c2;--line:#2e4656;--buoy:#b43322;--buoy-ink:#fff8f6;--buoy-soft:#3a2422;--wash:#243644;--field:#101820;--buoy-down:#8e291c;--ok:#7dcea0;--err:#f0a3a3;--warn:#e8c87a}
 *{box-sizing:border-box}
 html,body{height:100%}
-body{margin:0;background:#000;color:#f5f5f5;font-family:"Segoe UI","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;font-size:14px;line-height:1.7;overflow:hidden}
-a{color:#f5f5f5}
+body{margin:0;background:var(--water);color:var(--ink);font-family:"Segoe UI","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;font-size:14px;line-height:1.6;overflow:hidden}
+a{color:var(--ink)}
 .wrap{display:flex;height:100vh;height:100dvh;padding:12px;gap:12px}
-aside{width:232px;flex:none;background:#0a0a0a;border:1px solid #1f1f1f;border-radius:14px;padding:20px 14px;height:calc(100vh - 24px);height:calc(100dvh - 24px);overflow:auto}
-.brand{font-weight:700;font-size:15px;padding:4px 10px 16px}
-nav a{display:block;padding:8px 10px;border-radius:6px;text-decoration:none;color:#cfcfcf}
-nav a.active{background:#161616;color:#fff;border:1px solid #2a2a2a}
-nav a:hover{background:#141414}
+aside{width:232px;flex:none;background:var(--paper);border:1px solid var(--line);border-radius:0;padding:20px 16px;height:calc(100vh - 24px);height:calc(100dvh - 24px);overflow:auto}
+.brand{font-family:"Yu Mincho","Hiragino Mincho ProN","MS PMincho",serif;font-weight:600;font-size:22px;line-height:1.2;padding:2px 10px 18px;color:var(--ink)}
+nav a{display:block;padding:8px 12px;border-radius:0;border-left:3px solid transparent;text-decoration:none;color:var(--tide)}
+nav a.active{background:transparent;color:var(--ink);border:0;border-left:3px solid var(--buoy);font-weight:600}
+nav a:hover{background:var(--wash)}
 nav a svg,.topnav a svg{flex:none;vertical-align:-2px;margin-right:6px}
-.side-note{margin-top:24px;padding:10px;font-size:12px;color:#9a9a9a;border-top:1px solid #1d1d1d}
-main{flex:1;min-width:0;display:flex;flex-direction:column;background:#0a0a0a;border:1px solid #1f1f1f;border-radius:14px;height:calc(100vh - 24px);height:calc(100dvh - 24px);overflow:hidden;padding:0}
-.topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex:none;border-bottom:1px solid #1d1d1d;padding:16px 28px 14px}
+.side-note{margin-top:24px;padding:10px;font-size:12px;color:var(--tide);border-top:1px solid var(--line);max-width:28ch}
+aside{display:flex;flex-direction:column}
+aside .side-note{margin-top:auto}
+aside .navgrp{margin:0 0 12px}
+aside .navgrp b{display:flex;align-items:center;gap:8px;margin:0 0 3px;color:var(--tide);font-size:11px;font-weight:600}
+aside .navgrp b::after{content:"";flex:1;height:1px;background:var(--line)}
+aside .ticks{position:relative;padding-left:22px}
+aside .ticks::before{content:"";position:absolute;left:8px;top:2px;bottom:2px;width:1px;background:var(--line)}
+aside .ticks a{position:relative;padding:5px 6px 5px 6px;border:0;background:transparent;color:var(--tide)}
+aside .ticks a svg{display:none}
+aside .ticks a::before{content:"";position:absolute;left:-14px;top:50%;width:8px;height:1px;background:var(--line);transform:translateY(-50%)}
+aside .ticks a.active{color:var(--ink);font-weight:600;border:0;background:transparent}
+aside .ticks a.active::before{width:12px;height:2px;background:var(--buoy)}
+aside .ticks a:hover{background:transparent;color:var(--ink)}
+aside .navutil{margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
+main{flex:1;min-width:0;display:flex;flex-direction:column;background:var(--paper);border:1px solid var(--line);border-radius:0;height:calc(100vh - 24px);height:calc(100dvh - 24px);overflow:hidden;padding:0}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex:none;border-bottom:1px solid var(--line);padding:8px 28px}
 .mainscroll{flex:1;min-height:0;overflow:auto;padding:22px 28px 40px;scrollbar-gutter:stable}
 .mainscroll{min-height:96px}
-.summarybar{flex:0 0 auto;min-height:0;padding:10px 28px 8px;border-bottom:1px solid #1d1d1d;background:#0a0a0a}
-.summarybar .grid3{margin-bottom:0;gap:10px;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)}
-.summarybar .card{padding:10px 14px;min-width:0;overflow-wrap:anywhere;word-break:break-all}
-.summarybar .big{font-size:20px}
-.summarybar .muted{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;overflow-wrap:anywhere;word-break:break-all}
-.summarybar .btnrow button{white-space:normal;padding:6px 9px}
-.syncprogress{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:4px;min-width:0}
-.syncprogress progress{flex:1 1 100%;min-width:0;height:8px;accent-color:#8fd694}
-.syncprogress .muted{margin:0;white-space:normal;overflow-wrap:anywhere;word-break:break-word}
+.summarybar{position:relative;flex:0 0 auto;min-height:0;padding:0;border-bottom:1px solid var(--line);background:var(--paper)}
+.summarybar section{display:block}
+.summarybar .grid3{display:flex;flex-direction:column;gap:0;margin:0;grid-template-columns:none}
+.summarybar .sum-split{display:grid;grid-template-columns:1fr 1fr}
+.summarybar .sum-half{min-width:0;padding:12px 28px 10px;border:0}
+.summarybar .sum-half+.sum-half{border-left:1px solid var(--line)}
+.summarybar .sum-half h2{margin:0;color:var(--tide);font-size:11px;font-weight:600;white-space:nowrap}
+.summarybar .sum-half .big{margin-top:2px;font-size:22px;line-height:1.1;font-weight:600;font-variant-numeric:tabular-nums}
+.summarybar .sum-half .muted{display:block;margin:4px 0 0;color:var(--tide);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.summarybar .sum-foot{display:flex;align-items:center;gap:16px;min-width:0;padding:8px 28px;border-top:1px solid var(--line)}
+.summarybar .sum-foot .card{display:flex;align-items:center;flex:none;min-width:0;padding:0;border:0}
+.summarybar .sum-foot h2{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.summarybar .sum-foot .big{font-size:13px;line-height:1.2;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.summarybar #stLog{flex:1 1 auto;min-width:0;max-width:none;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.summarybar .sum-legacy{display:none}
+.summarybar .btnrow{margin:0;flex:none;flex-wrap:nowrap;gap:6px}
+.summarybar .btnrow button{white-space:nowrap;padding:6px 12px;font-size:13px}
+.syncprogress{display:flex;align-items:center;gap:6px;margin:0;min-width:0;flex:none}
+.summarybar .syncprogress{display:none}
+.summarybar .syncprogress:has(progress.tone-run){display:flex;flex:1 1 180px}
+.syncprogress progress{flex:none;width:56px;height:4px;accent-color:var(--tide)}
+.syncprogress progress.tone-ok{accent-color:var(--ok)}
+.syncprogress progress.tone-bad{accent-color:var(--err)}
+.syncprogress progress.tone-run{accent-color:var(--buoy)}
+.syncprogress progress.tone-warn{accent-color:var(--warn)}
+.syncprogress .muted{margin:0;max-width:18ch}
+#stRun[data-state="success"],#sumProject[data-state="success"],#sumGlobal[data-state="success"]{color:var(--ok)}
+#stRun[data-state="failed"],#sumProject[data-state="failed"],#sumGlobal[data-state="failed"]{color:var(--err)}
+#stRun[data-state="running"],#stRun[data-state="waiting"],#sumProject[data-state="running"],#sumProject[data-state="waiting"],#sumGlobal[data-state="running"],#sumGlobal[data-state="waiting"]{color:var(--buoy)}
+#stRun[data-state="skipped"],#stRun[data-state="unconfirmed"],#sumProject[data-state="skipped"],#sumProject[data-state="unconfirmed"],#sumGlobal[data-state="skipped"],#sumGlobal[data-state="unconfirmed"]{color:var(--warn)}
+#ovGlobal[data-state="success"]{color:var(--ok)}
+#ovGlobal[data-state="failed"]{color:var(--err)}
+#ovGlobal[data-state="running"],#ovGlobal[data-state="waiting"]{color:var(--buoy)}
+#ovGlobal[data-state="skipped"],#ovGlobal[data-state="unconfirmed"]{color:var(--warn)}
 .helper{display:inherit}
-.topbar .sub{color:#9a9a9a;font-size:12px}
-.lang{font-size:12px;color:#f5f5f5;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;padding:5px 10px;flex:none;width:auto;max-width:140px}
-h1{font-size:22px;margin:0 0 6px}
-.lead{color:#b5b5b5;margin:0 0 14px}
+.topbar .sub{color:var(--tide);font-size:12px}
+.lang{font-size:12px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:2px;padding:4px 8px;flex:none;width:auto;max-width:140px}
+h1{font-size:20px;font-weight:600;margin:0 0 6px;max-width:36ch}
+.lead{color:var(--tide);margin:0 0 14px;max-width:68ch}
+#attn{margin-top:16px}
+#attn .attn{list-style:none;margin:4px 0 0;padding:0}
+#attn .attn a{display:flex;align-items:baseline;justify-content:space-between;gap:18px;padding:10px 0;border-top:1px solid var(--line);color:inherit;text-decoration:none}
+#attn .attn a.bad{color:var(--err)}
+#attn .attn-go{color:var(--tide);font-size:12px;flex:none}
+#attn .attn a:hover .attn-go{color:var(--ink)}
+#attnCalm{margin:8px 0 0}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px}
-.card{background:#0d0d0d;border:1px solid #242424;border-radius:8px;padding:16px 18px}
-.card h2{font-size:13px;color:#9a9a9a;margin:0 0 8px;font-weight:600}
-.big{font-size:24px;margin:0}
-.muted{color:#9a9a9a;font-size:12px}
+.card{background:transparent;border:0;border-bottom:1px solid var(--line);border-radius:0;padding:4px 0 16px}
+.card h2{font-size:15px;color:var(--ink);margin:0 0 8px;font-weight:600}
+.big{font-size:24px;margin:0;font-variant-numeric:tabular-nums}
+.muted{color:var(--tide);font-size:12px}
 .row2{display:grid;grid-template-columns:1.4fr 1fr;gap:14px}
-.cols2{display:grid;grid-template-columns:1.55fr 1fr;gap:14px;margin:0 0 14px}
+.cols2{display:grid;grid-template-columns:1.55fr 1fr;gap:0;margin:0 0 14px}
+#projects .cols2{grid-template-columns:minmax(0,1.7fr) minmax(240px,.82fr)}
 .cols2>section{margin:0;min-width:0}
+.cols2>section+section{border-left:1px solid var(--line);padding-left:22px;margin-left:22px}
+#projects details.fold{border-top:1px solid var(--line);margin-top:12px;padding-top:4px}
+#projects details.fold summary{cursor:pointer;padding:8px 0;font-weight:600;color:var(--ink);font-size:13px}
+#status{border-top:1px solid var(--line);padding-top:12px;margin-top:8px}
 .rules-grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:14px;margin-top:12px}
-#ruleText{width:100%;min-height:340px;background:#0a0a0a;border:1px solid #2c2c2c;color:#fff;border-radius:6px;padding:10px 12px;font-family:ui-monospace,Consolas,"Courier New",monospace;font-size:12px;line-height:1.6;resize:vertical}
+#ruleText{width:100%;min-height:340px;background:#0a0a0a;border:1px solid #2c2c2c;color:#fff;border-radius:2px;padding:10px 12px;font-family:ui-monospace,Consolas,"Courier New",monospace;font-size:12px;line-height:1.6;resize:vertical}
 #ruleText:disabled{opacity:.5;cursor:not-allowed}
 #ruleText:focus{outline:2px solid #f5f5f5;outline-offset:1px}
 #ruleText{overflow-wrap:anywhere}
 #ruleText.cm-off{display:none}
 .rule-modes{display:flex;gap:8px;margin:12px 0 0;flex-wrap:wrap}
-.rmode{padding:6px 14px;font-size:12px}
-.rmode[aria-pressed="true"]{background:#2563eb;border-color:#2563eb;color:#fff}
-.rmode[aria-pressed="true"]:hover{background:#2563eb}
+.rmode{padding:6px 14px;font-size:12px;background:var(--paper);color:var(--ink);border-color:var(--line)}
+.rmode[aria-pressed="true"]{background:var(--buoy);border-color:var(--buoy);color:#fff}
+.rmode[aria-pressed="true"]:hover{background:var(--buoy-down)}
 .rule-src,.rule-view{min-width:0}
 .rules-grid.solo .rule-src,.rules-grid.solo .rule-view{grid-column:1/-1}
-#ruleEditorWrap{min-height:340px;background:#0a0a0a;border:1px solid #2c2c2c;border-radius:6px;overflow:hidden;display:none}
+#ruleEditorWrap{min-height:340px;background:#0a0a0a;border:1px solid #2c2c2c;border-radius:2px;overflow:hidden;display:none}
 #ruleEditorWrap.cm-on{display:block}
 #ruleEditorWrap .cm-editor{background:#0a0a0a;color:#fff}
 #ruleEditorWrap .cm-scroller{font-family:ui-monospace,Consolas,"Courier New",monospace;font-size:12px;line-height:1.6;overflow-wrap:anywhere}
@@ -1036,12 +1089,12 @@ h1{font-size:22px;margin:0 0 6px}
 #ruleEditorWrap .cm-line{padding:0 2px 0 0}
 #ruleEditorWrap .rule-md-row{background:#111214;box-shadow:inset 0 1px 0 #1f1f1f,inset 0 -1px 0 #1f1f1f}
 #ruleEditorWrap .rule-md-row.rule-md-row-alt{background:#17191c}
-#rulePreview{min-height:340px;background:#0a0a0a;border:1px solid #2c2c2c;border-radius:6px;padding:10px 12px;font-size:13px;overflow-wrap:anywhere}
+#rulePreview{min-height:340px;background:#0a0a0a;border:1px solid #2c2c2c;border-radius:2px;padding:10px 12px;font-size:13px;overflow-wrap:anywhere}
 #rulePreview h1,#rulePreview h2,#rulePreview h3,#rulePreview h4,#rulePreview h5,#rulePreview h6{margin:14px 0 8px;color:#fff}
 #rulePreview h1{font-size:20px}#rulePreview h2{font-size:17px}#rulePreview h3{font-size:15px}
 #rulePreview p,#rulePreview ul,#rulePreview ol{margin:8px 0}
-#rulePreview code{background:#1c1c1c;border:1px solid #2c2c2c;border-radius:4px;padding:1px 5px;font-family:ui-monospace,Consolas,"Courier New",monospace;font-size:12px}
-#rulePreview pre{background:#0d0d0d;border:1px solid #242424;border-radius:6px;padding:10px;overflow:auto}
+#rulePreview code{background:#1c1c1c;border:1px solid #2c2c2c;border-radius:2px;padding:1px 5px;font-family:ui-monospace,Consolas,"Courier New",monospace;font-size:12px}
+#rulePreview pre{background:#0d0d0d;border:1px solid #242424;border-radius:2px;padding:10px;overflow:auto}
 #rulePreview pre code{background:none;border:none;padding:0}
 #rulePreview table{border-collapse:collapse;margin:8px 0}
 #rulePreview th,#rulePreview td{border:1px solid #2c2c2c;padding:6px 9px}
@@ -1049,39 +1102,41 @@ h1{font-size:22px;margin:0 0 6px}
 #rulePreview tbody tr:nth-child(odd){background:#101010}
 #rulePreview tbody th[scope=row]{font-weight:700;text-align:left}
 #rulePreview a{color:#7ab7ff}
-.rpreview-scroll{overflow-x:auto;border-radius:6px}
+.rpreview-scroll{overflow-x:auto;border-radius:2px}
 .rpreview-scroll:focus{outline:2px solid #f5f5f5;outline-offset:1px}
-@media(max-width:1000px){.row2,.cols2,.rules-grid{grid-template-columns:1fr}aside{display:none}.mainscroll{padding:20px 16px 32px}.summarybar{padding:8px 16px 6px}}
-@media(max-width:480px){.summarybar{padding:8px 12px 6px}.summarybar .grid3{gap:6px}.summarybar .card{padding:8px 10px}.summarybar .btnrow button{padding:2px 5px;font-size:10px}}
-@media(max-height:520px){.topbar{padding:3px 10px 2px}.topnav{padding:2px 8px!important}.topnav a{padding:2px 5px!important;font-size:11px!important}.summarybar{padding:2px 10px 1px}.summarybar .card{padding:2px 6px}.summarybar .card h2{margin:0 0 2px;font-size:11px}.summarybar .grid3{gap:3px}.summarybar .big{font-size:13px}.summarybar .muted{font-size:10px;-webkit-line-clamp:1}.summarybar .btnrow{margin-top:2px}.summarybar .btnrow button{padding:2px 5px;font-size:10px}.helper{display:none!important}.mainscroll{padding:6px 10px 10px}}
+@media(max-width:1000px){.row2,.cols2,#projects .cols2,.rules-grid{grid-template-columns:1fr}aside{display:none}.mainscroll{padding:20px 16px 32px}.summarybar .sum-half{padding:10px 16px 8px}.summarybar .sum-foot{padding:8px 16px}.summarybar .sum-split{grid-template-columns:1fr}.summarybar .sum-half+.sum-half{border-left:0;border-top:1px solid var(--line)}.cols2>section+section{border-left:0;padding-left:0;margin-left:0;border-top:1px solid var(--line);padding-top:16px;margin-top:8px}}
+@media(max-width:480px){.summarybar .sum-half{padding:8px 12px}.summarybar .sum-foot{flex-wrap:wrap;gap:8px;padding:8px 12px}.summarybar .btnrow{flex-wrap:wrap}.summarybar .btnrow button{padding:6px 10px;font-size:12px}}
+@media(max-height:520px){.topbar{padding:3px 10px 2px}.topnav{padding:2px 8px!important}.topnav a{padding:2px 5px!important;font-size:11px!important}.summarybar .sum-half{padding:4px 10px 3px}.summarybar .sum-half h2{font-size:11px}.summarybar .sum-half .big{font-size:16px}.summarybar .sum-foot{gap:8px;padding:3px 10px}.summarybar .sum-foot .big{font-size:12px}.summarybar .muted{font-size:11px}.summarybar .btnrow{margin:0}.summarybar .btnrow button{padding:2px 8px;font-size:11px}.helper{display:none!important}.mainscroll{padding:6px 10px 10px}}
 [hidden]{display:none!important}
 section{width:100%;min-width:0;margin:0 0 14px}
-.topnav{display:none;flex:none;gap:8px;flex-wrap:wrap;align-items:center;border-bottom:1px solid #1d1d1d;padding:10px 16px}
-.topnav a{padding:7px 10px;border-radius:6px;text-decoration:none;color:#cfcfcf;border:1px solid transparent;font-size:13px}
-.topnav a.active{background:#161616;color:#fff;border-color:#2a2a2a}
-.btnlink{display:inline-block;padding:9px 16px;border:1px solid #333;border-radius:6px;background:#161616;color:#fff;text-decoration:none;font-size:13px}
-.btnlink:hover{background:#222}
+.topnav{display:none;flex:none;gap:8px;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--line);padding:10px 16px}
+.topnav a{padding:8px 12px;border-radius:0;text-decoration:none;color:var(--tide);border:1px solid transparent;border-bottom:3px solid transparent;font-size:13px}
+.topnav a.active{background:transparent;color:var(--ink);border-color:transparent;border-bottom-color:var(--buoy);font-weight:600}
+.btnlink{display:inline-block;padding:8px 16px;border:1px solid var(--line);border-radius:2px;background:var(--paper);color:var(--ink);text-decoration:none;font-size:13px}
+.btnlink:hover{background:var(--wash)}
 @media(max-width:1000px){.topnav{display:flex;flex-wrap:nowrap;overflow-x:auto}.topnav a{padding:11px 12px;white-space:nowrap}}
 table{width:100%;border-collapse:collapse;font-size:13px}
-th,td{text-align:left;padding:9px 8px;border-bottom:1px solid #1f1f1f;vertical-align:top}
-th{color:#9a9a9a;font-weight:600}
-code.path{word-break:break-all;overflow-wrap:anywhere;font-size:12px;color:#e8e8e8}
-input[type=text]{width:100%;background:#0a0a0a;border:1px solid #2c2c2c;color:#fff;border-radius:6px;padding:10px 12px;font-size:13px}
-input[type=text]:focus{outline:2px solid #f5f5f5;outline-offset:1px}
-button{cursor:pointer;border-radius:6px;font-size:13px;padding:9px 16px;border:1px solid #333;background:#161616;color:#fff}
-button:hover{background:#222}
-button.primary{background:#f5f5f5;color:#000;border-color:#f5f5f5;font-weight:700}
-button.primary:hover{background:#fff}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--tide);font-weight:600}
+code.path{word-break:break-all;overflow-wrap:anywhere;font-size:12px;color:var(--ink)}
+input[type=text]{width:100%;background:var(--field);border:1px solid var(--line);color:var(--ink);border-radius:2px;padding:10px 12px;font-size:13px}
+input[type=text]:focus{outline:2px solid var(--tide);outline-offset:1px}
+button{cursor:pointer;border-radius:2px;font-size:13px;padding:8px 16px;border:1px solid var(--line);background:var(--paper);color:var(--ink)}
+button:hover{background:var(--wash)}
+button.tip{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;margin:0 0 0 2px;padding:0;border:0;background:transparent;color:var(--tide);vertical-align:middle;cursor:help;border-radius:50%;align-self:center;flex:none}
+button.tip:hover{background:transparent;color:var(--ink)}
+button.primary{background:var(--buoy);color:var(--buoy-ink);border-color:var(--buoy);font-weight:600}
+button.primary:hover{background:var(--buoy-down)}
 button:disabled{opacity:.45;cursor:not-allowed}
-button.danger{border-color:#5a2b2b;color:#f0b9b9}
+button.danger{border-color:var(--err);color:var(--err);background:var(--field)}
 .btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
-pre{background:#070707;border:1px solid #222;border-radius:6px;padding:12px;white-space:pre-wrap;word-break:break-all;font-size:12px;max-height:260px;overflow:auto;color:#d6d6d6}
-.ok{color:#8fd694}.err{color:#f0a3a3}.warn{color:#e8c87a}
-label.chk{display:flex;gap:8px;align-items:flex-start;margin-top:10px;font-size:13px;color:#d6d6d6}
+pre{background:#0a0a0a;border:1px solid #2c2c2c;border-radius:2px;padding:12px;white-space:pre-wrap;word-break:break-all;font-size:12px;max-height:260px;overflow:auto;color:#e7eef3}
+.ok{color:var(--ok)}.err{color:var(--err)}.warn{color:var(--warn)}
+label.chk{display:flex;gap:8px;align-items:flex-start;margin-top:10px;font-size:13px;color:var(--ink)}
 .targetlist{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0 12px}
 .targetlist label.chk{margin-top:6px}
-footer{margin-top:34px;border-top:1px solid #1d1d1d;padding-top:12px;color:#8a8a8a;font-size:12px}
-:focus-visible{outline:2px solid #f5f5f5;outline-offset:2px}
+footer{margin-top:34px;border-top:1px solid var(--line);padding-top:12px;color:var(--tide);font-size:12px}
+:focus-visible{outline:2px solid var(--tide);outline-offset:2px}
 .pathrow{display:flex;gap:8px}
 .pathrow input{flex:1;min-width:0}
 .tablewrap{overflow-x:auto}
@@ -1089,37 +1144,40 @@ footer{margin-top:34px;border-top:1px solid #1d1d1d;padding-top:12px;color:#8a8a
 #prevArea{min-width:0;overflow-wrap:anywhere;word-break:break-all}
 #prevArea p{overflow-wrap:anywhere;word-break:break-all}
 details.help{margin:0}
-details.help summary{cursor:pointer;padding:4px 0;font-weight:600;color:#cfcfcf;font-size:13px}
-.ovl{position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;z-index:50}
+details.help summary{cursor:pointer;padding:4px 0;font-weight:600;color:var(--ink);font-size:15px}
+.ovl{position:fixed;inset:0;background:rgba(26,44,52,.45);display:flex;align-items:center;justify-content:center;z-index:50}
 .ovl[hidden]{display:none}
-.mbox{background:#0d0d0d;border:1px solid #2a2a2a;border-radius:8px;padding:20px 22px;max-width:460px;width:calc(100% - 40px)}
-.mbox h3{margin:0 0 8px;font-size:15px}
-.mbox p{margin:0 0 14px;color:#d6d6d6;font-size:13px;white-space:pre-wrap;word-break:break-all}
+.mbox{background:var(--paper);border:1px solid var(--line);border-radius:0;padding:20px 22px;max-width:460px;width:calc(100% - 40px)}
+.mbox h3{margin:0 0 8px;font-size:16px}
+.mbox p{margin:0 0 14px;color:var(--ink);font-size:13px;white-space:pre-wrap;word-break:break-all}
 .acts{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
 .acts button{white-space:nowrap;flex:none}
 #tbl .acts{gap:6px;align-items:center}
 #tbl button{padding:4px 8px;min-height:30px;font-size:12px;white-space:nowrap}
+#tbl .acts button{border-color:transparent;background:transparent;padding:4px 2px;min-height:0}
+#tbl .acts button.danger{border-color:transparent;background:transparent;color:var(--err)}
+#tbl .acts button:hover{background:var(--wash)}
 @media(pointer:coarse){#tbl button{min-height:44px;padding:10px 12px}}
-textarea{width:100%;background:#0a0a0a;border:1px solid #2c2c2c;color:#fff;border-radius:6px;padding:10px 12px;font-size:12px;font-family:Consolas,"MS Gothic",monospace;min-height:90px}
-select{width:100%;background:#0a0a0a;border:1px solid #2c2c2c;color:#fff;border-radius:6px;padding:9px 12px;font-size:13px}
-input[type=number]{width:120px;background:#0a0a0a;border:1px solid #2c2c2c;color:#fff;border-radius:6px;padding:9px 12px;font-size:13px}
-.diff-add{color:#8fd694}.diff-del{color:#f0a3a3}.diff-note{color:#9a9a9a}
+textarea{width:100%;background:var(--field);border:1px solid var(--line);color:var(--ink);border-radius:2px;padding:10px 12px;font-size:12px;font-family:Consolas,"MS Gothic",monospace;min-height:90px}
+select{width:100%;background:var(--field);border:1px solid var(--line);color:var(--ink);border-radius:2px;padding:9px 12px;font-size:13px}
+input[type=number]{width:120px;background:var(--field);border:1px solid var(--line);color:var(--ink);border-radius:2px;padding:9px 12px;font-size:13px}
+.diff-add{color:var(--ok)}.diff-del{color:var(--err)}.diff-note{color:var(--tide)}
 #ovl input[type=text]{margin-bottom:12px}
 .searchrow{display:flex;gap:8px;margin:0 0 10px}
 /* GitHub integration: topbar button + source settings dialog */
 .topbar-right{display:flex;align-items:center;gap:8px;flex:none}
-.ghbtn{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;padding:0;border-radius:6px;border:1px solid #2a2a2a;background:#0a0a0a;color:#f5f5f5;cursor:pointer;flex:none}
-.ghbtn:hover{background:#161616;border-color:#3a3a3a}
-.ghbtn:focus-visible{outline:2px solid #4c9aff;outline-offset:2px}
-#ghOvl{--gh-surface:#111113;--gh-input-bg:#0a0a0a;--gh-text:#f5f5f5;--gh-muted:#9a9aa3;--gh-border:#2a2a30;--gh-accent:#4c9aff;--gh-accent-hover:#2b7bf0;--gh-accent-soft:rgba(76,154,255,.12);--gh-ok:#8fd694;--gh-err:#f0a3a3;--gh-code-bg:#17171a;--gh-backdrop:rgba(0,0,0,.72);position:fixed;inset:0;background:var(--gh-backdrop);display:flex;align-items:center;justify-content:center;z-index:60;padding:16px;font:14px/1.45 -apple-system,"Segoe UI","Hiragino Sans","Noto Sans JP",sans-serif;color:var(--gh-text)}
+.ghbtn{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;padding:0;border-radius:2px;border:1px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer;flex:none}
+.ghbtn:hover{background:var(--wash);border-color:var(--tide)}
+.ghbtn:focus-visible{outline:2px solid var(--tide);outline-offset:2px}
+#ghOvl{--gh-surface:var(--paper);--gh-input-bg:var(--field);--gh-text:var(--ink);--gh-muted:var(--tide);--gh-border:var(--line);--gh-accent:var(--buoy);--gh-accent-hover:var(--buoy-down);--gh-accent-soft:var(--buoy-soft);--gh-ok:var(--ok);--gh-err:var(--err);--gh-code-bg:var(--wash);--gh-backdrop:rgba(16,24,32,.55);position:fixed;inset:0;background:var(--gh-backdrop);display:flex;align-items:center;justify-content:center;z-index:60;padding:16px;font:14px/1.45 "Segoe UI","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;color:var(--gh-text)}
 #ghOvl[hidden]{display:none}
 #ghOvl *{box-sizing:border-box}
-#ghOvl .ghbox{width:min(680px,calc(100vw - 32px));max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflow:auto;padding:0;border:1px solid var(--gh-border);border-radius:12px;background:var(--gh-surface);color:var(--gh-text);box-shadow:0 16px 48px rgba(0,0,0,.25)}
-#ghOvl .gh-head{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--gh-border)}
+#ghOvl .ghbox{width:min(680px,calc(100vw - 32px));max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflow:auto;padding:0;border:1px solid var(--gh-border);border-radius:0;background:var(--gh-surface);color:var(--gh-text)}
+#ghOvl .gh-head{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--gh-border)}
 #ghOvl .gh-head svg{flex:none}
 #ghOvl .gh-head h2{margin:0;font-size:15px;color:var(--gh-text)}
 #ghOvl .gh-head p{margin:0;color:var(--gh-muted);font-size:12px}
-#ghOvl .ghclose{margin-left:auto;border:0;background:none;color:var(--gh-muted);font-size:20px;line-height:1;padding:4px 8px;border-radius:6px;width:auto;height:auto;font-weight:400;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+#ghOvl .ghclose{margin-left:auto;border:0;background:none;color:var(--gh-muted);font-size:20px;line-height:1;padding:4px 8px;border-radius:2px;width:auto;height:auto;font-weight:400;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
 #ghOvl .ghclose:hover{background:var(--gh-code-bg);color:var(--gh-text)}
 #ghOvl form{padding:12px 16px;display:grid;gap:8px;margin:0}
 #ghOvl .ghfield{margin:0;border:0;padding:0;min-width:0}
@@ -1128,16 +1186,16 @@ input[type=number]{width:120px;background:#0a0a0a;border:1px solid #2c2c2c;color
 #ghOvl .ghfield .ghhint{color:var(--gh-muted);font-size:11.5px;margin:2px 0 0;line-height:1.35}
 #ghOvl .ghfield .ghhint.error{color:var(--gh-err)}
 #ghOvl .ghsecret{position:relative}
-#ghOvl input[type=text],#ghOvl input[type=password]{width:100%;padding:6px 10px;border:1px solid var(--gh-border);border-radius:6px;background:var(--gh-input-bg);color:var(--gh-text);font:inherit;margin:0}
+#ghOvl input[type=text],#ghOvl input[type=password]{width:100%;padding:8px 12px;border:1px solid var(--gh-border);border-radius:2px;background:var(--gh-input-bg);color:var(--gh-text);font:inherit;margin:0}
 #ghOvl .gh-two{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:12px}
 #ghOvl .ghsecret input{padding-right:40px}
 #ghOvl input.mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:13px}
 #ghOvl input:focus,#ghOvl input:focus-visible,#ghOvl button:focus-visible{outline:2px solid var(--gh-accent);outline-offset:1px}
 #ghOvl input[aria-invalid=true]{border-color:var(--gh-err)}
-#ghOvl .gheye{position:absolute;top:50%;right:4px;transform:translateY(-50%);width:28px;height:28px;padding:0;display:grid;place-items:center;border:0;border-radius:6px;background:none;color:var(--gh-muted);cursor:pointer}
+#ghOvl .gheye{position:absolute;top:50%;right:4px;transform:translateY(-50%);width:28px;height:28px;padding:0;display:grid;place-items:center;border:0;border-radius:2px;background:none;color:var(--gh-muted);cursor:pointer}
 #ghOvl .gheye:hover{background:var(--gh-code-bg);color:var(--gh-text)}
 #ghOvl .gheye[hidden],#ghOvl .gheye svg[hidden]{display:none}
-#ghOvl fieldset{border:1px solid var(--gh-border);border-radius:8px;padding:8px 12px;margin:0;display:grid;gap:8px;min-width:0}
+#ghOvl fieldset{border:1px solid var(--gh-border);border-radius:2px;padding:8px 12px;margin:0;display:grid;gap:8px;min-width:0}
 #ghOvl legend{padding:0 6px;font-weight:600;color:var(--gh-text);font-size:13px}
 #ghOvl .ghext-link{display:inline-flex;align-items:center;gap:4px;margin-top:2px;font-size:12px;color:var(--gh-accent);text-decoration:none}
 #ghOvl .ghext-link:hover{text-decoration:underline}
@@ -1145,16 +1203,16 @@ input[type=number]{width:120px;background:#0a0a0a;border:1px solid #2c2c2c;color
 #ghOvl .ghsr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 #ghOvl .ghlead{margin:0;color:var(--gh-muted);font-size:12px;line-height:1.35}
 #ghOvl .ghchoices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-#ghOvl .ghchoice{display:flex;gap:6px;align-items:flex-start;padding:6px 8px;margin:0;border:1px solid var(--gh-border);border-radius:8px;cursor:pointer;font-weight:400;color:var(--gh-text)}
+#ghOvl .ghchoice{display:flex;gap:8px;align-items:flex-start;padding:8px;margin:0;border:1px solid var(--gh-border);border-radius:2px;cursor:pointer;font-weight:400;color:var(--gh-text)}
 #ghOvl .ghchoice:hover{background:var(--gh-code-bg)}
-#ghOvl .ghchoice:has(input:checked){background:var(--gh-accent-soft);border-color:var(--gh-accent);box-shadow:0 0 0 1px var(--gh-accent) inset}
+#ghOvl .ghchoice:has(input:checked){background:var(--gh-accent-soft);border-color:var(--gh-accent)}
 #ghOvl .ghchoice:has(input:focus-visible){outline:2px solid var(--gh-accent);outline-offset:1px}
 #ghOvl .ghchoice input{margin-top:4px;accent-color:var(--gh-accent);width:auto;height:auto}
 #ghOvl .ghchoice b{font-weight:600;font-size:13px}
 #ghOvl .ghchoice small{display:block;color:var(--gh-muted);font-size:11.5px;line-height:1.3}
-#ghOvl .ghchoice em{font-style:normal;font-size:11px;margin-left:6px;padding:1px 6px;border-radius:999px;background:var(--gh-accent);color:#0b0b0c;font-weight:600;vertical-align:1px;white-space:nowrap;display:inline-block}
+#ghOvl .ghchoice em{font-style:normal;font-size:11px;margin-left:8px;padding:4px 8px;border-radius:2px;background:var(--wash);color:var(--ink);border:1px solid var(--gh-border);font-weight:600;vertical-align:1px;white-space:nowrap;display:inline-block}
 #ghOvl #ghCustomWrap{margin-top:6px}
-#ghOvl .ghsummary{background:var(--gh-code-bg);border-radius:8px;padding:8px 10px}
+#ghOvl .ghsummary{background:var(--gh-code-bg);border-radius:2px;padding:8px 12px}
 #ghOvl .ghsummary-title{font-size:11.5px;font-weight:600;color:var(--gh-muted);margin-bottom:2px}
 #ghOvl .ghsummary p{margin:0 0 4px;color:var(--gh-text);font-size:12.5px;line-height:1.35}
 #ghOvl .ghtree{font:11.5px/1.4 ui-monospace,"SF Mono",Menlo,Consolas,monospace;overflow-x:auto;color:var(--gh-text)}
@@ -1166,46 +1224,46 @@ input[type=number]{width:120px;background:#0a0a0a;border:1px solid #2c2c2c;color
 #ghOvl .ghstatus.err{color:var(--gh-err)}
 #ghOvl .ghfoot{display:flex;gap:8px;justify-content:space-between;align-items:center;padding-top:2px;flex-wrap:wrap}
 #ghOvl .ghfoot .right{display:flex;gap:8px}
-#ghOvl .ghbtn-act{padding:6px 14px;border-radius:6px;border:1px solid var(--gh-border);background:var(--gh-surface);color:var(--gh-text);font:inherit;font-weight:400}
+#ghOvl .ghbtn-act{padding:8px 16px;border-radius:2px;border:1px solid var(--gh-border);background:var(--gh-surface);color:var(--gh-text);font:inherit;font-weight:400}
 #ghOvl .ghbtn-act:hover{background:var(--gh-code-bg)}
-#ghOvl .ghbtn-act.primary{background:#1f6feb;border-color:#1f6feb;color:#fff;font-weight:400}
+#ghOvl .ghbtn-act.primary{background:var(--gh-accent);border-color:var(--gh-accent);color:#fff;font-weight:600}
 #ghOvl .ghbtn-act.primary:hover{background:var(--gh-accent-hover)}
 #ghOvl .ghbtn-act:disabled{opacity:.5;cursor:not-allowed}
 @media(max-width:560px){#ghOvl .gh-two{grid-template-columns:1fr}#ghOvl .ghchoices{grid-template-columns:1fr}}
 /* #gsettings card selector */
-#gsettings{--gs-accent:#4c9aff;--gs-accent-soft:rgba(76,154,255,.12);--gs-card:#17171a;--gs-card-hover:#1d1d21;--gs-border:#2a2a30;--gs-muted:#9a9aa3;--gs-text:#e8e8ea;--gs-ok:#3fb950;--gs-off:#6b6b75;--gs-on-accent:#0b0b0c}
+#gsettings{--gs-accent:var(--buoy);--gs-accent-soft:var(--buoy-soft);--gs-card:var(--field);--gs-card-hover:var(--wash);--gs-border:var(--line);--gs-muted:var(--tide);--gs-text:var(--ink);--gs-ok:var(--ok);--gs-off:var(--tide);--gs-on-accent:var(--buoy-ink)}
 #gsettings .gs-toolbar{display:flex;align-items:center;gap:4px;margin:16px 0 12px;flex-wrap:wrap}
 #gsettings .gs-count{font-size:13px;color:var(--gs-muted);margin-right:auto}
 #gsettings .gs-ghost{border-color:transparent;background:none;color:var(--gs-accent);padding:4px 8px;font-size:13px}
 #gsettings .gs-ghost:hover{background:var(--gs-accent-soft)}
-#gsettings .gs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;max-height:272px;overflow-y:auto;overscroll-behavior:contain;padding:4px 8px 4px 4px;margin:-4px;scrollbar-width:thin;scrollbar-color:var(--gs-border) transparent}
+#gsettings .gs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;max-height:272px;overflow-y:auto;overscroll-behavior:contain;padding:4px 8px 4px 4px;margin:-4px;scrollbar-width:thin;scrollbar-color:var(--gs-border) transparent}
 #gsettings .gs-grid::-webkit-scrollbar{width:8px}
 #gsettings .gs-grid::-webkit-scrollbar-thumb{background:var(--gs-border);border-radius:8px}
 #gsettings .gs-grid::-webkit-scrollbar-track{background:transparent}
 #gsettings .gs-provider{position:relative;display:block;cursor:pointer}
 #gsettings .gs-provider input{position:absolute;opacity:0;inset:0;width:100%;height:100%;margin:0;cursor:pointer}
-#gsettings .gs-card{display:flex;gap:12px;align-items:center;padding:12px;height:100%;background:var(--gs-card);border:1px solid var(--gs-border);border-radius:10px;transition:background .15s,border-color .15s,box-shadow .15s;color:var(--gs-text)}
+#gsettings .gs-card{display:flex;gap:12px;align-items:center;padding:12px;height:100%;background:var(--gs-card);border:1px solid var(--gs-border);border-radius:2px;transition:background .15s,border-color .15s;color:var(--gs-text)}
 #gsettings .gs-provider:hover .gs-card{background:var(--gs-card-hover)}
-#gsettings .gs-provider input:checked + .gs-card{border-color:var(--gs-accent);background:var(--gs-accent-soft);box-shadow:0 0 0 1px var(--gs-accent) inset}
+#gsettings .gs-provider input:checked + .gs-card{border-color:var(--gs-accent);background:var(--gs-accent-soft)}
 #gsettings .gs-provider input:focus-visible + .gs-card{outline:2px solid var(--gs-accent);outline-offset:2px}
-#gsettings .gs-logo{flex:none;width:40px;height:40px;border-radius:10px;display:grid;place-items:center;font-size:13px;font-weight:700;letter-spacing:.02em;overflow:hidden;background:hsl(var(--gs-h,210) 40% 22%);color:hsl(var(--gs-h,210) 80% 78%)}
-#gsettings .gs-logo.gs-has-img{background:#fff;border:1px solid rgba(255,255,255,.08);padding:7px}
+#gsettings .gs-logo{flex:none;width:40px;height:40px;border-radius:2px;display:grid;place-items:center;font-size:13px;font-weight:600;letter-spacing:0;overflow:hidden;background:var(--wash);color:var(--ink)}
+#gsettings .gs-logo.gs-has-img{background:#fff;border:1px solid rgba(255,255,255,.08);padding:8px}
 #gsettings .gs-logo img{width:100%;height:100%;object-fit:contain;display:block}
 #gsettings .gs-meta{min-width:0;flex:1}
 #gsettings .gs-name{display:block;font-weight:600;line-height:1.3}
 #gsettings .gs-path{display:block;margin-top:2px;font:11px/1.4 ui-monospace,"SF Mono",Menlo,Consolas,monospace;color:var(--gs-muted);word-break:break-all}
-#gsettings .gs-check{flex:none;width:20px;height:20px;border-radius:6px;border:1.5px solid var(--gs-border);display:grid;place-items:center;color:transparent;transition:background .15s,border-color .15s,color .15s;font-size:12px;line-height:1}
+#gsettings .gs-check{flex:none;width:20px;height:20px;border-radius:2px;border:1.5px solid var(--gs-border);display:grid;place-items:center;color:transparent;transition:background .15s,border-color .15s,color .15s;font-size:12px;line-height:1}
 #gsettings .gs-provider input:checked + .gs-card .gs-check{background:var(--gs-accent);border-color:var(--gs-accent);color:var(--gs-on-accent)}
 #gsettings .gs-saverow{display:flex;align-items:center;gap:12px;margin-top:16px;flex-wrap:wrap}
 #gsettings .gs-dirty{font-size:12px;color:var(--gs-muted)}
 #gsettings .gs-dirty.on{color:var(--gs-accent)}
-#gsettings .gs-divider{border-top:1px solid #1d1d1d;margin:18px 0 14px}
+#gsettings .gs-divider{border-top:1px solid var(--line);margin:18px 0 14px}
 #gsettings .gs-synchead{display:flex;align-items:flex-start;gap:16px}
 #gsettings .gs-synctext{flex:1;min-width:0}
 #gsettings .gs-synctext .muted{margin:0 0 6px}
-#gsettings .gs-pill{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:3px 10px;border-radius:999px;font-size:12px;border:1px solid var(--gs-border);background:var(--gs-card);color:var(--gs-text)}
+#gsettings .gs-pill{display:inline-flex;align-items:center;gap:8px;margin-top:8px;padding:4px 8px;border-radius:2px;font-size:12px;border:1px solid var(--gs-border);background:var(--gs-card);color:var(--gs-text)}
 #gsettings .gs-pill i{width:8px;height:8px;border-radius:50%;background:var(--gs-off)}
-#gsettings .gs-pill.on i{background:var(--gs-ok);box-shadow:0 0 0 3px rgba(63,185,80,.25)}
+#gsettings .gs-pill.on i{background:var(--gs-ok)}
 #gsettings .gs-switch{position:relative;flex:none;width:46px;height:26px;border-radius:999px;border:1px solid var(--gs-border);background:var(--gs-card);padding:0;transition:background .2s,border-color .2s}
 #gsettings .gs-switch::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:var(--gs-off);transition:transform .2s,background .2s}
 #gsettings .gs-switch[aria-checked=true]{background:var(--gs-accent);border-color:var(--gs-accent)}
@@ -1227,79 +1285,101 @@ input[type=number]{width:120px;background:#0a0a0a;border:1px solid #2c2c2c;color
 <aside>
 <div class="brand">Shirube Console</div>
 <nav>
+<div class="navgrp"><b data-i18n="見る">見る</b><div class="ticks">
 <a href="#top" class="active" aria-current="page"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg><span data-i18n="概要">概要</span></a>
+<a href="#logs"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg><span data-i18n="同期ログ">同期ログ</span></a>
+</div></div>
+<div class="navgrp"><b data-i18n="配る">配る</b><div class="ticks">
 <a href="#projects"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg><span data-i18n="プロジェクト">プロジェクト</span></a>
 <a href="#global"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg><span data-i18n="Global同期">Global同期</span></a>
 <a href="#rules"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M15 12h-5"/><path d="M15 8h-5"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3"/></svg><span data-i18n="ルール">ルール</span></a>
+</div></div>
+<div class="navgrp"><b data-i18n="守る">守る</b><div class="ticks">
 <a href="#backups"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg><span data-i18n="バックアップ">バックアップ</span></a>
 <a href="#local"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg><span data-i18n="ローカル編集">ローカル編集</span></a>
-<a href="#logs"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg><span data-i18n="同期ログ">同期ログ</span></a>
+</div></div>
+<div class="navgrp navutil"><div class="ticks">
 <a href="#settings"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg><span data-i18n="設定・ヘルプ">設定・ヘルプ</span></a>
+</div></div>
 </nav>
 <div class="side-note"><span data-i18n="このPC専用。外部送信なし。">このPC専用。外部送信なし。</span><br><span data-i18n="AGENTS.md は直接編集しません。">AGENTS.md は直接編集しません。</span></div>
 </aside>
 <main>
-<div class="topbar"><div><strong data-i18n="Shirube 管理">Shirube 管理</strong> <span class="sub" data-i18n="プロジェクト同期ダッシュボード">プロジェクト同期ダッシュボード</span></div><div class="topbar-right"><button type="button" id="btnGitHub" class="ghbtn" aria-label="GitHub連携" data-i18n-aria="GitHub連携" title="GitHub連携"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></button><select id="selLang" class="lang" aria-label="表示言語" data-i18n-aria="表示言語"><option value="ja">日本語</option><option value="en">English</option><option value="zh-CN">简体中文</option></select></div></div>
+<div class="topbar"><div><strong data-i18n="Shirube 管理">Shirube 管理</strong> <span class="sub" data-i18n="プロジェクト同期ダッシュボード">プロジェクト同期ダッシュボード</span></div><div class="topbar-right"><button type="button" id="btnGitHub" class="ghbtn" aria-label="GitHub連携" data-i18n-aria="GitHub連携" title="GitHub連携"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></button><select id="selTheme" class="lang" aria-label="表示の色" data-i18n-aria="表示の色"><option value="system" data-i18n="端末に合わせる">端末に合わせる</option><option value="light" data-i18n="昼">昼</option><option value="dark" data-i18n="夜">夜</option></select><select id="selLang" class="lang" aria-label="表示言語" data-i18n-aria="表示言語"><option value="ja">日本語</option><option value="en">English</option><option value="zh-CN">简体中文</option></select></div></div>
 <nav class="topnav" aria-label="画面切替" data-i18n-aria="画面切替">
 <a href="#top" class="active" aria-current="page"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg><span data-i18n="概要">概要</span></a>
+<a href="#logs"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg><span data-i18n="同期ログ">同期ログ</span></a>
 <a href="#projects"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg><span data-i18n="プロジェクト">プロジェクト</span></a>
 <a href="#global"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg><span data-i18n="Global同期">Global同期</span></a>
 <a href="#rules"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M15 12h-5"/><path d="M15 8h-5"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3"/></svg><span data-i18n="ルール">ルール</span></a>
 <a href="#backups"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg><span data-i18n="バックアップ">バックアップ</span></a>
 <a href="#local"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg><span data-i18n="ローカル編集">ローカル編集</span></a>
-<a href="#logs"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg><span data-i18n="同期ログ">同期ログ</span></a>
 <a href="#settings"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg><span data-i18n="設定・ヘルプ">設定・ヘルプ</span></a>
 </nav>
 <div class="summarybar">
 <section aria-label="summary">
 <div class="grid3">
-<div class="card"><h2 data-i18n="登録プロジェクト数">登録プロジェクト数</h2><p class="big" id="stCount">読込中</p><p class="muted helper" data-i18n="projects.json が正本です">projects.json が正本です</p></div>
-<div class="card"><h2 data-i18n="同期状態">同期状態</h2><p class="big" id="stRun">読込中</p><p class="muted helper" id="stLog">-</p><div class="syncprogress"><progress id="syncProgress" max="2" value="0" aria-label="同期進捗" aria-valuetext="0/2 待機中" data-i18n-aria="同期進捗"></progress><span class="muted" id="syncProgressText" aria-live="polite">0/2 待機中</span></div></div>
-<div class="card"><h2 data-i18n="最終結果">最終結果</h2><p class="muted" id="stTail">読込中</p><div class="btnrow"><button id="btnSync" class="primary" data-i18n="すべて同期">すべて同期</button><button id="btnSyncGlobalOnly" data-i18n="Globalのみ">Globalのみ</button><button id="btnSyncProjectOnly" data-i18n="Projectのみ">Projectのみ</button></div></div>
+<div class="sum-split">
+<div class="card sum-half"><h2>Project</h2><p class="big" id="sumProject">読込中</p><p class="muted" id="sumProjectLine">読込中</p></div>
+<div class="card sum-half"><h2>Global</h2><p class="big" id="sumGlobal">読込中</p><p class="muted" id="sumGlobalLine">読込中</p></div>
 </div>
+<div class="sum-foot">
+<div class="card"><h2 data-i18n="登録プロジェクト数">登録プロジェクト数</h2><p class="big" id="stCount">読込中</p></div>
+<p class="muted" id="stLog">-</p>
+<div class="syncprogress"><progress id="syncProgress" max="2" value="0" aria-label="同期進捗" aria-valuetext="0/2 待機中" data-i18n-aria="同期進捗"></progress><span class="muted" id="syncProgressText" aria-live="polite">0/2 待機中</span></div>
+<div class="btnrow"><button id="btnSync" class="primary" data-i18n="すべて同期">すべて同期</button><button id="btnSyncGlobalOnly" data-i18n="Globalのみ">Globalのみ</button><button id="btnSyncProjectOnly" data-i18n="Projectのみ">Projectのみ</button></div>
+</div>
+<div class="sum-legacy">
+<h2 data-i18n="同期状態">同期状態</h2><p class="big" id="stRun">読込中</p>
+<p class="muted helper" data-i18n="projects.json が正本です">projects.json が正本です</p>
+<h2 data-i18n="最終結果">最終結果</h2><p class="muted" id="stTail">読込中</p>
 <p class="muted helper" id="ovGlobal">Global同期: 読込中</p>
+</div>
+</div>
 </section>
 </div>
 <div class="mainscroll">
 <div id="top">
-<h1 data-i18n="プロジェクト同期ダッシュボード">プロジェクト同期ダッシュボード</h1>
-<p class="lead" data-i18n="登録一覧の管理と今すぐ同期を行います。配布ファイルの直接編集はしません。開始した処理はUIを閉じても継続しますが、両方の完了確認には画面を開いたままにしてください。">登録一覧の管理と今すぐ同期を行います。配布ファイルの直接編集はしません。開始した処理はUIを閉じても継続しますが、両方の完了確認には画面を開いたままにしてください。</p>
+<h1><span data-i18n="プロジェクト同期ダッシュボード">プロジェクト同期ダッシュボード</span><button type="button" class="tip" data-i18n-title="登録一覧の管理と今すぐ同期を行います。配布ファイルの直接編集はしません。開始した処理はUIを閉じても継続しますが、両方の完了確認には画面を開いたままにしてください。" data-i18n-aria="登録一覧の管理と今すぐ同期を行います。配布ファイルの直接編集はしません。開始した処理はUIを閉じても継続しますが、両方の完了確認には画面を開いたままにしてください。" title="登録一覧の管理と今すぐ同期を行います。配布ファイルの直接編集はしません。開始した処理はUIを閉じても継続しますが、両方の完了確認には画面を開いたままにしてください。" aria-label="登録一覧の管理と今すぐ同期を行います。配布ファイルの直接編集はしません。開始した処理はUIを閉じても継続しますが、両方の完了確認には画面を開いたままにしてください。" onmousedown="event.stopPropagation()" onclick="event.preventDefault();event.stopPropagation()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></button></h1>
+<div class="card" id="attn"><h2 data-i18n="対応が必要なこと">対応が必要なこと</h2>
+<ul id="attnList" class="attn"></ul>
+<p class="muted" id="attnCalm">読込中</p>
+</div>
 </div>
 <div id="projects" hidden>
 <div class="cols2">
 <section>
-<div class="card"><h2 data-i18n="プロジェクト一覧">プロジェクト一覧</h2>
+<div class="card"><h2><span data-i18n="プロジェクト一覧">プロジェクト一覧</span><button type="button" class="tip" data-i18n-title="解除は一覧からのみ削除し、リポジトリ内のファイルは削除しません。「開く」で登録フォルダを開けます。" data-i18n-aria="解除は一覧からのみ削除し、リポジトリ内のファイルは削除しません。「開く」で登録フォルダを開けます。" title="解除は一覧からのみ削除し、リポジトリ内のファイルは削除しません。「開く」で登録フォルダを開けます。" aria-label="解除は一覧からのみ削除し、リポジトリ内のファイルは削除しません。「開く」で登録フォルダを開けます。" onmousedown="event.stopPropagation()" onclick="event.preventDefault();event.stopPropagation()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></button></h2>
 <p class="muted" id="emptyProj" hidden data-i18n="まだ登録がありません。右の新規登録から追加してください。">まだ登録がありません。右の新規登録から追加してください。</p>
 <div class="searchrow"><input type="text" id="inpSearch" placeholder="検索で絞り込み（名前・パス）" data-i18n-placeholder="検索で絞り込み（名前・パス）" autocomplete="off"></div>
 <div class="tablewrap"><table id="tbl" hidden><thead><tr><th data-i18n="選択">選択</th><th data-i18n="名前">名前</th><th data-i18n="パス">パス</th><th data-i18n="有効">有効</th><th data-i18n="操作">操作</th></tr></thead><tbody id="rows"></tbody></table></div>
-<p class="muted" data-i18n="解除は一覧からのみ削除し、リポジトリ内のファイルは削除しません。「開く」で登録フォルダを開けます。">解除は一覧からのみ削除し、リポジトリ内のファイルは削除しません。「開く」で登録フォルダを開けます。</p>
 <div class="btnrow"><a href="#register" class="btnlink" data-i18n="新規登録へ">新規登録へ</a></div>
 <div id="msgList" role="status"></div>
 </div>
 </section>
 <section id="register">
-<div class="card"><h2 data-i18n="新規登録">新規登録</h2>
-<p class="muted" data-i18n="フォルダのパスを入力するか「参照」で選択し、プレビューで内容を確認してから登録します。選択だけでは登録されません。既存 AGENTS.md がある場合は原則登録停止します（手動整理が必要）。登録後の同期で AGENTS.md は生成・再生成されます。">フォルダのパスを入力するか「参照」で選択し、プレビューで内容を確認してから登録します。選択だけでは登録されません。既存 AGENTS.md がある場合は原則登録停止します（手動整理が必要）。登録後の同期で AGENTS.md は生成・再生成されます。</p>
+<div class="card"><h2><span data-i18n="新規登録">新規登録</span><button type="button" class="tip" data-i18n-title="フォルダのパスを入力するか「参照」で選択し、プレビューで内容を確認してから登録します。選択だけでは登録されません。既存 AGENTS.md がある場合は原則登録停止します（手動整理が必要）。登録後の同期で AGENTS.md は生成・再生成されます。" data-i18n-aria="フォルダのパスを入力するか「参照」で選択し、プレビューで内容を確認してから登録します。選択だけでは登録されません。既存 AGENTS.md がある場合は原則登録停止します（手動整理が必要）。登録後の同期で AGENTS.md は生成・再生成されます。" title="フォルダのパスを入力するか「参照」で選択し、プレビューで内容を確認してから登録します。選択だけでは登録されません。既存 AGENTS.md がある場合は原則登録停止します（手動整理が必要）。登録後の同期で AGENTS.md は生成・再生成されます。" aria-label="フォルダのパスを入力するか「参照」で選択し、プレビューで内容を確認してから登録します。選択だけでは登録されません。既存 AGENTS.md がある場合は原則登録停止します（手動整理が必要）。登録後の同期で AGENTS.md は生成・再生成されます。" onmousedown="event.stopPropagation()" onclick="event.preventDefault();event.stopPropagation()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></button></h2>
 <div class="pathrow"><input type="text" id="inpPath" placeholder="例 C:\Project\MyRepo" data-i18n-placeholder="例 C:\Project\MyRepo" autocomplete="off"><button id="btnBrowse" data-i18n="参照...">参照...</button></div>
 <label class="chk"><input type="checkbox" id="ckForceReplace"> <span data-i18n="既存 AGENTS.md の置き換えを許可（バックアップ後、同期で再生成）">既存 AGENTS.md の置き換えを許可（バックアップ後、同期で再生成）</span></label>
 <div class="btnrow"><button id="btnPrev" class="primary" data-i18n="プレビュー">プレビュー</button></div>
 <div id="browseArea" class="muted"></div>
 <div id="prevArea"></div>
-<hr style="border:0;border-top:1px solid #1d1d1d;margin:16px 0">
-<p class="muted" data-i18n="複数まとめて登録（1行1パス、最大20件。新規のみ。AGENTS.md ありは個別取込）。">複数まとめて登録（1行1パス、最大20件。新規のみ。AGENTS.md ありは個別取込）。</p>
+<details class="fold">
+<summary><span data-i18n="まとめてプレビュー">まとめてプレビュー</span><button type="button" class="tip" data-i18n-title="複数まとめて登録（1行1パス、最大20件。新規のみ。AGENTS.md ありは個別取込）。" data-i18n-aria="複数まとめて登録（1行1パス、最大20件。新規のみ。AGENTS.md ありは個別取込）。" title="複数まとめて登録（1行1パス、最大20件。新規のみ。AGENTS.md ありは個別取込）。" aria-label="複数まとめて登録（1行1パス、最大20件。新規のみ。AGENTS.md ありは個別取込）。" onmousedown="event.stopPropagation()" onclick="event.preventDefault();event.stopPropagation()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></button></summary>
 <textarea id="inpBatch" placeholder="例 C:\Project\A" data-i18n-placeholder="例 C:\Project\A"></textarea>
 <div class="btnrow"><button id="btnBatchPrev" data-i18n="まとめてプレビュー">まとめてプレビュー</button></div>
 <div id="batchArea"></div>
-<hr style="border:0;border-top:1px solid #1d1d1d;margin:16px 0">
-<p class="muted" data-i18n="既存 AGENTS.md の取込（無損失：原本を退避し固有分を project-local.md へ転記）。">既存 AGENTS.md の取込（無損失：原本を退避し固有分を project-local.md へ転記）。</p>
+</details>
+<details class="fold">
+<summary><span data-i18n="取込プレビュー">取込プレビュー</span><button type="button" class="tip" data-i18n-title="既存 AGENTS.md の取込（無損失：原本を退避し固有分を project-local.md へ転記）。" data-i18n-aria="既存 AGENTS.md の取込（無損失：原本を退避し固有分を project-local.md へ転記）。" title="既存 AGENTS.md の取込（無損失：原本を退避し固有分を project-local.md へ転記）。" aria-label="既存 AGENTS.md の取込（無損失：原本を退避し固有分を project-local.md へ転記）。" onmousedown="event.stopPropagation()" onclick="event.preventDefault();event.stopPropagation()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></button></summary>
 <div class="btnrow"><button id="btnImportPrev" data-i18n="取込プレビュー">取込プレビュー</button></div>
 <div id="importArea"></div>
+</details>
 </div>
 </section>
 </div>
 <section id="status">
-<div class="card"><h2 data-i18n="状態と再試行">状態と再試行</h2>
-<p class="muted" data-i18n="最終試行・最終成功・取得SHA・失敗理由の一覧です。選択した同期・差分はチェック欄で選びます。">最終試行・最終成功・取得SHA・失敗理由の一覧です。選択した同期・差分はチェック欄で選びます。</p>
+<div class="card"><h2><span data-i18n="状態と再試行">状態と再試行</span><button type="button" class="tip" data-i18n-title="最終試行・最終成功・取得SHA・失敗理由の一覧です。選択した同期・差分はチェック欄で選びます。" data-i18n-aria="最終試行・最終成功・取得SHA・失敗理由の一覧です。選択した同期・差分はチェック欄で選びます。" title="最終試行・最終成功・取得SHA・失敗理由の一覧です。選択した同期・差分はチェック欄で選びます。" aria-label="最終試行・最終成功・取得SHA・失敗理由の一覧です。選択した同期・差分はチェック欄で選びます。" onmousedown="event.stopPropagation()" onclick="event.preventDefault();event.stopPropagation()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></button></h2>
 <div class="btnrow"><button id="btnStatusReload" data-i18n="状態を更新">状態を更新</button><button id="btnSyncSel" class="primary" data-i18n="選択を同期">選択を同期</button><button id="btnPlanSel" data-i18n="選択の反映前差分">選択の反映前差分</button></div>
 <div class="tablewrap"><table id="tblStatus" hidden><thead><tr><th data-i18n="選択">選択</th><th data-i18n="名前">名前</th><th data-i18n="有効">有効</th><th data-i18n="最終試行">最終試行</th><th data-i18n="最終成功">最終成功</th><th data-i18n="取得SHA">取得SHA</th><th data-i18n="結果">結果</th><th data-i18n="失敗理由">失敗理由</th></tr></thead><tbody id="statusRows"></tbody></table></div>
 <p class="muted" id="emptyStatus" data-i18n="まだ同期状態がありません。今すぐ同期で初回実行できます。">まだ同期状態がありません。今すぐ同期で初回実行できます。</p>
@@ -1311,23 +1391,20 @@ input[type=number]{width:120px;background:#0a0a0a;border:1px solid #2c2c2c;color
 <div id="global" hidden>
 <div class="cols2">
 <section>
-<div class="card"><h2 data-i18n="Global同期（選択した対象へ配布）">Global同期（選択した対象へ配布）</h2>
-<p class="muted" data-i18n="PC全体の共通ルールを配ります。Projectとは別の状態（最終成功・取得元・失敗理由）を持ちます。配布ファイルの直接編集はしません。">PC全体の共通ルールを配ります。Projectとは別の状態（最終成功・取得元・失敗理由）を持ちます。配布ファイルの直接編集はしません。</p>
+<div class="card"><h2><span data-i18n="Global同期（選択した対象へ配布）">Global同期（選択した対象へ配布）</span><button type="button" class="tip" data-i18n-title="PC全体の共通ルールを配ります。Projectとは別の状態（最終成功・取得元・失敗理由）を持ちます。配布ファイルの直接編集はしません。" data-i18n-aria="PC全体の共通ルールを配ります。Projectとは別の状態（最終成功・取得元・失敗理由）を持ちます。配布ファイルの直接編集はしません。" title="PC全体の共通ルールを配ります。Projectとは別の状態（最終成功・取得元・失敗理由）を持ちます。配布ファイルの直接編集はしません。" aria-label="PC全体の共通ルールを配ります。Projectとは別の状態（最終成功・取得元・失敗理由）を持ちます。配布ファイルの直接編集はしません。" onmousedown="event.stopPropagation()" onclick="event.preventDefault();event.stopPropagation()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></button></h2>
 <p class="muted" id="emptyGlobal" data-i18n="まだGlobal同期の状態がありません。今すぐ同期で初回実行できます。">まだGlobal同期の状態がありません。今すぐ同期で初回実行できます。</p>
 <div class="tablewrap"><table id="tblGlobal" hidden><thead><tr><th data-i18n="対象">対象</th><th data-i18n="配置先">配置先</th><th data-i18n="最終試行">最終試行</th><th data-i18n="最終成功">最終成功</th><th data-i18n="取得元">取得元</th><th data-i18n="結果">結果</th><th data-i18n="失敗理由">失敗理由</th></tr></thead><tbody id="globalRows"></tbody></table></div>
 <p class="muted" id="globalSummary">読込中</p>
 <div class="btnrow"><button id="btnGlobalSync" class="primary" disabled data-i18n="プレビューを適用">プレビューを適用</button><button id="btnGlobalPreview" data-i18n="反映前プレビュー">反映前プレビュー</button><button id="btnGlobalReload" data-i18n="状態を更新">状態を更新</button></div>
 <div id="msgGlobal" role="status"></div>
 <div id="globalPlanArea"></div>
-<hr style="border:0;border-top:1px solid #1d1d1d;margin:16px 0">
-<p class="muted" data-i18n="現在の内容と配置先（実ファイルの先頭のみ表示）。設定ファイルの中身は表示しません。">現在の内容と配置先（実ファイルの先頭のみ表示）。設定ファイルの中身は表示しません。</p>
-<div class="btnrow"><button id="btnGlobalContent" data-i18n="内容を表示">内容を表示</button></div>
+<hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
+<div class="btnrow"><button id="btnGlobalContent" data-i18n="内容を表示">内容を表示</button><button type="button" class="tip" data-i18n-title="現在の内容と配置先（実ファイルの先頭のみ表示）。設定ファイルの中身は表示しません。" data-i18n-aria="現在の内容と配置先（実ファイルの先頭のみ表示）。設定ファイルの中身は表示しません。" title="現在の内容と配置先（実ファイルの先頭のみ表示）。設定ファイルの中身は表示しません。" aria-label="現在の内容と配置先（実ファイルの先頭のみ表示）。設定ファイルの中身は表示しません。" onmousedown="event.stopPropagation()" onclick="event.preventDefault();event.stopPropagation()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></button></div>
 <pre id="globalContentPre">まだ表示していません。「内容を表示」で確認できます。</pre>
 </div>
 </section>
 <section id="gsettings">
-<div class="card"><h2 data-i18n="Global設定">Global設定</h2>
-<p class="muted" data-i18n="配る対象の選択・自動同期の間隔と有効/無効を変えます。更新前バックアップと復元は「バックアップ」画面で行います。">配る対象の選択・自動同期の間隔と有効/無効を変えます。更新前バックアップと復元は「バックアップ」画面で行います。</p>
+<div class="card"><h2><span data-i18n="Global設定">Global設定</span><button type="button" class="tip" data-i18n-title="配る対象の選択・自動同期の間隔と有効/無効を変えます。更新前バックアップと復元は「バックアップ」画面で行います。" data-i18n-aria="配る対象の選択・自動同期の間隔と有効/無効を変えます。更新前バックアップと復元は「バックアップ」画面で行います。" title="配る対象の選択・自動同期の間隔と有効/無効を変えます。更新前バックアップと復元は「バックアップ」画面で行います。" aria-label="配る対象の選択・自動同期の間隔と有効/無効を変えます。更新前バックアップと復元は「バックアップ」画面で行います。" onmousedown="event.stopPropagation()" onclick="event.preventDefault();event.stopPropagation()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></button></h2>
 <div class="gs-toolbar">
 <span id="globalTargetsCount" class="gs-count" aria-live="polite"></span>
 <button id="btnGlobalTargetsAll" class="gs-ghost" disabled data-i18n="すべて選択">すべて選択</button>
@@ -1342,7 +1419,7 @@ input[type=number]{width:120px;background:#0a0a0a;border:1px solid #2c2c2c;color
 <div class="gs-divider"></div>
 <div class="gs-synchead">
 <div class="gs-synctext">
-<p class="muted" data-i18n="自動同期（Shirube Global Auto Sync）。ログオン時＋一定間隔で裏で実行します。">自動同期（Shirube Global Auto Sync）。ログオン時＋一定間隔で裏で実行します。</p>
+<p class="muted"><span data-i18n="自動同期">自動同期</span><button type="button" class="tip" data-i18n-title="自動同期（Shirube Global Auto Sync）。ログオン時＋一定間隔で裏で実行します。" data-i18n-aria="自動同期（Shirube Global Auto Sync）。ログオン時＋一定間隔で裏で実行します。" title="自動同期（Shirube Global Auto Sync）。ログオン時＋一定間隔で裏で実行します。" aria-label="自動同期（Shirube Global Auto Sync）。ログオン時＋一定間隔で裏で実行します。" onmousedown="event.stopPropagation()" onclick="event.preventDefault();event.stopPropagation()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></button></p>
 <span id="globalSyncPill" class="gs-pill"><i aria-hidden="true"></i><span id="globalEnabledState">読込中</span></span>
 </div>
 <button id="btnGlobalEnabled" class="gs-switch" type="button" role="switch" aria-checked="false" aria-label="自動同期の有効/無効" data-i18n-aria="自動同期の有効/無効"></button>
@@ -1360,8 +1437,7 @@ input[type=number]{width:120px;background:#0a0a0a;border:1px solid #2c2c2c;color
 </div>
 <div id="rules" hidden>
 <section>
-<div class="card"><h2 data-i18n="共通ルール編集">共通ルール編集</h2>
-<p class="muted" data-i18n="GitHub上の global.md / project.md を取得して編集・保存します。保存にはGitHub連携とトークンが必要です。取得時のSHAと一致した場合のみ更新します。">GitHub上の global.md / project.md を取得して編集・保存します。保存にはGitHub連携とトークンが必要です。取得時のSHAと一致した場合のみ更新します。</p>
+<div class="card"><h2><span data-i18n="共通ルール編集">共通ルール編集</span><button type="button" class="tip" data-i18n-title="GitHub上の global.md / project.md を取得して編集・保存します。保存にはGitHub連携とトークンが必要です。取得時のSHAと一致した場合のみ更新します。" data-i18n-aria="GitHub上の global.md / project.md を取得して編集・保存します。保存にはGitHub連携とトークンが必要です。取得時のSHAと一致した場合のみ更新します。" title="GitHub上の global.md / project.md を取得して編集・保存します。保存にはGitHub連携とトークンが必要です。取得時のSHAと一致した場合のみ更新します。" aria-label="GitHub上の global.md / project.md を取得して編集・保存します。保存にはGitHub連携とトークンが必要です。取得時のSHAと一致した場合のみ更新します。" onmousedown="event.stopPropagation()" onclick="event.preventDefault();event.stopPropagation()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></button></h2>
 <p class="muted warn" id="rulesGate" hidden data-i18n="GitHub連携が未設定のため編集できません。上部のGitHubボタンから設定してください。">GitHub連携が未設定のため編集できません。上部のGitHubボタンから設定してください。</p>
 <div class="btnrow"><select id="selRuleKind" aria-label="ルール種別" data-i18n-aria="ルール種別"><option value="project">project.md</option><option value="global">global.md</option></select><button id="btnRuleLoad" data-i18n="取得">取得</button><button id="btnRuleSave" class="primary" data-i18n="保存">保存</button></div>
 <p class="muted" id="ruleMeta"></p>
@@ -1381,8 +1457,7 @@ input[type=number]{width:120px;background:#0a0a0a;border:1px solid #2c2c2c;color
 </div>
 <div id="backups" hidden>
 <section>
-<div class="card"><h2 data-i18n="バックアップと復元">バックアップと復元</h2>
-<p class="muted" data-i18n="復元は AGENTS.md と localSource を一緒に復元し、次回上書き防止のため休止（無効）にします。共通 GitHub 側の巻戻しはしません。">復元は AGENTS.md と localSource を一緒に復元し、次回上書き防止のため休止（無効）にします。共通 GitHub 側の巻戻しはしません。</p>
+<div class="card"><h2><span data-i18n="バックアップと復元">バックアップと復元</span><button type="button" class="tip" data-i18n-title="復元は AGENTS.md と localSource を一緒に復元し、次回上書き防止のため休止（無効）にします。共通 GitHub 側の巻戻しはしません。" data-i18n-aria="復元は AGENTS.md と localSource を一緒に復元し、次回上書き防止のため休止（無効）にします。共通 GitHub 側の巻戻しはしません。" title="復元は AGENTS.md と localSource を一緒に復元し、次回上書き防止のため休止（無効）にします。共通 GitHub 側の巻戻しはしません。" aria-label="復元は AGENTS.md と localSource を一緒に復元し、次回上書き防止のため休止（無効）にします。共通 GitHub 側の巻戻しはしません。" onmousedown="event.stopPropagation()" onclick="event.preventDefault();event.stopPropagation()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></button></h2>
 <div class="btnrow"><button id="btnBackupsReload" data-i18n="一覧を更新">一覧を更新</button></div>
 <div class="tablewrap"><table id="tblBackups" hidden><thead><tr><th>ID</th><th data-i18n="対象">対象</th><th data-i18n="作成">作成</th><th data-i18n="内容">内容</th><th data-i18n="操作">操作</th></tr></thead><tbody id="backupRows"></tbody></table></div>
 <p class="muted" id="emptyBackups" data-i18n="バックアップがありません。">バックアップがありません。</p>
@@ -1391,8 +1466,7 @@ input[type=number]{width:120px;background:#0a0a0a;border:1px solid #2c2c2c;color
 </div>
 </section>
 <section>
-<div class="card"><h2 data-i18n="Globalバックアップと復元">Globalバックアップと復元</h2>
-<p class="muted" data-i18n="復元前に Global 自動同期を休止し、復元後も休止のまま残ります（再開は有効化）。差分で内容を確認してから復元します。">復元前に Global 自動同期を休止し、復元後も休止のまま残ります（再開は有効化）。差分で内容を確認してから復元します。</p>
+<div class="card"><h2><span data-i18n="Globalバックアップと復元">Globalバックアップと復元</span><button type="button" class="tip" data-i18n-title="復元前に Global 自動同期を休止し、復元後も休止のまま残ります（再開は有効化）。差分で内容を確認してから復元します。" data-i18n-aria="復元前に Global 自動同期を休止し、復元後も休止のまま残ります（再開は有効化）。差分で内容を確認してから復元します。" title="復元前に Global 自動同期を休止し、復元後も休止のまま残ります（再開は有効化）。差分で内容を確認してから復元します。" aria-label="復元前に Global 自動同期を休止し、復元後も休止のまま残ります（再開は有効化）。差分で内容を確認してから復元します。" onmousedown="event.stopPropagation()" onclick="event.preventDefault();event.stopPropagation()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></button></h2>
 <div class="btnrow"><button id="btnGlobalBackups" data-i18n="一覧を更新">一覧を更新</button></div>
 <div class="tablewrap"><table id="tblGlobalBackups" hidden><thead><tr><th>ID</th><th data-i18n="作成">作成</th><th data-i18n="対象">対象</th><th data-i18n="操作">操作</th></tr></thead><tbody id="globalBackupRows"></tbody></table></div>
 <p class="muted" id="emptyGlobalBackups" data-i18n="バックアップがありません。">バックアップがありません。</p>
@@ -1403,8 +1477,7 @@ input[type=number]{width:120px;background:#0a0a0a;border:1px solid #2c2c2c;color
 </div>
 <div id="local" hidden>
 <section>
-<div class="card"><h2 data-i18n="ローカルルール編集と検査">ローカルルール編集と検査</h2>
-<p class="muted" data-i18n="project-local.md を形式検証付きで編集します。保存時は取得時ハッシュと一致した場合のみ書換えます。検査結果は候補であり断定ではありません。">project-local.md を形式検証付きで編集します。保存時は取得時ハッシュと一致した場合のみ書換えます。検査結果は候補であり断定ではありません。</p>
+<div class="card"><h2><span data-i18n="ローカルルール編集と検査">ローカルルール編集と検査</span><button type="button" class="tip" data-i18n-title="project-local.md を形式検証付きで編集します。保存時は取得時ハッシュと一致した場合のみ書換えます。検査結果は候補であり断定ではありません。" data-i18n-aria="project-local.md を形式検証付きで編集します。保存時は取得時ハッシュと一致した場合のみ書換えます。検査結果は候補であり断定ではありません。" title="project-local.md を形式検証付きで編集します。保存時は取得時ハッシュと一致した場合のみ書換えます。検査結果は候補であり断定ではありません。" aria-label="project-local.md を形式検証付きで編集します。保存時は取得時ハッシュと一致した場合のみ書換えます。検査結果は候補であり断定ではありません。" onmousedown="event.stopPropagation()" onclick="event.preventDefault();event.stopPropagation()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></button></h2>
 <div class="btnrow"><select id="selLocal" style="max-width:280px"></select><button id="btnLocalLoad" data-i18n="取得">取得</button><button id="btnCheck" data-i18n="重複・矛盾候補を検査">重複・矛盾候補を検査</button></div>
 <div id="localArea"></div>
 <div id="checkArea"></div>
@@ -1420,8 +1493,7 @@ input[type=number]{width:120px;background:#0a0a0a;border:1px solid #2c2c2c;color
 </div>
 </section>
 <section>
-<div class="card"><h2 data-i18n="Global同期ログ">Global同期ログ</h2>
-<p class="muted" data-i18n="直近のみ表示。末尾の OK は成功、FAIL は失敗、SKIP は見送りです。">直近のみ表示。末尾の OK は成功、FAIL は失敗、SKIP は見送りです。</p>
+<div class="card"><h2><span data-i18n="Global同期ログ">Global同期ログ</span><button type="button" class="tip" data-i18n-title="直近のみ表示。末尾の OK は成功、FAIL は失敗、SKIP は見送りです。" data-i18n-aria="直近のみ表示。末尾の OK は成功、FAIL は失敗、SKIP は見送りです。" title="直近のみ表示。末尾の OK は成功、FAIL は失敗、SKIP は見送りです。" aria-label="直近のみ表示。末尾の OK は成功、FAIL は失敗、SKIP は見送りです。" onmousedown="event.stopPropagation()" onclick="event.preventDefault();event.stopPropagation()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></button></h2>
 <div class="btnrow"><button id="btnGlobalLogs" data-i18n="ログを更新">ログを更新</button></div>
 <pre id="globalLogPre">読込中</pre>
 </div>
@@ -1429,21 +1501,19 @@ input[type=number]{width:120px;background:#0a0a0a;border:1px solid #2c2c2c;color
 </div>
 <div id="settings" hidden>
 <section>
-<div class="card"><h2 data-i18n="設定（間隔・入出力）">設定（間隔・入出力）</h2>
-<p class="muted" data-i18n="同期間隔は Project タスクのみ変更します（Global は不変）。エクスポート・インポートに秘密情報は含みません。">同期間隔は Project タスクのみ変更します（Global は不変）。エクスポート・インポートに秘密情報は含みません。</p>
+<div class="card"><h2><span data-i18n="設定（間隔・入出力）">設定（間隔・入出力）</span><button type="button" class="tip" data-i18n-title="同期間隔は Project タスクのみ変更します（Global は不変）。エクスポート・インポートに秘密情報は含みません。" data-i18n-aria="同期間隔は Project タスクのみ変更します（Global は不変）。エクスポート・インポートに秘密情報は含みません。" title="同期間隔は Project タスクのみ変更します（Global は不変）。エクスポート・インポートに秘密情報は含みません。" aria-label="同期間隔は Project タスクのみ変更します（Global は不変）。エクスポート・インポートに秘密情報は含みません。" onmousedown="event.stopPropagation()" onclick="event.preventDefault();event.stopPropagation()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></button></h2>
 <div class="btnrow"><label class="muted"><span data-i18n="Project 同期の間隔（分）">Project 同期の間隔（分）</span> <input type="number" id="numInterval" min="5" max="1440" step="1" value="15"></label><button id="btnIntervalGet" data-i18n="現在値">現在値</button><button id="btnIntervalSet" data-i18n="間隔を変更">間隔を変更</button></div>
 <div id="msgInterval" role="status"></div>
-<hr style="border:0;border-top:1px solid #1d1d1d;margin:16px 0">
+<hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
 <div class="btnrow"><button id="btnExport" data-i18n="設定をエクスポート（JSON保存）">設定をエクスポート（JSON保存）</button></div>
-<p class="muted" data-i18n="取り込みはプレビューで合流内容を確認してから登録します（新規のみ追加・既存維持）。">取り込みはプレビューで合流内容を確認してから登録します（新規のみ追加・既存維持）。</p>
 <textarea id="txtImport" placeholder="エクスポートしたJSONを貼り付け" data-i18n-placeholder="エクスポートしたJSONを貼り付け"></textarea>
-<div class="btnrow"><button id="btnImportPrev2" data-i18n="取込プレビュー">取込プレビュー</button></div>
+<div class="btnrow"><button id="btnImportPrev2" data-i18n="取込プレビュー">取込プレビュー</button><button type="button" class="tip" data-i18n-title="取り込みはプレビューで合流内容を確認してから登録します（新規のみ追加・既存維持）。" data-i18n-aria="取り込みはプレビューで合流内容を確認してから登録します（新規のみ追加・既存維持）。" title="取り込みはプレビューで合流内容を確認してから登録します（新規のみ追加・既存維持）。" aria-label="取り込みはプレビューで合流内容を確認してから登録します（新規のみ追加・既存維持）。" onmousedown="event.stopPropagation()" onclick="event.preventDefault();event.stopPropagation()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></button></div>
 <div id="importRegArea"></div>
 <div id="msgSettings" role="status"></div>
 </div>
 </section>
 <section id="help">
-<div class="card"><details class="help" id="helpDetail"><summary data-i18n="ヘルプ">ヘルプ</summary>
+<div class="card"><details class="help" id="helpDetail"><summary><span data-i18n="ヘルプ">ヘルプ</span><button type="button" class="tip" data-i18n-title="管理バッチをダブルクリックするとこの画面が開きます。サーバーは 127.0.0.1 のみで待受けし、15分無操作で終了します。同期タスク自体はタスクスケジューラの設定どおり継続します。登録・解除は projects.json のみを変更します。" data-i18n-aria="管理バッチをダブルクリックするとこの画面が開きます。サーバーは 127.0.0.1 のみで待受けし、15分無操作で終了します。同期タスク自体はタスクスケジューラの設定どおり継続します。登録・解除は projects.json のみを変更します。" title="管理バッチをダブルクリックするとこの画面が開きます。サーバーは 127.0.0.1 のみで待受けし、15分無操作で終了します。同期タスク自体はタスクスケジューラの設定どおり継続します。登録・解除は projects.json のみを変更します。" aria-label="管理バッチをダブルクリックするとこの画面が開きます。サーバーは 127.0.0.1 のみで待受けし、15分無操作で終了します。同期タスク自体はタスクスケジューラの設定どおり継続します。登録・解除は projects.json のみを変更します。" onmousedown="event.stopPropagation()" onclick="event.preventDefault();event.stopPropagation()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></button></summary>
 <p class="muted" data-i18n="管理バッチをダブルクリックするとこの画面が開きます。サーバーは 127.0.0.1 のみで待受けし、15分無操作で終了します。同期タスク自体はタスクスケジューラの設定どおり継続します。登録・解除は projects.json のみを変更します。">管理バッチをダブルクリックするとこの画面が開きます。サーバーは 127.0.0.1 のみで待受けし、15分無操作で終了します。同期タスク自体はタスクスケジューラの設定どおり継続します。登録・解除は projects.json のみを変更します。</p>
 </details>
 </div>
@@ -1729,6 +1799,9 @@ const I18N = {
     "開く": "Open",
     "開けませんでした": "Could not open",
     "概要": "Overview",
+    "見る": "View",
+    "配る": "Distribute",
+    "守る": "Keep",
     "確認チェックを入れてください。": "Check the confirmation box.",
     "確認済みプランで反映します（反映前に再照合し、変化があれば拒否）。よろしいですか。": "Apply the confirmed plan (it is re-checked first and rejected if anything changed). Continue?",
     "確認中": "Checking",
@@ -1776,6 +1849,12 @@ const I18N = {
     "最終試行": "Last attempt",
     "最終試行・最終成功・取得SHA・失敗理由の一覧です。選択した同期・差分はチェック欄で選びます。": "Lists the last attempt, last success, fetched SHA and failure reason. Select projects for sync or diff with the checkboxes.",
     "最終成功": "Last success",
+    "対応が必要なこと": "Needs attention",
+    "いま対応はありません。": "Nothing needs attention.",
+    "Projectの同期が失敗しています。": "Project sync is failing.",
+    "Globalの同期が失敗しています。": "Global sync is failing.",
+    "Project最終成功 {when}": "Project last success {when}",
+    "Global最終成功 {when}": "Global last success {when}",
     "作成": "Created",
     "参照...": "Browse...",
     "時間切れのため選択を終了しました。登録は行いません。": "Selection timed out and was closed. Nothing was registered.",
@@ -2028,7 +2107,11 @@ const I18N = {
     "テーブル": "Table",
     "プレビューを表示できません。ソースのみ編集できます。": "The preview is unavailable. Only the source text can be edited.",
     "プレビューの表示中にエラーが発生しました。": "The preview could not be rendered.",
-    "本文が大きいためプレビューを省略しました。": "The text is too large, so the preview was skipped."
+    "本文が大きいためプレビューを省略しました。": "The text is too large, so the preview was skipped.",
+    "表示の色": "Appearance",
+    "端末に合わせる": "Match device",
+    "昼": "Day",
+    "夜": "Night"
   },
   "zh-CN": {
     " 既存 AGENTS.md はバックアップ後に同期で再生成されます（固有内容は自動転記されません）。": " 现有 AGENTS.md 会在备份后由同步重新生成（其中专有内容不会自动转写）。",
@@ -2183,6 +2266,9 @@ const I18N = {
     "開く": "打开",
     "開けませんでした": "无法打开",
     "概要": "概览",
+    "見る": "查看",
+    "配る": "分发",
+    "守る": "维护",
     "確認チェックを入れてください。": "请勾选确认项。",
     "確認済みプランで反映します（反映前に再照合し、変化があれば拒否）。よろしいですか。": "将应用已确认的计划（应用前会重新核对，如有变化则拒绝）。是否继续？",
     "確認中": "确认中",
@@ -2230,6 +2316,12 @@ const I18N = {
     "最終試行": "最近尝试",
     "最終試行・最終成功・取得SHA・失敗理由の一覧です。選択した同期・差分はチェック欄で選びます。": "显示最近尝试、最近成功、获取的 SHA 和失败原因的列表。使用复选框选择要同步或比较差异的项目。",
     "最終成功": "最近成功",
+    "対応が必要なこと": "需要处理",
+    "いま対応はありません。": "目前无需处理。",
+    "Projectの同期が失敗しています。": "Project 同步失败。",
+    "Globalの同期が失敗しています。": "Global 同步失败。",
+    "Project最終成功 {when}": "Project 最近成功 {when}",
+    "Global最終成功 {when}": "Global 最近成功 {when}",
     "作成": "创建时间",
     "参照...": "浏览...",
     "時間切れのため選択を終了しました。登録は行いません。": "选择已超时结束。未执行注册。",
@@ -2482,7 +2574,11 @@ const I18N = {
     "テーブル": "表格",
     "プレビューを表示できません。ソースのみ編集できます。": "无法显示预览。仅可编辑源文本。",
     "プレビューの表示中にエラーが発生しました。": "显示预览时发生错误。",
-    "本文が大きいためプレビューを省略しました。": "文本过大，已跳过预览。"
+    "本文が大きいためプレビューを省略しました。": "文本过大，已跳过预览。",
+    "表示の色": "外观",
+    "端末に合わせる": "跟随设备",
+    "昼": "白天",
+    "夜": "夜间"
   }
 };
 let currentLang = "ja";
@@ -2599,6 +2695,7 @@ function applyLanguage(lang, reload){
   try{ if(lastGlobalBackupDiff) renderGlobalBackupDiff(lastGlobalBackupDiff.data); }catch(e){}
   try{ if(typeof renderProjectLog === "function") renderProjectLog(); }catch(e){}
   try{ if(typeof renderGlobalLog === "function") renderGlobalLog(); }catch(e){}
+  try{ if(typeof renderAttention === "function") renderAttention(); }catch(e){}
   try{ const c=document.getElementById("stCount"); if(c) c.textContent=lastProjectCount===null?L("読込中"):L("{n} 件",{n:lastProjectCount}); }catch(e){}
   if(previousLang !== currentLang && localizedText[previousLang]) localizedText[previousLang].clear();
   try{ const sel = document.getElementById("selLang"); if(sel) sel.value = currentLang; }catch(e){}
@@ -2624,6 +2721,42 @@ function initLanguage(){
     };
   }
 }
+const THEME_KEY = "shirube.theme";
+function safeTheme(v){ return (v==="light"||v==="dark"||v==="system") ? v : "system"; }
+function storedTheme(){
+  try{ return safeTheme(window.localStorage.getItem(THEME_KEY)); }catch(e){ return "system"; }
+}
+function saveTheme(v){
+  try{ window.localStorage.setItem(THEME_KEY, safeTheme(v)); }catch(e){}
+}
+function applyTheme(choice){
+  const c = safeTheme(choice);
+  try{
+    if(c==="system") document.documentElement.removeAttribute("data-theme");
+    else document.documentElement.setAttribute("data-theme", c);
+  }catch(e){}
+  try{ const sel = document.getElementById("selTheme"); if(sel) sel.value = c; }catch(e){}
+}
+function initTheme(){
+  const choice = storedTheme();
+  applyTheme(choice);
+  const sel = document.getElementById("selTheme");
+  if(sel){
+    sel.value = choice;
+    sel.onchange = function(){
+      const next = safeTheme(sel.value);
+      saveTheme(next);
+      applyTheme(next);
+    };
+  }
+  try{
+    if(!window.matchMedia) return;
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const onChange = function(){ if(storedTheme()==="system") applyTheme("system"); };
+    if(mq.addEventListener) mq.addEventListener("change", onChange);
+    else if(mq.addListener) mq.addListener(onChange);
+  }catch(e){}
+}
 function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 function stateJa(s){
   if(s==="running") return L("実行中");
@@ -2640,6 +2773,7 @@ function renderGlobalLog(){
   pre.textContent = !globalLogState.loaded ? L("読込中") : globalLogState.error ? L("取得失敗: ") + globalLogState.error : globalLogState.tail || L("ログがありません。");
 }
 let lastProjectCount = null;
+let lastAttentionStatus = undefined;
 let syncDisplayState = null;
 let projectLogState = {loaded:false, tail:"", error:null};
 function renderProjectLog(){
@@ -2660,7 +2794,7 @@ function updateCommonSyncState(kind, state){
   commonSyncStates[kind] = state;
   if(kind === "project" && id) unifiedObservedProjectRunId = id;
   if(kind === "global" && id) unifiedObservedGlobalRunId = id;
-  if(unifiedStateLock) return;
+  if(unifiedStateLock){ try{ paintSummaryHalves(); }catch(eHalf){} return; }
   if(unifiedFinalState){
     const expected = kind === "project"
       ? (unifiedProjectRunId || unifiedBaselineProjectRunId)
@@ -2686,7 +2820,95 @@ function updateCommonSyncState(kind, state){
     renderSyncState();
   }
 }
+function summarySideLine(state){
+  if(!state) return L("読込中");
+  let line = String(state.finalLine || "").trim();
+  if(!line && state.tail){
+    const parts = String(state.tail).split(/\r?\n/);
+    line = String(parts[parts.length - 1] || "").trim();
+  }
+  if(!line){
+    const when = state.resultAt || state.logMtime || "";
+    if(when) return String(when);
+    return state.logName ? String(state.logName) : L("ログなし");
+  }
+  return line.slice(-220);
+}
+function paintSummaryHalves(){
+  const sides = [
+    ["sumProject", "sumProjectLine", commonSyncStates.project],
+    ["sumGlobal", "sumGlobalLine", commonSyncStates.global || currentGlobalStatus]
+  ];
+  for(let i = 0; i < sides.length; i++){
+    const word = document.getElementById(sides[i][0]);
+    const line = document.getElementById(sides[i][1]);
+    const state = sides[i][2];
+    if(!state){
+      if(word){ word.textContent = L("読込中"); try{ word.removeAttribute("data-state"); }catch(e0){} }
+      if(line){ const wait = L("読込中"); line.textContent = wait; line.title = wait; }
+      continue;
+    }
+    const status = state.syncState || (state.running ? "running" : "idle");
+    if(word){ word.textContent = stateJa(status); try{ word.dataset.state = status; }catch(e1){} }
+    if(line){ const text = summarySideLine(state); line.textContent = text; line.title = text; }
+  }
+}
+function latestSuccessAt(rows){
+  let best = "";
+  const list = rows || [];
+  for(let i=0;i<list.length;i++){
+    const v = String(list[i].lastSuccessAt || "").trim();
+    if(v && v !== "-" && v > best) best = v;
+  }
+  return best;
+}
+function renderAttention(){
+  const list = document.getElementById("attnList");
+  const calm = document.getElementById("attnCalm");
+  if(!list || !calm) return;
+  list.textContent = "";
+  if(lastProjectCount === null || !currentGlobalStatus){
+    calm.hidden = false;
+    calm.textContent = L("読込中");
+    return;
+  }
+  const rows = Array.isArray(lastAttentionStatus) ? lastAttentionStatus : [];
+  const items = [];
+  const projectFailed = (commonSyncStates.project && commonSyncStates.project.syncState === "failed") || rows.some(function(e){ return e.result === "failed"; });
+  const providers = currentGlobalStatus.providers || [];
+  const globalFailed = currentGlobalStatus.syncState === "failed" || providers.some(function(e){ return e.result === "failed"; });
+  if(lastProjectCount === 0) items.push({href:"#register", bad:false, text:L("まだ登録がありません。右の新規登録から追加してください。"), where:L("プロジェクト")});
+  else if(projectFailed) items.push({href:"#projects", bad:true, text:L("Projectの同期が失敗しています。"), where:L("プロジェクト")});
+  if(globalFailed) items.push({href:"#global", bad:true, text:L("Globalの同期が失敗しています。"), where:L("Global同期")});
+  if(currentGlobalStatus.githubConfigured !== true) items.push({href:"#rules", bad:false, text:L("GitHub連携が未設定のため編集できません。上部のGitHubボタンから設定してください。"), where:L("ルール")});
+  if(currentGlobalStatus.taskEnabled === false) items.push({href:"#gsettings", bad:false, text:L("自動同期は休止中です（裏の実行なし）。再開は切替ボタンで有効化してください。"), where:L("Global設定")});
+  if(!items.length){
+    calm.hidden = false;
+    const projectWhen = latestSuccessAt(rows) || L("未実行");
+    const globalWhen = latestSuccessAt(providers) || L("未実行");
+    calm.textContent = L("いま対応はありません。") + " " + L("Project最終成功 {when}", {when:projectWhen}) + " / " + L("Global最終成功 {when}", {when:globalWhen});
+    return;
+  }
+  calm.hidden = true;
+  items.forEach(function(it){
+    const li = document.createElement("li");
+    const a = document.createElement("a");
+    a.href = it.href;
+    if(it.bad) a.className = "bad";
+    const label = document.createElement("span");
+    label.textContent = it.text;
+    const go = document.createElement("span");
+    go.className = "attn-go";
+    go.textContent = it.where;
+    a.appendChild(label);
+    a.appendChild(go);
+    li.appendChild(a);
+    list.appendChild(li);
+  });
+}
 function renderSyncState(){
+  try{ paintSummaryHalves(); }catch(eHalf){}
+  try{ renderAttention(); }catch(eAttn){}
   const run = document.getElementById("stRun");
   const current = commonSyncStates[commonSyncSource];
   const detail = syncDisplayState;
@@ -2876,7 +3098,9 @@ async function refresh(deadline){
     try{ renderStatusTable(stList, selectedStatus); }catch(e){}
     try{ applySearchFilter(); }catch(e2){}
     try{ fillLocalSelect(p.projects); }catch(e){}
-  }catch(e){ projectLogState = {loaded:true, tail:"", error:e.message}; renderProjectLog(); }
+    lastAttentionStatus = st ? (st.projects || []) : null;
+    try{ renderAttention(); }catch(e3){}
+  }catch(e){ projectLogState = {loaded:true, tail:"", error:e.message}; renderProjectLog(); try{ renderAttention(); }catch(e2){} }
 }
 async function pollUntilDone(syncId, tries, delayMs, deadline){
   const dl = deadline || (Date.now() + 60000);
@@ -3766,6 +3990,7 @@ const GLOBAL_LOGOS = Object.freeze({
   "kimi-code":"data:image/svg+xml;base64,PHN2ZyBoZWlnaHQ9IjFlbSIgc3R5bGU9ImZsZXg6bm9uZTtsaW5lLWhlaWdodDoxIiB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIxZW0iIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHRpdGxlPktpbWk8L3RpdGxlPjxwYXRoIGQ9Ik0yMS44NDYgMGExLjkyMyAxLjkyMyAwIDExMCAzLjg0NkgyMC4xNWEuMjI2LjIyNiAwIDAxLS4yMjctLjIyNlYxLjkyM0MxOS45MjMuODYxIDIwLjc4NCAwIDIxLjg0NiAweiIgZmlsbD0iIzE3ODNGRiI+PC9wYXRoPjxwYXRoIGQ9Ik0xMS4wNjUgMTEuMTk5bDcuMjU3LTcuMmMuMTM3LS4xMzYuMDYtLjQxLS4xMTYtLjQxSDE0LjNhLjE2NC4xNjQgMCAwMC0uMTE3LjA1MWwtNy44MiA3Ljc1NmMtLjEyMi4xMi0uMzAyLjAxMy0uMzAyLS4xNzlWMy44MmMwLS4xMjctLjA4My0uMjMtLjE4NS0uMjNIMy4xODZjLS4xMDMgMC0uMTg2LjEwMy0uMTg2LjIzVjE5Ljc3YzAgLjEyOC4wODMuMjMuMTg2LjIzaDIuNjljLjEwMyAwIC4xODYtLjEwMi4xODYtLjIzdi0zLjI1YzAtLjA2OS4wMjUtLjEzNS4wNjktLjE3OGwyLjQyNC0yLjQwNmEuMTU4LjE1OCAwIDAxLjIwNS0uMDIzbDYuNDg0IDQuNzcyYTcuNjc3IDcuNjc3IDAgMDAzLjQ1MyAxLjI4M2MuMTA4LjAxMi4yLS4wOTUuMi0uMjN2LTMuMDZjMC0uMTE3LS4wNy0uMjEyLS4xNjQtLjIyN2E1LjAyOCA1LjAyOCAwIDAxLTIuMDI3LS44MDdsLTUuNjEzLTQuMDY0Yy0uMTE3LS4wNzgtLjEzMi0uMjc5LS4wMjgtLjM4MXoiIGZpbGw9ImN1cnJlbnRDb2xvciI+PC9wYXRoPjwvc3ZnPg==",
   "qoder":"data:image/svg+xml;base64,PHN2ZyBmaWxsPSJjdXJyZW50Q29sb3IiIGhlaWdodD0iMWVtIiBzdHlsZT0iZmxleDpub25lO2xpbmUtaGVpZ2h0OjEiIHZpZXdCb3g9IjAgMCAyNCAyNCIgd2lkdGg9IjFlbSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48dGl0bGU+UW9kZXI8L3RpdGxlPjxwYXRoIGQ9Ik0yMy4zNzYgMTQuNDU4di00LjA1NmMwLTIuMzA0LTEuMDAzLTQuMTU0LTIuNzQ4LTUuMDc1TDExLjYxMi41NzRsLS4wNDYuMDg2LS4wNDUuMDg2YzEuNjguODg2IDIuNjQ0IDIuNjczIDIuNjQ0IDQuOTAydjQuMDU2YTcuOTI4IDcuOTI4IDAgMDEtLjAxNC40NTRsLS4wMDUuMDYxYy0uMDA1LjA4MS0uMDEuMTY0LS4wMTguMjQ1YTQuODk3IDQuODk3IDAgMDEtLjAxMS4xbC0uMDEuMDc2Yy0uMDA4LjA2OC0uMDE1LjEzNS0uMDI1LjIwM2wtLjAxOC4xMTMtLjAxLjA1OGE5Ljk5IDkuOTkgMCAwMS0uMDk4LjUxM2wtLjAwNy4wM2E3LjIwOSA3LjIwOSAwIDAxLS4wNzQuMjk0bC0uMDI0LjA4NmMtLjAyNy4wOTktLjA1Ni4xOTctLjA4Ny4yOTZsLS4wMjcuMDg1YTkuNTkyIDkuNTkyIDAgMDEtLjExMS4zMjNsLS4wMzMuMDg1LS4wMTguMDQ2Yy0uMDMyLjA4Mi0uMDY0LjE2Ni0uMDk4LjI0OC0uMDE5LjA0OC0uMDQuMDk2LS4wNjEuMTQ1bC0uMDA3LjAxN2E2IDYgMCAwMS0uMDg0LjE4N2MtLjAyNC4wNTYtLjA1LjExLS4wNzcuMTY1LS4wMy4wNjEtLjA1OC4xMjItLjA4OS4xODJhOS40MjMgOS40MjMgMCAwMS0uMTc2LjMzMmMtLjAzLjA1Ni0uMDYyLjExMS0uMDk0LjE2Ny0uMDMxLjA1My0uMDYyLjEwOC0uMDk1LjE2LS4wMzMuMDU1LS4wNjYuMTEtLjEwMS4xNjQtLjAzMy4wNTMtLjA2NS4xMDQtLjEuMTU1LS4wMzQuMDU1LS4wNy4xMDctLjExMS4xNjlsLS4wOTkuMTQ0YTE1LjE5MyAxNS4xOTMgMCAwMS0uMzQuNDU3Yy0uMDQuMDUtLjA4LjEwMi0uMTIxLjE1MWwtLjEwNy4xMjgtLjAwNy4wMDhhNi45ODcgNi45ODcgMCAwMS0uMjYyLjI5OGwtLjE0OS4xNi0uMTE2LjEyYTkuNTYyIDkuNTYyIDAgMDEtLjIwNC4xOThsLS4wMy4wMy0uMDcyLjA2OWE5LjA1IDkuMDUgMCAwMS0uMjYzLjIzNWwtLjAyNS4wMjItLjAyOS4wMjYtLjA0Mi4wMzVhMTEuNyAxMS43IDAgMDEtLjIyLjE4bC0uMDcuMDU1LS4wMTguMDEzYTguOTA0IDguOTA0IDAgMDEtLjE5NC4xNDZjLS4wMjkuMDItLjA1Ny4wNDItLjA4Ni4wNjNhNy43IDcuNyAwIDAxLS4yMi4xNTJsLS4wNTcuMDRhOC44NjUgOC44NjUgMCAwMS0uMjkzLjE4NWwtLjA2Mi4wMzdhMTAuNDI0IDEwLjQyNCAwIDAxLS4zMDcuMTczbC0uMDM3LjAyLS4xOTYuMTAzLS4xMDguMDUyLS4wMTIuMDA2YTYuMTk2IDYuMTk2IDAgMDEtLjMxNS4xNDNjLS4wNjUuMDI4LS4xMy4wNTQtLjE5Ni4wOGwtLjAzNS4wMTQtLjA4Ni4wMzRjLS4wNy4wMjYtLjE0My4wNS0uMjE1LjA3NWwtLjAzOS4wMTQtLjA2NC4wMjNhOC4wNTYgOC4wNTYgMCAwMS0uMzIzLjA5N2wtLjYzLjE3M2E3LjI4NSA3LjI4NSAwIDAxLS4zMy4wOGwtLjA3LjAxNWMtLjA1My4wMTItLjEwNC4wMjMtLjE1Ny4wMzJsLS4wNjUuMDExLS4wODUuMDE1YTIuMzMyIDIuMzMyIDAgMDEtLjE5NC4wMjdsLS4wODUuMDFhNC43MTUgNC43MTUgMCAwMS0uMTYuMDE4bC0uMDM0LjAwM2E0Ljg2MSA0Ljg2MSAwIDAxLS4yNDYuMDE2aC0uMDMzYTIuNzE0IDIuNzE0IDAgMDEtLjE1NS4wMDVoLS4xMDZhMy4zODQgMy4zODQgMCAwMS0uMjI1LS4wMDdINC44NmwtLjE1LS4wMTItLjA2Ni0uMDA2YTUuNTg2IDUuNTg2IDAgMDEtLjE4Ny0uMDJsLS4wNC0uMDA1YTUuMTQgNS4xNCAwIDAxLS4yMTktLjAzNWwtLjA1NC0uMDFhNi45NDMgNi45NDMgMCAwMS0uMzQ3LS4wODJsLS4wMy0uMDA4LS4wMzgtLjAxYTUuMDM0IDUuMDM0IDAgMDEtLjI2OS0uMDg2bC0uMDYzLS4wMjNhNC4yMTYgNC4yMTYgMCAwMS0uMTg4LS4wNzNsLS4wNzEtLjAzMS0uMDE2LS4wMDdhNC45NTkgNC45NTkgMCAwMS0uMTYtLjA3NGwtLjAyNi0uMDEzYS4xNjQuMTY0IDAgMDAtLjAxNC0uMDA3bC0uNjcxLS4zNTEuNDg2LjQ4NmguMDE2bDguOTk1IDQuNzQyLjA5My4wNDguMDMuMDE0LjAyLjAxYy4wNTYuMDI2LjExMS4wNTIuMTY5LjA3NmwuMDE2LjAwOC4wNzMuMDMyLjE5NS4wNzYuMDIyLjAwOGEuNzE4LjcxOCAwIDAxLjAzLjAxMmwuMDE0LjAwNGE0LjY5MyA0LjY5MyAwIDAwLjMyMy4xbC4wMjcuMDA3Yy4wNzMuMDIuMTQ3LjAzOC4yMi4wNTVsLjAxOC4wMDQuMDI3LjAwNi4wNjYuMDEzLjA4OC4wMTZjLjA3NS4wMTQuMTUuMDI2LjIyNi4wMzhsLjA0Mi4wMDRjLjA2NC4wMDkuMTI4LjAxNi4xOTMuMDIybC4xMjYuMDEyLjA2LjAwMy4wNS4wMDIuMDk4LjAwNWMuMDQ2LjAwMi4wOTQuMDAyLjE0LjAwM2guMTJjLjA1IDAgLjEtLjAwMi4xNjEtLjAwNWguMDMzbC4wNy0uMDA0YTYuMTcgNi4xNyAwIDAwLjE4NC0uMDE0bC4wMzMtLjAwM2EuNzUzLjc1MyAwIDAwLjA1OC0uMDA1bC4xMDgtLjAxMi4wODEtLjAxLjA4LS4wMS4xMjktLjAyMS4wODItLjAxNC4wNzEtLjAxMmMuMDU0LS4wMS4xMDctLjAyMS4xNi0uMDMzbC4wNjYtLjAxMy4wNTktLjAxM2MuMDk2LS4wMjIuMTkyLS4wNDYuMjg3LS4wNzNsLjYzLS4xNzJhNy4zNTQgNy4zNTQgMCAwMC4zOTctLjEyMmwuMDQtLjAxNWMuMDc1LS4wMjUuMTQ5LS4wNTEuMjIyLS4wNzguMDMyLS4wMTEuMDYyLS4wMjQuMDkzLS4wMzdsLjAzLS4wMTJjLjA2Ny0uMDI3LjEzNS0uMDU0LjItLjA4MmwuMTI4LS4wNTYuMTk1LS4wOS4wMjEtLjAxLjEwMi0uMDVjLjA2OC0uMDM0LjEzNS0uMDY5LjIwMi0uMTA1bC4wMzctLjAyLjA3My0uMDM4Yy4wOC0uMDQ0LjE2LS4wOTIuMjQtLjEzOWwuMDI2LS4wMTVhOC4wODYgOC4wODYgMCAwMC4zMjItLjJsLjA2NS0uMDQ1IDEuOTguOTAyYTEuNzQ4IDEuNzQ4IDAgMDAyLjQ3Mi0xLjU5di03LjMzbC4wMDQuMDA0eiIgZmlsbD0iIzJBREI1QyI+PC9wYXRoPjxwYXRoIGQ9Ik0xMS42MTcuNTc2YTMuOTA0IDMuOTA0IDAgMDAtLjA5My0uMDQ3Yy0uMDE2LS4wMDktLjAzMy0uMDE2LS4wNS0uMDI0YTUuODU0IDUuODU0IDAgMDAtLjE2Ni0uMDc3bC0uMDktLjA0YTQuMDk0IDQuMDk0IDAgMDAtLjE5NC0uMDc0Yy0uMDE3LS4wMDYtLjAzNS0uMDE1LS4wNTMtLjAybC0uMDEzLS4wMDVhNS4xOCA1LjE4IDAgMDAtLjI3Ny0uMDg4bC0uMDctLjAxOWE0LjAzNCA0LjAzNCAwIDAwLS4yMTktLjA1M2MtLjAxNS0uMDAzLS4wMy0uMDA4LS4wNDQtLjAxMkwxMC4yNTMuMWwtLjA1Ny0uMDExYTUuMTc3IDUuMTc3IDAgMDAtLjIyNS0uMDM2TDkuOTI4LjA0N2E1Ljk3MiA1Ljk3MiAwIDAwLS4xOTEtLjAyMkw5LjY2OS4wMmExLjMzIDEuMzMgMCAwMC0uMDU4LS4wMDVMOS41MTUuMDA5YTQuMDU4IDQuMDU4IDAgMDAtLjExMS0uMDA1QzkuMzU0IDAgOS4zMDQgMCA5LjI1NCAwaC0uMTA5Yy0uMDUyIDAtLjEwNi4wMDQtLjE2LjAwNEw4Ljg4NC4wMUE1LjMyIDUuMzIgMCAwMDguNy4wMjJsLS4wODMuMDA2aC0uMDA4Yy0uMDUuMDA1LS4xLjAxMy0uMTUuMDE5bC0uMTIuMDE0Yy0uMDU2LjAwOC0uMTEyLjAxOC0uMTY5LjAyOC0uMDM3LjAwNi0uMDc0LjAxMS0uMTEuMDE4YTcuMDU0IDcuMDU0IDAgMDAtLjU3Mi4xMzNsLS42My4xNzJjLS4xMTEuMDMxLS4yMi4wNjQtLjMzLjEtLjAzNy4wMTEtLjA3Mi4wMjUtLjEwOC4wMzdhMTIuOTEgMTIuOTEgMCAwMC0uMzQ1LjEyNmMtLjA2Ny4wMjctLjEzMy4wNTQtLjIuMDgzbC0uMTI4LjA1NWExMS45MTYgMTEuOTE2IDAgMDAtLjMxOC4xNSA3LjM3NiA3LjM3NiAwIDAwLS4zMTEuMTYzYy0uMDgyLjA0NS0uMTYuMDkyLS4yNC4xNGE5LjQyNCA5LjQyNCAwIDAwLS4zNS4yMThsLS4wMTYuMDEtLjA2LjA0YTkuMjQyIDkuMjQyIDAgMDAtLjUxLjM3IDEyLjU0IDEyLjU0IDAgMDAtLjMxNS4yNTRsLS4wNDMuMDM0LS4wMS4wMDctLjA0NS4wNDFjLS4wOS4wNzgtLjE4LjE1OC0uMjY4LjI0bC0uMTA2LjEwMWMtLjA3LjA2Ny0uMTM5LjEzNS0uMjA3LjIwNGwtLjA1Ni4wNTQtLjA2My4wNjctLjE1My4xNjQtLjEyLjEzMy0uMTQ4LjE3Yy0uMDI0LjAzLS4wNDkuMDU3LS4wNzMuMDg2bC0uMDQzLjA1M2E1Ljk2IDUuOTYgMCAwMC0uMTIzLjE1NWwtLjExOC4xNTFjLS4wNC4wNTMtLjA4LjEwNi0uMTE4LjE2bC0uMDc1LjEwMS0uMDM4LjA1Ni0uMTA3LjE1NS0uMTEuMTY0YTkuOTEgOS45MSAwIDAwLS4xNjguMjY1Yy0uMDEyLjAyLS4wMjMuMDQzLS4wMzcuMDYzYTEyLjQzIDEyLjQzIDAgMDAtLjE5Mi4zMzVsLS4wOS4xNjhjLS4wMTkuMDM0LS4wNC4wNy0uMDU3LjEwNS0uMDExLjAyMi0uMDIuMDQzLS4wMzIuMDY1bC0uMDkyLjE4OC0uMDguMTY3YTE5LjE1IDE5LjE1IDAgMDAtLjA4My4xOTJjLS4wMTcuMDM4LS4wMzUuMDc2LS4wNS4xMTUtLjAwOC4wMTYtLjAxNC4wMzQtLjAyMS4wNTEtLjAzNS4wODMtLjA2Ny4xNjctLjEuMjUzbC0uMDUxLjEzNGMtLjA0LjExLS4wNzcuMjItLjExMy4zM2wtLjAyLjA1N2MwIC4wMDIgMCAuMDA1LS4wMDIuMDA3bC0uMDA4LjAyNmMtLjAzMi4xLS4wNi4yLS4wOS4zMDFsLS4wMjMuMDg5Yy0uMDI3LjEtLjA1Mi4yLS4wNzUuMzAxbC0uMDA3LjAzYTcuNjMgNy42MyAwIDAwLS4wNTcuMjY3bC0uMDA4LjA0OGMtLjAxNS4wNzQtLjAyNi4xNDgtLjAzOC4yMjNMLjA4MiA4LjRjLS4wMTEuMDc4LS4wMi4xNTYtLjAyOS4yMzQtLjAwNi4wNTEtLjAxMy4xMDMtLjAxNy4xNTRhNi41NyA2LjU3IDAgMDAtLjAyLjI2Yy0uMDAzLjA0NC0uMDA3LjA4Ni0uMDA5LjEzLS4wMDQuMTI4LS4wMDcuMjU3LS4wMDcuMzg2djQuMDU2YzAgMS40NzguNDIgMi43NDEgMS4xMzggMy42OTJBNC43NSA0Ljc1IDAgMDAyLjczIDE4LjY3bDkuMDE1IDQuNzUzYy0xLjY1Ni0uODc0LTIuNzI4LTIuNjg1LTIuNzMtNS4wNTF2LTQuMDU2YzAtLjEzLjAwNC0uMjYuMDEtLjM5LjAwMi0uMDQzLjAwNi0uMDg1LjAxLS4xMjguMDA1LS4wODguMDEtLjE3NC4wMTktLjI2MWwuMDE3LS4xNTVjLjAxLS4wNzcuMDE4LS4xNTUuMDI5LS4yMzRsLjAyNi0uMTY0Yy4wMTMtLjA3NC4wMjUtLjE1LjAzOS0uMjIzLjAyLS4xMDUuMDQtLjIxLjA2NC0uMzEzbC4wMDgtLjAzMWMuMDIzLS4xLjA0OC0uMjAxLjA3NS0uMzAxbC4wMjMtLjA4OGMuMDI4LS4xLjA1OC0uMjAyLjA5LS4zMDJsLjAwOC0uMDI1LjAyMS0uMDYzYy4wMzYtLjExLjA3My0uMjIuMTEzLS4zM2wuMDUyLS4xMzRjLjAzMS0uMDg1LjA2NS0uMTY5LjEtLjI1My4wMjItLjA1Ni4wNDctLjExMS4wNy0uMTY2YTEzLjg1NiAxMy44NTYgMCAwMS4xNjQtLjM1OGMuMDMtLjA2My4wNi0uMTI2LjA5Mi0uMTg4bC4wODgtLjE3MmE5LjIyIDkuMjIgMCAwMS4xODctLjMzOGwuMDk2LS4xNjRjLjAzNC0uMDU3LjA2OS0uMTEyLjEwNC0uMTY4bC4xLS4xNTlhMTAuNDkgMTAuNDkgMCAwMS41NjctLjc4NmwuMTIzLS4xNTUuMTE2LS4xMzljLjA1LS4wNTcuMDk4LS4xMTUuMTQ4LS4xNzFhMTQuMDkyIDE0LjA5MiAwIDAxLjI3Mi0uMjk3IDkuNzA2IDkuNzA2IDAgMDEuNDMyLS40MjVjLjA4OC0uMDgzLjE3Ny0uMTYzLjI2OC0uMjQxbC4wNTQtLjA0OGExMC4wOCAxMC4wOCAwIDAxLjU1My0uNDM1bC4wOTItLjA2OGMuMDc1LS4wNTMuMTUtLjEwNS4yMjYtLjE1Ni4wMTktLjAxMy4wMzgtLjAyOC4wNi0uMDRhOS4xOCA5LjE4IDAgMDEuMzYyLS4yMjdjLjA4LS4wNDcuMTYtLjA5NC4yNDEtLjEzOWwuMTEtLjA1OGE3LjY0MyA3LjY0MyAwIDAxLjUyMS0uMjU2bC4xMjYtLjA1NmE3LjUwOSA3LjUwOSAwIDAxLjU0Ni0uMjA4bC4xMDctLjAzN2MuMTEtLjAzNi4yMi0uMDY5LjMzLS4xbC42My0uMTcyYy4wOTUtLjAyNi4xOTEtLjA1LjI4Ny0uMDcybC4wOTctLjAyYy4wNjItLjAxNC4xMjUtLjAyOS4xODctLjA0bC4xMTQtLjAxOGMuMDU1LS4wMS4xMS0uMDIuMTY2LS4wMjguMDQtLjAwNi4wOC0uMDEuMTItLjAxNC4wNTMtLjAwNy4xMDUtLjAxNC4xNTctLjAxOWwuMDgzLS4wMDZjLjA2MS0uMDA1LjEyMy0uMDEuMTg0LS4wMTMuMDM0LS4wMDMuMDY3LS4wMDMuMTAxLS4wMDRsLjE2LS4wMDZoLjExYTMuMTg3IDMuMTg3IDAgMDEuMjYxLjAwOGwuMTUzLjAxLjA2Ny4wMDdjLjA2NC4wMDYuMTI4LjAxMy4xOTIuMDIybC4wNDMuMDA1YTUuMjMyIDUuMjMyIDAgMDEuMjgxLjA0N2wuMTQxLjAzYy4wNzMuMDE2LjE0Ni4wMzUuMjE4LjA1M2wuMDcuMDE5Yy4wOTQuMDI2LjE4Ny4wNTUuMjc4LjA4N2wuMDY3LjAyNWE0LjMyNiA0LjMyNiAwIDAxLjQ0OS4xOWwuMTQzLjA3MkwxMS42MTcuNTc2eiI+PC9wYXRoPjwvc3ZnPg==",
   "pi":"data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA4MDAgODAwIj4KICAKICAKICA8cGF0aCBjbGFzcz0ibG9nby1tYXJrIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiIGQ9IgogICAgTTE2NS4yOSAxNjUuMjkKICAgIEg1MTcuMzYKICAgIFY0MDAKICAgIEg0MDAKICAgIFY1MTcuMzYKICAgIEgyODIuNjUKICAgIFY2MzQuNzIKICAgIEgxNjUuMjkKICAgIFoKICAgIE0yODIuNjUgMjgyLjY1CiAgICBWNDAwCiAgICBINDAwCiAgICBWMjgyLjY1CiAgICBaCiAgIi8+CiAgCiAgPHBhdGggY2xhc3M9ImxvZ28tbWFyayIgZD0iTTUxNy4zNiA0MDAgSDYzNC43MiBWNjM0LjcyIEg1MTcuMzYgWiIvPgo8L3N2Zz4=",
+  "grokcli":"data:image/svg+xml;base64,PHN2ZyBmaWxsPSJjdXJyZW50Q29sb3IiIGZpbGwtcnVsZT0iZXZlbm9kZCIgaGVpZ2h0PSIxZW0iIHN0eWxlPSJmbGV4Om5vbmU7bGluZS1oZWlnaHQ6MSIgdmlld0JveD0iMCAwIDI0IDI0IiB3aWR0aD0iMWVtIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjx0aXRsZT5Hcm9rPC90aXRsZT48cGF0aCBkPSJNOS4yNyAxNS4yOWw3Ljk3OC01Ljg5N2MuMzkxLS4yOS45NS0uMTc3IDEuMTM3LjI3Mi45OCAyLjM2OS41NDIgNS4yMTUtMS40MSA3LjE2OS0xLjk1MSAxLjk1NC00LjY2NyAyLjM4Mi03LjE0OSAxLjQwNmwtMi43MTEgMS4yNTdjMy44ODkgMi42NjEgOC42MTEgMi4wMDMgMTEuNTYyLS45NTMgMi4zNDEtMi4zNDQgMy4wNjYtNS41MzkgMi4zODgtOC40MmwuMDA2LjAwN2MtLjk4My00LjIzMi4yNDItNS45MjQgMi43NS05LjM4My4wNi0uMDgyLjEyLS4xNjQuMTc5LS4yNDhsLTMuMzAxIDMuMzA1di0uMDFMOS4yNjcgMTUuMjkyTTcuNjIzIDE2LjcyM2MtMi43OTItMi42Ny0yLjMxLTYuODAxLjA3MS05LjE4NCAxLjc2MS0xLjc2MyA0LjY0Ny0yLjQ4MyA3LjE2Ni0xLjQyNWwyLjcwNS0xLjI1YTcuODA4IDcuODA4IDAgMDAtMS44MjktMUE4Ljk3NSA4Ljk3NSAwIDAwNS45ODQgNS44M2MtMi41MzMgMi41MzYtMy4zMyA2LjQzNi0xLjk2MiA5Ljc2NCAxLjAyMiAyLjQ4Ny0uNjUzIDQuMjQ2LTIuMzQgNi4wMjItLjU5OS42My0xLjE5OSAxLjI1OS0xLjY4MiAxLjkyNWw3LjYyLTYuODE1Ij48L3BhdGg+PC9zdmc+",
 });
 function updateGlobalUI(g){
   const adoptGuard = arguments.length > 1 && arguments[1] && typeof arguments[1] === "object" ? arguments[1] : null;
@@ -3827,9 +4052,12 @@ function renderGlobalStatus(){
     document.getElementById("globalSummary").textContent = L("読込中");
     document.getElementById("ovGlobal").textContent = L("Global同期: 読込中");
     document.getElementById("ovGlobal").title = L("Global同期: 読込中");
+    try{ document.getElementById("ovGlobal").removeAttribute("data-state"); }catch(e0){}
     document.getElementById("globalEnabledState").textContent = L("読込中");
     try{ sw.setAttribute("aria-checked", "false"); sw.setAttribute("aria-label", L("自動同期の有効/無効")); sw.disabled = true; }catch(e1){}
     try{ pill.classList.remove("on"); }catch(e2){}
+    try{ paintSummaryHalves(); }catch(eP){}
+    try{ renderAttention(); }catch(eA){}
     return;
   }
   let sum = L("待機中");
@@ -3841,8 +4069,10 @@ function renderGlobalStatus(){
   if(st === "waiting") sum = L("起動待ちです。子プロセスの起動を確認しています。");
   if(st === "unconfirmed") sum = L("未確認です。今回の実行結果がまだありません。");
   document.getElementById("globalSummary").textContent = sum;
-  document.getElementById("ovGlobal").textContent = L("Global同期: {summary}", {summary:sum});
-  document.getElementById("ovGlobal").title = L("Global同期: {summary}", {summary:sum});
+  const ov = document.getElementById("ovGlobal");
+  ov.textContent = L("Global同期: {summary}", {summary:sum});
+  ov.title = ov.textContent;
+  ov.dataset.state = st || "idle";
   try{
     const en = document.getElementById("globalEnabledState");
     const known = g.taskEnabled === true || g.taskEnabled === false;
@@ -3855,6 +4085,8 @@ function renderGlobalStatus(){
     sw.disabled = !known || !!globalEnabledInflight;
     if(g.taskEnabled === true) pill.classList.add("on"); else pill.classList.remove("on");
   }catch(e3){}
+  try{ paintSummaryHalves(); }catch(eP){}
+  try{ renderAttention(); }catch(eA){}
 }
 let commonSyncStates = { project: null, global: null };
 let commonSyncSource = "project";
@@ -3920,10 +4152,6 @@ function globalProviderLogo(e){
   try{ tile.setAttribute("aria-hidden", "true"); }catch(e1){}
   const initials = globalLogoInitials(e && (e.label || e.id) || "");
   tile.textContent = initials;
-  const key = String(e && e.id || "");
-  let h = 7;
-  for(let i=0;i<key.length;i++) h = (h * 31 + key.charCodeAt(i)) % 360;
-  try{ if(tile.style && tile.style.setProperty) tile.style.setProperty("--gs-h", String(h)); }catch(e2){}
   const src = (typeof GLOBAL_LOGOS !== "undefined" && GLOBAL_LOGOS[e.id]) ? GLOBAL_LOGOS[e.id] : null;
   if(src){
     const img = document.createElement("img");
@@ -4510,6 +4738,12 @@ function renderUnifiedProgress(){
       else { p.value = state.completed; }
       p.max = state.total || 2;
       p.setAttribute("aria-valuetext", text || "");
+      let tone = "";
+      if(state.indeterminate || text.indexOf(L("実行中")) >= 0 || text.indexOf(L("起動待ち")) >= 0) tone = "run";
+      else if(text.indexOf(L("失敗")) >= 0) tone = "bad";
+      else if(text.indexOf(L("成功")) >= 0) tone = "ok";
+      else if(text.indexOf(L("見送り")) >= 0 || text.indexOf(L("未確認")) >= 0) tone = "warn";
+      p.className = tone ? ("tone-" + tone) : "";
     }
     if(t) t.textContent = text || "";
   }catch(e){}
@@ -4791,6 +5025,7 @@ async function loadGlobalBackups(){
 }
 document.getElementById("btnGlobalBackups").onclick = function(){ loadGlobalBackups(); };
 initLanguage();
+initTheme();
 showHash();refresh();refreshGlobal();
 /* --- GitHub integration (topbar dialog) --------------------------------- */
 const ghState = {open:false, busy:false, restore:null, tokenSource:""};
